@@ -80,6 +80,19 @@ const BooksManager = () => {
     }
   };
 
+  const updateBookNotes = async (id: string, notes: string) => {
+    const { error } = await supabase
+      .from('books')
+      .update({ notes })
+      .eq('id', id);
+
+    if (error) {
+      toast.error('שגיאה בעדכון ההערות');
+    } else {
+      fetchBooks();
+    }
+  };
+
   const deleteBook = async (id: string) => {
     const { error } = await supabase.from('books').delete().eq('id', id);
 
@@ -170,13 +183,14 @@ const BooksManager = () => {
               <TableHead className="text-right">שם הספר</TableHead>
               <TableHead className="text-right">מחבר</TableHead>
               <TableHead className="text-right">סטטוס</TableHead>
+              <TableHead className="text-right">הערות</TableHead>
               <TableHead className="w-[50px]"></TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>
             {filteredBooks.length === 0 ? (
               <TableRow>
-                <TableCell colSpan={4} className="text-center text-muted-foreground">
+                <TableCell colSpan={5} className="text-center text-muted-foreground">
                   {searchTerm ? 'לא נמצאו תוצאות' : 'אין ספרים עדיין'}
                 </TableCell>
               </TableRow>
@@ -199,6 +213,14 @@ const BooksManager = () => {
                         <SelectItem value="נקרא">נקרא</SelectItem>
                       </SelectContent>
                     </Select>
+                  </TableCell>
+                  <TableCell>
+                    <Input
+                      placeholder="הוסף הערות..."
+                      value={book.notes || ''}
+                      onChange={(e) => updateBookNotes(book.id, e.target.value)}
+                      className="min-w-[150px]"
+                    />
                   </TableCell>
                   <TableCell>
                     <Button

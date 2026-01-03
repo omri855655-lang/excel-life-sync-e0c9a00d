@@ -95,6 +95,19 @@ const ShowsManager = () => {
     }
   };
 
+  const updateShowNotes = async (id: string, notes: string) => {
+    const { error } = await supabase
+      .from('shows')
+      .update({ notes })
+      .eq('id', id);
+
+    if (error) {
+      toast.error('שגיאה בעדכון ההערות');
+    } else {
+      fetchShows();
+    }
+  };
+
   const deleteShow = async (id: string) => {
     const { error } = await supabase.from('shows').delete().eq('id', id);
 
@@ -169,13 +182,14 @@ const ShowsManager = () => {
               <TableHead className="text-right">סטטוס</TableHead>
               <TableHead className="text-right">עונה</TableHead>
               <TableHead className="text-right">פרק</TableHead>
+              <TableHead className="text-right">הערות</TableHead>
               <TableHead className="w-[50px]"></TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>
             {filteredShows.length === 0 ? (
               <TableRow>
-                <TableCell colSpan={6} className="text-center text-muted-foreground">
+                <TableCell colSpan={7} className="text-center text-muted-foreground">
                   {searchTerm ? 'לא נמצאו תוצאות' : 'אין סדרות או סרטים עדיין'}
                 </TableCell>
               </TableRow>
@@ -226,6 +240,14 @@ const ShowsManager = () => {
                         placeholder="-"
                       />
                     )}
+                  </TableCell>
+                  <TableCell>
+                    <Input
+                      placeholder="הוסף הערות..."
+                      value={show.notes || ''}
+                      onChange={(e) => updateShowNotes(show.id, e.target.value)}
+                      className="min-w-[150px]"
+                    />
                   </TableCell>
                   <TableCell>
                     <Button
