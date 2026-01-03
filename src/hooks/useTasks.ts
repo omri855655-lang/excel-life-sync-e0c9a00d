@@ -62,19 +62,27 @@ export function useTasks(taskType: "personal" | "work") {
   const [loading, setLoading] = useState(true);
 
   const fetchTasks = useCallback(async () => {
-    if (!user) {
+    // Personal tasks require login; work tasks are meant to be public-read
+    if (!user && taskType === "personal") {
       setTasks([]);
       setLoading(false);
       return;
     }
 
+    setLoading(true);
+
     try {
-      const { data, error } = await supabase
+      let query = supabase
         .from("tasks")
         .select("*")
-        .eq("user_id", user.id)
         .eq("task_type", taskType)
         .order("created_at", { ascending: true });
+
+      if (taskType === "personal" && user) {
+        query = query.eq("user_id", user.id);
+      }
+
+      const { data, error } = await query;
 
       if (error) throw error;
 
