@@ -11,6 +11,9 @@ const WorkTasks = () => {
   const navigate = useNavigate();
   const { user } = useAuth();
 
+  const ALLOWED_EMAIL = "omri855655@gmail.com";
+  const isAllowedUser = user?.email === ALLOWED_EMAIL;
+
   const toggleTheme = () => {
     setIsDark(!isDark);
     document.documentElement.classList.toggle("dark");
@@ -23,7 +26,7 @@ const WorkTasks = () => {
         <FileSpreadsheet className="h-6 w-6 text-primary" />
         <h1 className="text-xl font-bold text-foreground">לוז משימות עבודה</h1>
         <div className="mr-auto flex items-center gap-2">
-          {user && (
+          {isAllowedUser && (
             <Button
               variant="outline"
               size="sm"
@@ -34,11 +37,7 @@ const WorkTasks = () => {
               אזור אישי
             </Button>
           )}
-          <Button
-            variant="ghost"
-            size="icon"
-            onClick={toggleTheme}
-          >
+          <Button variant="ghost" size="icon" onClick={toggleTheme}>
             {isDark ? <Sun className="h-5 w-5" /> : <Moon className="h-5 w-5" />}
           </Button>
         </div>
@@ -46,7 +45,7 @@ const WorkTasks = () => {
 
       {/* Content */}
       <div className="flex-1 overflow-hidden">
-        <TaskSpreadsheet title="לוז משימות עבודה" initialTasks={workTasks} readOnly={!user} />
+        <TaskSpreadsheet title="לוז משימות עבודה" initialTasks={workTasks} readOnly={!isAllowedUser} />
       </div>
     </div>
   );
