@@ -17,11 +17,24 @@ const Personal = () => {
   const [isDark, setIsDark] = useState(false);
   const [activeTab, setActiveTab] = useState("dashboard");
 
+  const ALLOWED_EMAIL = "omri855655@gmail.com";
+
   useEffect(() => {
-    if (!loading && !user) {
+    if (loading) return;
+
+    if (!user) {
       navigate("/auth");
+      return;
     }
-  }, [user, loading, navigate]);
+
+    if (user.email !== ALLOWED_EMAIL) {
+      (async () => {
+        await signOut();
+        toast.error("אין הרשאה לאזור האישי");
+        navigate("/auth");
+      })();
+    }
+  }, [user, loading, navigate, signOut]);
 
   const toggleTheme = () => {
     setIsDark(!isDark);

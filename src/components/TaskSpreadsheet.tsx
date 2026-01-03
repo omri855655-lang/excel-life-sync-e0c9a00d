@@ -14,6 +14,7 @@ import {
 interface TaskSpreadsheetProps {
   initialTasks: Task[];
   title: string;
+  readOnly?: boolean;
 }
 
 const statusColors = {
@@ -28,7 +29,7 @@ const statusIcons = {
   "בטיפול": AlertCircle,
 };
 
-const TaskSpreadsheet = ({ initialTasks, title }: TaskSpreadsheetProps) => {
+const TaskSpreadsheet = ({ initialTasks, title, readOnly = false }: TaskSpreadsheetProps) => {
   const [tasks, setTasks] = useState<Task[]>(initialTasks);
   const [selectedRow, setSelectedRow] = useState<number | null>(null);
   const [editingCell, setEditingCell] = useState<{ row: number; field: keyof Task } | null>(null);
@@ -152,8 +153,9 @@ const TaskSpreadsheet = ({ initialTasks, title }: TaskSpreadsheetProps) => {
 
     return (
       <span
-        className={cn("cursor-text", className)}
+        className={cn(readOnly ? "cursor-default" : "cursor-text", className)}
         onDoubleClick={() => {
+          if (readOnly) return;
           setEditValue(value);
           setEditingCell({ row: taskId, field });
         }}
@@ -195,21 +197,23 @@ const TaskSpreadsheet = ({ initialTasks, title }: TaskSpreadsheetProps) => {
       {/* Toolbar */}
       <div className="flex items-center gap-2 p-3 border-b border-border bg-muted/30">
         <h2 className="text-lg font-semibold text-foreground ml-4">{title}</h2>
-        <div className="flex items-center gap-1">
-          <Button variant="outline" size="sm" onClick={addTask}>
-            <Plus className="h-4 w-4 ml-1" />
-            משימה חדשה
-          </Button>
-          <Button
-            variant="outline"
-            size="sm"
-            onClick={deleteTask}
-            disabled={selectedRow === null}
-          >
-            <Trash2 className="h-4 w-4 ml-1" />
-            מחק משימה
-          </Button>
-        </div>
+        {!readOnly && (
+          <div className="flex items-center gap-1">
+            <Button variant="outline" size="sm" onClick={addTask}>
+              <Plus className="h-4 w-4 ml-1" />
+              משימה חדשה
+            </Button>
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={deleteTask}
+              disabled={selectedRow === null}
+            >
+              <Trash2 className="h-4 w-4 ml-1" />
+              מחק משימה
+            </Button>
+          </div>
+        )}
         <div className="mr-auto">
           <Button variant="secondary" size="sm" onClick={exportToCSV}>
             <Download className="h-4 w-4 ml-1" />
@@ -274,9 +278,11 @@ const TaskSpreadsheet = ({ initialTasks, title }: TaskSpreadsheetProps) => {
                   <td className="px-3 py-2 text-sm">
                     <Select
                       value={task.status}
-                      onValueChange={(value) =>
-                        handleStatusChange(task.id, value as Task["status"])
-                      }
+                      disabled={readOnly}
+                      onValueChange={(value) => {
+                        if (readOnly) return;
+                        handleStatusChange(task.id, value as Task["status"]);
+                      }}
                     >
                       <SelectTrigger
                         className={cn(
