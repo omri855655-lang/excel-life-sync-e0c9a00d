@@ -22,7 +22,7 @@ const Auth = () => {
 
   useEffect(() => {
     if (!loading && user) {
-      navigate('/');
+      navigate('/personal');
     }
   }, [user, loading, navigate]);
 
@@ -58,7 +58,7 @@ const Auth = () => {
       }
     } else {
       toast.success('התחברת בהצלחה!');
-      navigate('/');
+      navigate('/personal');
     }
   };
 
@@ -78,7 +78,7 @@ const Auth = () => {
       }
     } else {
       toast.success('נרשמת בהצלחה! מתחבר...');
-      navigate('/');
+      navigate('/personal');
     }
   };
 
