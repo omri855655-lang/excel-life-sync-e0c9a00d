@@ -46,10 +46,7 @@ const WorkTasks = () => {
 
       {/* Content */}
       <div className="flex-1 overflow-hidden">
-        <TaskSpreadsheet
-          title="לוז משימות עבודה"
-          initialTasks={workTasks}
-        />
+        <TaskSpreadsheet title="לוז משימות עבודה" initialTasks={workTasks} readOnly={!user} />
       </div>
     </div>
   );
