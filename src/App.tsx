@@ -23,7 +23,8 @@ const App = () => (
             <Route path="/" element={<WorkTasks />} />
             <Route path="/personal" element={<Personal />} />
             <Route path="/auth" element={<Auth />} />
-            <Route path="/install" element={<InstallApp />} />
+            <Route path="/install/*" element={<InstallApp />} />
+            <Route path="/Install/*" element={<InstallApp />} />
             {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
             <Route path="*" element={<NotFound />} />
           </Routes>
