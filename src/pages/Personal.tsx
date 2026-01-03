@@ -5,7 +5,7 @@ import TaskSpreadsheetDb from "@/components/TaskSpreadsheetDb";
 import BooksManager from "@/components/BooksManager";
 import ShowsManager from "@/components/ShowsManager";
 import Dashboard from "@/components/Dashboard";
-import { FileSpreadsheet, Moon, Sun, LogOut, BookOpen, Tv, LayoutDashboard, ListTodo, Briefcase } from "lucide-react";
+import { FileSpreadsheet, Moon, Sun, LogOut, BookOpen, Tv, LayoutDashboard, ListTodo, Briefcase, Download } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { toast } from "sonner";
@@ -73,6 +73,15 @@ const Personal = () => {
           >
             <Briefcase className="h-4 w-4" />
             משימות עבודה
+          </Button>
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={() => navigate("/install")}
+            className="gap-2"
+          >
+            <Download className="h-4 w-4" />
+            <span className="hidden sm:inline">התקנת אפליקציה</span>
           </Button>
           <span className="text-sm text-muted-foreground hidden sm:block">{user.email}</span>
           <Button
