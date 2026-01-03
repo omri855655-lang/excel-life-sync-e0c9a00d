@@ -2,31 +2,18 @@ import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { useAuth } from "@/hooks/useAuth";
 import TaskSpreadsheet from "@/components/TaskSpreadsheet";
-import SheetTabs from "@/components/SheetTabs";
 import BooksManager from "@/components/BooksManager";
 import ShowsManager from "@/components/ShowsManager";
 import Dashboard from "@/components/Dashboard";
-import { FileSpreadsheet, Moon, Sun, LogOut, BookOpen, Tv, LayoutDashboard, ListTodo } from "lucide-react";
+import { FileSpreadsheet, Moon, Sun, LogOut, BookOpen, Tv, LayoutDashboard, ListTodo, Briefcase } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { personalTasks, workTasks } from "@/data/initialTasks";
+import { personalTasks } from "@/data/initialTasks";
 import { toast } from "sonner";
 
-interface Sheet {
-  id: string;
-  name: string;
-  type: "personal" | "work";
-}
-
-const Index = () => {
+const Personal = () => {
   const { user, loading, signOut } = useAuth();
   const navigate = useNavigate();
-  const [sheets, setSheets] = useState<Sheet[]>([
-    { id: "1", name: "משימות אישיות", type: "personal" },
-    { id: "2", name: "לוז משימות עבודה", type: "work" },
-  ]);
-
-  const [activeSheetId, setActiveSheetId] = useState("1");
   const [isDark, setIsDark] = useState(false);
   const [activeTab, setActiveTab] = useState("dashboard");
 
@@ -36,49 +23,15 @@ const Index = () => {
     }
   }, [user, loading, navigate]);
 
-  const activeSheet = sheets.find((s) => s.id === activeSheetId) || sheets[0];
-
-  const handleAddSheet = () => {
-    const newId = String(Date.now());
-    const newSheet: Sheet = {
-      id: newId,
-      name: `גיליון ${sheets.length + 1}`,
-      type: "personal",
-    };
-    setSheets((prev) => [...prev, newSheet]);
-    setActiveSheetId(newId);
-  };
-
-  const handleDeleteSheet = (id: string) => {
-    if (sheets.length > 1) {
-      const newSheets = sheets.filter((s) => s.id !== id);
-      setSheets(newSheets);
-      if (activeSheetId === id) {
-        setActiveSheetId(newSheets[0].id);
-      }
-    }
-  };
-
-  const handleRenameSheet = (id: string, name: string) => {
-    setSheets((prev) =>
-      prev.map((s) => (s.id === id ? { ...s, name } : s))
-    );
-  };
-
   const toggleTheme = () => {
     setIsDark(!isDark);
     document.documentElement.classList.toggle("dark");
   };
 
-  const getTasksForSheet = () => {
-    if (activeSheet.type === "work") return workTasks;
-    return personalTasks;
-  };
-
   const handleSignOut = async () => {
     await signOut();
     toast.success("התנתקת בהצלחה");
-    navigate("/auth");
+    navigate("/");
   };
 
   if (loading) {
@@ -98,8 +51,17 @@ const Index = () => {
       {/* Header */}
       <header className="flex items-center gap-3 px-4 py-3 border-b border-border bg-card shadow-sm">
         <FileSpreadsheet className="h-6 w-6 text-primary" />
-        <h1 className="text-xl font-bold text-foreground">מערכת ניהול אישית</h1>
+        <h1 className="text-xl font-bold text-foreground">אזור אישי</h1>
         <div className="mr-auto flex items-center gap-2">
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={() => navigate("/")}
+            className="gap-2"
+          >
+            <Briefcase className="h-4 w-4" />
+            משימות עבודה
+          </Button>
           <span className="text-sm text-muted-foreground hidden sm:block">{user.email}</span>
           <Button
             variant="ghost"
@@ -129,7 +91,7 @@ const Index = () => {
             </TabsTrigger>
             <TabsTrigger value="tasks" className="gap-2">
               <ListTodo className="h-4 w-4" />
-              משימות
+              משימות אישיות
             </TabsTrigger>
             <TabsTrigger value="books" className="gap-2">
               <BookOpen className="h-4 w-4" />
@@ -149,19 +111,10 @@ const Index = () => {
         <TabsContent value="tasks" className="flex-1 flex flex-col overflow-hidden m-0">
           <div className="flex-1 overflow-hidden">
             <TaskSpreadsheet
-              key={activeSheet.id}
-              title={activeSheet.name}
-              initialTasks={getTasksForSheet()}
+              title="משימות אישיות"
+              initialTasks={personalTasks}
             />
           </div>
-          <SheetTabs
-            sheets={sheets.map((s) => ({ id: s.id, name: s.name }))}
-            activeSheet={activeSheetId}
-            onSelectSheet={setActiveSheetId}
-            onAddSheet={handleAddSheet}
-            onDeleteSheet={handleDeleteSheet}
-            onRenameSheet={handleRenameSheet}
-          />
         </TabsContent>
 
         <TabsContent value="books" className="flex-1 overflow-auto m-0">
@@ -176,4 +129,4 @@ const Index = () => {
   );
 };
 
-export default Index;
+export default Personal;
