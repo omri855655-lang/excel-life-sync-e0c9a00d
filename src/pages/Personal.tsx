@@ -1,14 +1,13 @@
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { useAuth } from "@/hooks/useAuth";
-import TaskSpreadsheet from "@/components/TaskSpreadsheet";
+import TaskSpreadsheetDb from "@/components/TaskSpreadsheetDb";
 import BooksManager from "@/components/BooksManager";
 import ShowsManager from "@/components/ShowsManager";
 import Dashboard from "@/components/Dashboard";
 import { FileSpreadsheet, Moon, Sun, LogOut, BookOpen, Tv, LayoutDashboard, ListTodo, Briefcase } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { personalTasks } from "@/data/initialTasks";
 import { toast } from "sonner";
 
 const Personal = () => {
@@ -123,9 +122,9 @@ const Personal = () => {
 
         <TabsContent value="tasks" className="flex-1 flex flex-col overflow-hidden m-0">
           <div className="flex-1 overflow-hidden">
-            <TaskSpreadsheet
+            <TaskSpreadsheetDb
               title="משימות אישיות"
-              initialTasks={personalTasks}
+              taskType="personal"
             />
           </div>
         </TabsContent>
