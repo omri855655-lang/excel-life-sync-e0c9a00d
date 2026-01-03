@@ -86,6 +86,54 @@ export type Database = {
         }
         Relationships: []
       }
+      tasks: {
+        Row: {
+          category: string | null
+          created_at: string
+          description: string
+          id: string
+          overdue: boolean | null
+          planned_end: string | null
+          progress: string | null
+          responsible: string | null
+          status: string | null
+          status_notes: string | null
+          task_type: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          category?: string | null
+          created_at?: string
+          description: string
+          id?: string
+          overdue?: boolean | null
+          planned_end?: string | null
+          progress?: string | null
+          responsible?: string | null
+          status?: string | null
+          status_notes?: string | null
+          task_type?: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          category?: string | null
+          created_at?: string
+          description?: string
+          id?: string
+          overdue?: boolean | null
+          planned_end?: string | null
+          progress?: string | null
+          responsible?: string | null
+          status?: string | null
+          status_notes?: string | null
+          task_type?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
     }
     Views: {
       [_ in never]: never

@@ -1,8 +1,7 @@
 import { useState } from "react";
-import TaskSpreadsheet from "@/components/TaskSpreadsheet";
+import TaskSpreadsheetDb from "@/components/TaskSpreadsheetDb";
 import { FileSpreadsheet, Moon, Sun, Lock } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { workTasks } from "@/data/initialTasks";
 import { useNavigate } from "react-router-dom";
 import { useAuth } from "@/hooks/useAuth";
 
@@ -45,7 +44,7 @@ const WorkTasks = () => {
 
       {/* Content */}
       <div className="flex-1 overflow-hidden">
-        <TaskSpreadsheet title="לוז משימות עבודה" initialTasks={workTasks} readOnly={!isAllowedUser} />
+        <TaskSpreadsheetDb title="לוז משימות עבודה" taskType="work" readOnly={!isAllowedUser} />
       </div>
     </div>
   );
