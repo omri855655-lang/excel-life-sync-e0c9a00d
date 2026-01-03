@@ -4,10 +4,12 @@ import { FileSpreadsheet, Moon, Sun, Lock } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { workTasks } from "@/data/initialTasks";
 import { useNavigate } from "react-router-dom";
+import { useAuth } from "@/hooks/useAuth";
 
 const WorkTasks = () => {
   const [isDark, setIsDark] = useState(false);
   const navigate = useNavigate();
+  const { user } = useAuth();
 
   const toggleTheme = () => {
     setIsDark(!isDark);
@@ -21,15 +23,17 @@ const WorkTasks = () => {
         <FileSpreadsheet className="h-6 w-6 text-primary" />
         <h1 className="text-xl font-bold text-foreground">לוז משימות עבודה</h1>
         <div className="mr-auto flex items-center gap-2">
-          <Button
-            variant="outline"
-            size="sm"
-            onClick={() => navigate("/personal")}
-            className="gap-2"
-          >
-            <Lock className="h-4 w-4" />
-            אזור אישי
-          </Button>
+          {user && (
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => navigate("/personal")}
+              className="gap-2"
+            >
+              <Lock className="h-4 w-4" />
+              אזור אישי
+            </Button>
+          )}
           <Button
             variant="ghost"
             size="icon"
