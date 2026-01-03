@@ -101,8 +101,29 @@ const BooksManager = () => {
     return <div className="p-8 text-center text-muted-foreground">טוען ספרים...</div>;
   }
 
+  const readCount = books.filter(b => b.status === 'נקרא').length;
+  const readingCount = books.filter(b => b.status === 'בקריאה').length;
+  const toReadCount = books.filter(b => b.status === 'לקרוא').length;
+
   return (
-    <div className="p-4 space-y-4">
+    <div className="h-full flex flex-col p-4">
+      {/* Stats Dashboard */}
+      <div className="grid grid-cols-3 gap-4 mb-4">
+        <div className="bg-green-500/10 border border-green-500/30 rounded-lg p-4 text-center">
+          <div className="text-2xl font-bold text-green-600">{readCount}</div>
+          <div className="text-sm text-muted-foreground">נקראו</div>
+        </div>
+        <div className="bg-blue-500/10 border border-blue-500/30 rounded-lg p-4 text-center">
+          <div className="text-2xl font-bold text-blue-600">{readingCount}</div>
+          <div className="text-sm text-muted-foreground">בקריאה</div>
+        </div>
+        <div className="bg-orange-500/10 border border-orange-500/30 rounded-lg p-4 text-center">
+          <div className="text-2xl font-bold text-orange-600">{toReadCount}</div>
+          <div className="text-sm text-muted-foreground">לקרוא</div>
+        </div>
+      </div>
+
+      {/* Header with count */}
       <div className="flex items-center gap-2 mb-4">
         <BookOpen className="h-6 w-6 text-primary" />
         <h2 className="text-xl font-bold">הספרים שלי</h2>
@@ -110,7 +131,7 @@ const BooksManager = () => {
       </div>
 
       {/* Add new book */}
-      <div className="flex gap-2 flex-wrap">
+      <div className="flex gap-2 flex-wrap mb-4">
         <Input
           placeholder="שם הספר"
           value={newBook.title}
@@ -130,7 +151,7 @@ const BooksManager = () => {
       </div>
 
       {/* Search */}
-      <div className="relative">
+      <div className="relative mb-4">
         <Search className="absolute right-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
         <Input
           placeholder="חפש ספר או מחבר..."
@@ -140,9 +161,10 @@ const BooksManager = () => {
         />
       </div>
 
-      {/* Books table */}
-      <div className="border rounded-lg overflow-hidden">
-        <Table>
+      {/* Books table with scroll */}
+      <div className="flex-1 min-h-0 border rounded-lg overflow-hidden">
+        <div className="h-full overflow-auto">
+          <Table>
           <TableHeader>
             <TableRow>
               <TableHead className="text-right">שם הספר</TableHead>
@@ -192,7 +214,8 @@ const BooksManager = () => {
               ))
             )}
           </TableBody>
-        </Table>
+          </Table>
+        </div>
       </div>
     </div>
   );
