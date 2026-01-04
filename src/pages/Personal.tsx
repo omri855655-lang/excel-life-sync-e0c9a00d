@@ -4,8 +4,9 @@ import { useAuth } from "@/hooks/useAuth";
 import TaskSpreadsheetDb from "@/components/TaskSpreadsheetDb";
 import BooksManager from "@/components/BooksManager";
 import ShowsManager from "@/components/ShowsManager";
+import PodcastsManager from "@/components/PodcastsManager";
 import Dashboard from "@/components/Dashboard";
-import { FileSpreadsheet, Moon, Sun, LogOut, BookOpen, Tv, LayoutDashboard, ListTodo, Briefcase, Download } from "lucide-react";
+import { FileSpreadsheet, Moon, Sun, LogOut, BookOpen, Tv, LayoutDashboard, ListTodo, Briefcase, Download, Headphones } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { toast } from "sonner";
@@ -122,6 +123,10 @@ const Personal = () => {
               <Tv className="h-4 w-4" />
               סדרות
             </TabsTrigger>
+            <TabsTrigger value="podcasts" className="gap-2">
+              <Headphones className="h-4 w-4" />
+              פודקאסטים
+            </TabsTrigger>
           </TabsList>
         </div>
 
@@ -144,6 +149,10 @@ const Personal = () => {
 
         <TabsContent value="shows" className="flex-1 overflow-auto m-0">
           <ShowsManager />
+        </TabsContent>
+
+        <TabsContent value="podcasts" className="flex-1 overflow-auto m-0">
+          <PodcastsManager />
         </TabsContent>
       </Tabs>
     </div>

@@ -1,9 +1,11 @@
 import { useState, useCallback } from "react";
 import { Button } from "@/components/ui/button";
-import { Plus, Trash2, Download, Check, Clock, AlertCircle, Loader2 } from "lucide-react";
+import { Plus, Trash2, Download, Check, Clock, AlertCircle, Loader2, Sparkles } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useTasks, Task } from "@/hooks/useTasks";
 import { taskHeaders } from "@/data/initialTasks";
+import { supabase } from "@/integrations/supabase/client";
+import { toast } from "sonner";
 import {
   Select,
   SelectContent,
@@ -11,6 +13,12 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
 
 interface TaskSpreadsheetDbProps {
   title: string;
@@ -34,6 +42,10 @@ const TaskSpreadsheetDb = ({ title, taskType, readOnly = false }: TaskSpreadshee
   const { tasks, loading, addTask, updateTask, deleteTask } = useTasks(taskType);
   const [selectedRow, setSelectedRow] = useState<string | null>(null);
   const [editingCell, setEditingCell] = useState<{ row: string; field: keyof Task } | null>(null);
+  const [aiDialogOpen, setAiDialogOpen] = useState(false);
+  const [aiSuggestion, setAiSuggestion] = useState<string>("");
+  const [aiLoading, setAiLoading] = useState(false);
+  const [selectedTaskForAi, setSelectedTaskForAi] = useState<Task | null>(null);
 
   const handleCellChange = useCallback(
     (taskId: string, field: keyof Task, value: string) => {
@@ -57,6 +69,40 @@ const TaskSpreadsheetDb = ({ title, taskType, readOnly = false }: TaskSpreadshee
     if (selectedRow) {
       await deleteTask(selectedRow);
       setSelectedRow(null);
+    }
+  };
+
+  const handleAiHelp = async (task: Task) => {
+    if (!task.description.trim()) {
+      toast.error("נא להזין תיאור משימה לפני בקשת עזרה מ-AI");
+      return;
+    }
+    
+    setSelectedTaskForAi(task);
+    setAiDialogOpen(true);
+    setAiLoading(true);
+    setAiSuggestion("");
+
+    try {
+      const { data, error } = await supabase.functions.invoke("task-ai-helper", {
+        body: { taskDescription: task.description, taskCategory: task.category },
+      });
+
+      if (error) {
+        throw error;
+      }
+
+      if (data?.error) {
+        throw new Error(data.error);
+      }
+
+      setAiSuggestion(data.suggestion || "לא התקבלה תגובה מה-AI");
+    } catch (error: any) {
+      console.error("AI error:", error);
+      toast.error(error.message || "שגיאה בקבלת עזרה מ-AI");
+      setAiDialogOpen(false);
+    } finally {
+      setAiLoading(false);
     }
   };
 
@@ -344,6 +390,21 @@ const TaskSpreadsheetDb = ({ title, taskType, readOnly = false }: TaskSpreadshee
                         <span className="text-muted-foreground">-</span>
                       )}
                     </td>
+                    <td className="px-3 py-2 text-sm">
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          handleAiHelp(task);
+                        }}
+                        className="h-7 gap-1 text-primary hover:text-primary"
+                        title="קבל עזרה מ-AI"
+                      >
+                        <Sparkles className="h-3.5 w-3.5" />
+                        <span className="text-xs">AI</span>
+                      </Button>
+                    </td>
                   </tr>
                 );
               })}
@@ -351,6 +412,36 @@ const TaskSpreadsheetDb = ({ title, taskType, readOnly = false }: TaskSpreadshee
           </table>
         )}
       </div>
+
+      {/* AI Dialog */}
+      <Dialog open={aiDialogOpen} onOpenChange={setAiDialogOpen}>
+        <DialogContent className="max-w-md" dir="rtl">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <Sparkles className="h-5 w-5 text-primary" />
+              עזרה מ-AI
+            </DialogTitle>
+          </DialogHeader>
+          <div className="space-y-4">
+            {selectedTaskForAi && (
+              <div className="bg-muted p-3 rounded-lg">
+                <p className="text-sm font-medium">משימה:</p>
+                <p className="text-sm text-muted-foreground">{selectedTaskForAi.description}</p>
+              </div>
+            )}
+            {aiLoading ? (
+              <div className="flex items-center justify-center py-8">
+                <Loader2 className="h-6 w-6 animate-spin text-primary" />
+                <span className="mr-2 text-muted-foreground">מקבל הצעות...</span>
+              </div>
+            ) : (
+              <div className="bg-primary/5 border border-primary/20 p-4 rounded-lg whitespace-pre-wrap text-sm">
+                {aiSuggestion}
+              </div>
+            )}
+          </div>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 };
