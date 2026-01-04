@@ -2,3 +2,6 @@ project_id = "isnhgyycowmnlxtmbmwm"
 
 [functions.send-task-reminders]
 verify_jwt = false
+
+[functions.task-ai-helper]
+verify_jwt = false
