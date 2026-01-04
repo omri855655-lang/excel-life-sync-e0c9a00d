@@ -140,6 +140,9 @@ export function useTasks(taskType: "personal" | "work") {
   const updateTask = useCallback(async (taskId: string, updates: Partial<Task>) => {
     if (!user) return;
 
+    // Find the current task to calculate overdue status
+    const currentTask = tasks.find(t => t.id === taskId);
+    
     const dbUpdates: Record<string, any> = {};
     if (updates.description !== undefined) dbUpdates.description = updates.description;
     if (updates.category !== undefined) dbUpdates.category = updates.category || null;
@@ -149,6 +152,27 @@ export function useTasks(taskType: "personal" | "work") {
     if (updates.progress !== undefined) dbUpdates.progress = updates.progress || null;
     if (updates.plannedEnd !== undefined) dbUpdates.planned_end = updates.plannedEnd || null;
     if (updates.overdue !== undefined) dbUpdates.overdue = updates.overdue;
+
+    // Recalculate overdue when plannedEnd or status changes
+    const newPlannedEnd = updates.plannedEnd !== undefined ? updates.plannedEnd : currentTask?.plannedEnd;
+    const newStatus = updates.status !== undefined ? updates.status : currentTask?.status;
+    
+    if (newPlannedEnd && newStatus !== "בוצע") {
+      const today = new Date();
+      today.setHours(0, 0, 0, 0);
+      const plannedDate = new Date(newPlannedEnd);
+      plannedDate.setHours(0, 0, 0, 0);
+      dbUpdates.overdue = plannedDate < today;
+      updates.overdue = dbUpdates.overdue;
+    } else if (newStatus === "בוצע") {
+      // Completed tasks are not overdue
+      dbUpdates.overdue = false;
+      updates.overdue = false;
+    } else if (!newPlannedEnd) {
+      // No due date = not overdue
+      dbUpdates.overdue = false;
+      updates.overdue = false;
+    }
 
     try {
       const { error } = await supabase
@@ -168,7 +192,7 @@ export function useTasks(taskType: "personal" | "work") {
       console.error("Error updating task:", error);
       toast.error("שגיאה בעדכון משימה");
     }
-  }, [user]);
+  }, [user, tasks]);
 
   const deleteTask = useCallback(async (taskId: string) => {
     if (!user) return;
