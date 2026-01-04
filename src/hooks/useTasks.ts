@@ -86,7 +86,25 @@ export function useTasks(taskType: "personal" | "work") {
 
       if (error) throw error;
 
-      const mappedTasks = (data as DbTask[]).map(mapDbTaskToTask);
+      // Recalculate overdue status based on current date
+      const today = new Date();
+      today.setHours(0, 0, 0, 0);
+
+      const mappedTasks = (data as DbTask[]).map((dbTask) => {
+        const task = mapDbTaskToTask(dbTask);
+        
+        // Calculate overdue: only if planned_end exists, date has PASSED, and status is not "בוצע"
+        if (task.plannedEnd && task.status !== "בוצע") {
+          const plannedDate = new Date(task.plannedEnd);
+          plannedDate.setHours(0, 0, 0, 0);
+          task.overdue = plannedDate < today;
+        } else {
+          task.overdue = false;
+        }
+        
+        return task;
+      });
+
       setTasks(mappedTasks);
     } catch (error: any) {
       console.error("Error fetching tasks:", error);
