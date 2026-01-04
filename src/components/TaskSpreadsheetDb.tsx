@@ -1,4 +1,4 @@
-import { useState, useCallback } from "react";
+import { useState, useCallback, forwardRef } from "react";
 import { Button } from "@/components/ui/button";
 import { Plus, Trash2, Download, Check, Clock, AlertCircle, Loader2, Sparkles } from "lucide-react";
 import { cn } from "@/lib/utils";
@@ -137,44 +137,63 @@ const TaskSpreadsheetDb = ({ title, taskType, readOnly = false }: TaskSpreadshee
   const inProgressCount = tasks.filter((t) => t.status === "בטיפול").length;
   const completionRate = tasks.length > 0 ? Math.round((completedCount / tasks.length) * 100) : 0;
 
-  const EditableCell = ({
+  const EditableCellInput = ({
     value,
-    taskId,
     field,
-    className = "",
+    className,
+    onSave,
+    onCancel,
   }: {
     value: string;
-    taskId: string;
     field: keyof Task;
-    className?: string;
+    className: string;
+    onSave: (value: string) => void;
+    onCancel: () => void;
   }) => {
-    const isEditing = editingCell?.row === taskId && editingCell?.field === field;
     const [editValue, setEditValue] = useState(value);
+
+    return (
+      <input
+        type={field === "plannedEnd" ? "date" : "text"}
+        value={editValue}
+        onChange={(e) => setEditValue(e.target.value)}
+        onBlur={() => onSave(editValue)}
+        onKeyDown={(e) => {
+          if (e.key === "Enter") {
+            onSave(editValue);
+          } else if (e.key === "Escape") {
+            onCancel();
+          }
+        }}
+        className={cn(
+          "w-full bg-transparent outline-none ring-2 ring-primary rounded px-1",
+          className
+        )}
+        autoFocus
+        dir="auto"
+      />
+    );
+  };
+
+  const renderEditableCell = (
+    value: string,
+    taskId: string,
+    field: keyof Task,
+    className: string = ""
+  ) => {
+    const isEditing = editingCell?.row === taskId && editingCell?.field === field;
 
     if (isEditing) {
       return (
-        <input
-          type={field === "plannedEnd" ? "date" : "text"}
-          value={editValue}
-          onChange={(e) => setEditValue(e.target.value)}
-          onBlur={() => {
-            handleCellChange(taskId, field, editValue);
+        <EditableCellInput
+          value={value}
+          field={field}
+          className={className}
+          onSave={(newValue) => {
+            handleCellChange(taskId, field, newValue);
             setEditingCell(null);
           }}
-          onKeyDown={(e) => {
-            if (e.key === "Enter") {
-              handleCellChange(taskId, field, editValue);
-              setEditingCell(null);
-            } else if (e.key === "Escape") {
-              setEditingCell(null);
-            }
-          }}
-          className={cn(
-            "w-full bg-transparent outline-none ring-2 ring-primary rounded px-1",
-            className
-          )}
-          autoFocus
-          dir="auto"
+          onCancel={() => setEditingCell(null)}
         />
       );
     }
@@ -184,7 +203,6 @@ const TaskSpreadsheetDb = ({ title, taskType, readOnly = false }: TaskSpreadshee
         className={cn(readOnly ? "cursor-default" : "cursor-text", className)}
         onDoubleClick={() => {
           if (readOnly) return;
-          setEditValue(value);
           setEditingCell({ row: taskId, field });
         }}
         dir="auto"
@@ -302,26 +320,13 @@ const TaskSpreadsheetDb = ({ title, taskType, readOnly = false }: TaskSpreadshee
                       {rowIndex + 1}
                     </td>
                     <td className="px-3 py-2 text-sm max-w-[300px]">
-                      <EditableCell
-                        value={task.description}
-                        taskId={task.id}
-                        field="description"
-                      />
+                      {renderEditableCell(task.description, task.id, "description")}
                     </td>
                     <td className="px-3 py-2 text-sm">
-                      <EditableCell
-                        value={task.category}
-                        taskId={task.id}
-                        field="category"
-                        className="text-muted-foreground"
-                      />
+                      {renderEditableCell(task.category, task.id, "category", "text-muted-foreground")}
                     </td>
                     <td className="px-3 py-2 text-sm">
-                      <EditableCell
-                        value={task.responsible}
-                        taskId={task.id}
-                        field="responsible"
-                      />
+                      {renderEditableCell(task.responsible, task.id, "responsible")}
                     </td>
                     <td className="px-3 py-2 text-sm">
                       <Select
@@ -361,27 +366,13 @@ const TaskSpreadsheetDb = ({ title, taskType, readOnly = false }: TaskSpreadshee
                       </Select>
                     </td>
                     <td className="px-3 py-2 text-sm max-w-[200px]">
-                      <EditableCell
-                        value={task.statusNotes}
-                        taskId={task.id}
-                        field="statusNotes"
-                        className="text-muted-foreground text-xs"
-                      />
+                      {renderEditableCell(task.statusNotes, task.id, "statusNotes", "text-muted-foreground text-xs")}
                     </td>
                     <td className="px-3 py-2 text-sm max-w-[200px]">
-                      <EditableCell
-                        value={task.progress}
-                        taskId={task.id}
-                        field="progress"
-                        className="text-muted-foreground text-xs"
-                      />
+                      {renderEditableCell(task.progress, task.id, "progress", "text-muted-foreground text-xs")}
                     </td>
                     <td className="px-3 py-2 text-sm whitespace-nowrap">
-                      <EditableCell
-                        value={task.plannedEnd}
-                        taskId={task.id}
-                        field="plannedEnd"
-                      />
+                      {renderEditableCell(task.plannedEnd, task.id, "plannedEnd")}
                     </td>
                     <td className="px-3 py-2 text-sm text-center">
                       {task.overdue && task.status !== "בוצע" ? (
