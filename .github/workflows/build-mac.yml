@@ -7,26 +7,43 @@ on:
 
 jobs:
   build-mac:
-    runs-on: macos-latest
-    
+    name: Build macOS DMG (${{ matrix.arch }})
+    runs-on: ${{ matrix.os }}
+
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - arch: x64
+            os: macos-13
+          - arch: arm64
+            os: macos-14
+
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
-      
+
       - name: Setup Node.js
         uses: actions/setup-node@v4
         with:
-          node-version: '20'
-          cache: 'npm'
-      
+          node-version: "20"
+          cache: "npm"
+
       - name: Install dependencies
         run: npm ci
-      
+
       - name: Build web app
         run: npm run build
-      
+
       - name: Build Electron app
-        run: npx electron-builder --mac --publish never
+        shell: bash
+        run: |
+          set -euo pipefail
+          if [ "${{ matrix.arch }}" = "x64" ]; then
+            npx electron-builder --mac --x64 --publish never
+          else
+            npx electron-builder --mac --arm64 --publish never
+          fi
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
@@ -36,19 +53,19 @@ jobs:
           set -euo pipefail
           mkdir -p artifacts
           echo "Searching for DMG files under electron-dist/ ..."
-          find electron-dist -maxdepth 4 -type f -name "*.dmg" -print
-          DMG_PATH=$(find electron-dist -maxdepth 4 -type f -name "*.dmg" | head -n 1)
+          find electron-dist -maxdepth 6 -type f -name "*.dmg" -print
+          DMG_PATH=$(find electron-dist -maxdepth 6 -type f -name "*.dmg" | head -n 1)
           if [ -z "${DMG_PATH:-}" ]; then
             echo "No DMG found in electron-dist. Build output:" >&2
-            find electron-dist -maxdepth 4 -print >&2
+            find electron-dist -maxdepth 6 -print >&2
             exit 1
           fi
-          cp "$DMG_PATH" "artifacts/Excel-Life-Sync.dmg"
-          echo "Copied: $DMG_PATH -> artifacts/Excel-Life-Sync.dmg"
+          cp "$DMG_PATH" "artifacts/Excel-Life-Sync-${{ matrix.arch }}.dmg"
+          echo "Copied: $DMG_PATH -> artifacts/Excel-Life-Sync-${{ matrix.arch }}.dmg"
 
       - name: Upload DMG artifact
         uses: actions/upload-artifact@v4
         with:
-          name: mac-dmg
-          path: artifacts/Excel-Life-Sync.dmg
+          name: mac-dmg-${{ matrix.arch }}
+          path: artifacts/Excel-Life-Sync-${{ matrix.arch }}.dmg
           retention-days: 30

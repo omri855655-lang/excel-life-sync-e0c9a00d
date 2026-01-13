@@ -15,12 +15,7 @@
   "mac": {
     "category": "public.app-category.productivity",
     "icon": "public/app-icon.png",
-    "target": [
-      {
-        "target": "dmg",
-        "arch": ["x64", "arm64"]
-      }
-    ],
+    "target": "dmg",
     "darkModeSupport": true
   },
   "dmg": {
