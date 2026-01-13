@@ -29,10 +29,26 @@ jobs:
         run: npx electron-builder --mac --publish never
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-      
+
+      - name: Collect DMG
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p artifacts
+          echo "Searching for DMG files under electron-dist/ ..."
+          find electron-dist -maxdepth 4 -type f -name "*.dmg" -print
+          DMG_PATH=$(find electron-dist -maxdepth 4 -type f -name "*.dmg" | head -n 1)
+          if [ -z "${DMG_PATH:-}" ]; then
+            echo "No DMG found in electron-dist. Build output:" >&2
+            find electron-dist -maxdepth 4 -print >&2
+            exit 1
+          fi
+          cp "$DMG_PATH" "artifacts/Excel-Life-Sync.dmg"
+          echo "Copied: $DMG_PATH -> artifacts/Excel-Life-Sync.dmg"
+
       - name: Upload DMG artifact
         uses: actions/upload-artifact@v4
         with:
-          name: mac-app
-          path: electron-dist/**/*.dmg
+          name: mac-dmg
+          path: artifacts/Excel-Life-Sync.dmg
           retention-days: 30
