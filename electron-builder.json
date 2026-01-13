@@ -11,7 +11,7 @@
   ],
   "mac": {
     "category": "public.app-category.productivity",
-    "icon": "public/pwa-512x512.png",
+    "icon": "public/app-icon.png",
     "target": [
       {
         "target": "dmg",
@@ -22,14 +22,14 @@
   },
   "dmg": {
     "title": "${productName}",
-    "icon": "public/pwa-512x512.png"
+    "icon": "public/app-icon.png"
   },
   "win": {
-    "icon": "public/pwa-512x512.png",
+    "icon": "public/app-icon.png",
     "target": "nsis"
   },
   "linux": {
-    "icon": "public/pwa-512x512.png",
+    "icon": "public/app-icon.png",
     "target": "AppImage"
   }
 }

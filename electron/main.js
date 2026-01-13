@@ -14,7 +14,7 @@ function createWindow() {
     minWidth: 800,
     minHeight: 600,
     title: 'Excel Life Sync',
-    icon: path.join(__dirname, '../public/pwa-512x512.png'),
+    icon: path.join(__dirname, '../public/app-icon.png'),
     webPreferences: {
       nodeIntegration: false,
       contextIsolation: true,
