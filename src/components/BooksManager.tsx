@@ -119,9 +119,9 @@ const BooksManager = () => {
   const toReadCount = books.filter(b => b.status === 'לקרוא').length;
 
   return (
-    <div className="h-full flex flex-col p-4">
+    <div className="h-full flex flex-col p-4 overflow-hidden" dir="rtl">
       {/* Stats Dashboard */}
-      <div className="grid grid-cols-3 gap-4 mb-4">
+      <div className="grid grid-cols-3 gap-4 mb-4 flex-shrink-0">
         <div className="bg-green-500/10 border border-green-500/30 rounded-lg p-4 text-center">
           <div className="text-2xl font-bold text-green-600">{readCount}</div>
           <div className="text-sm text-muted-foreground">נקראו</div>
@@ -137,25 +137,27 @@ const BooksManager = () => {
       </div>
 
       {/* Header with count */}
-      <div className="flex items-center gap-2 mb-4">
+      <div className="flex items-center gap-2 mb-4 flex-shrink-0">
         <BookOpen className="h-6 w-6 text-primary" />
         <h2 className="text-xl font-bold">הספרים שלי</h2>
         <span className="text-sm text-muted-foreground">({books.length} ספרים)</span>
       </div>
 
       {/* Add new book */}
-      <div className="flex gap-2 flex-wrap mb-4">
+      <div className="flex gap-2 flex-wrap mb-4 flex-shrink-0">
         <Input
           placeholder="שם הספר"
           value={newBook.title}
           onChange={(e) => setNewBook({ ...newBook, title: e.target.value })}
-          className="flex-1 min-w-[200px]"
+          className="flex-1 min-w-[200px] text-right"
+          dir="rtl"
         />
         <Input
           placeholder="מחבר"
           value={newBook.author}
           onChange={(e) => setNewBook({ ...newBook, author: e.target.value })}
-          className="flex-1 min-w-[150px]"
+          className="flex-1 min-w-[150px] text-right"
+          dir="rtl"
         />
         <Button onClick={addBook}>
           <Plus className="h-4 w-4 ml-1" />
@@ -164,13 +166,14 @@ const BooksManager = () => {
       </div>
 
       {/* Search */}
-      <div className="relative mb-4">
+      <div className="relative mb-4 flex-shrink-0">
         <Search className="absolute right-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
         <Input
           placeholder="חפש ספר או מחבר..."
           value={searchTerm}
           onChange={(e) => setSearchTerm(e.target.value)}
-          className="pr-10"
+          className="pr-10 text-right"
+          dir="rtl"
         />
       </div>
 
@@ -197,8 +200,8 @@ const BooksManager = () => {
             ) : (
               filteredBooks.map((book) => (
                 <TableRow key={book.id}>
-                  <TableCell className="font-medium">{book.title}</TableCell>
-                  <TableCell>{book.author || '-'}</TableCell>
+                  <TableCell className="font-medium text-right">{book.title}</TableCell>
+                  <TableCell className="text-right">{book.author || '-'}</TableCell>
                   <TableCell>
                     <Select
                       value={book.status || 'לקרוא'}
@@ -219,7 +222,8 @@ const BooksManager = () => {
                       placeholder="הוסף הערות..."
                       value={book.notes || ''}
                       onChange={(e) => updateBookNotes(book.id, e.target.value)}
-                      className="min-w-[150px]"
+                      className="min-w-[150px] text-right"
+                      dir="rtl"
                     />
                   </TableCell>
                   <TableCell>

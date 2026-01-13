@@ -1,6 +1,6 @@
-import { useState, useCallback, forwardRef } from "react";
+import { useState, useCallback, useMemo } from "react";
 import { Button } from "@/components/ui/button";
-import { Plus, Trash2, Download, Check, Clock, AlertCircle, Loader2, Sparkles } from "lucide-react";
+import { Plus, Trash2, Download, Check, Clock, AlertCircle, Loader2, Sparkles, ArrowUpDown } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useTasks, Task } from "@/hooks/useTasks";
 import { taskHeaders } from "@/data/initialTasks";
@@ -26,16 +26,22 @@ interface TaskSpreadsheetDbProps {
   readOnly?: boolean;
 }
 
-const statusColors = {
+const statusColors: Record<string, string> = {
   "בוצע": "bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-400",
   "טרם החל": "bg-gray-100 text-gray-800 dark:bg-gray-800 dark:text-gray-400",
   "בטיפול": "bg-amber-100 text-amber-800 dark:bg-amber-900/30 dark:text-amber-400",
 };
 
-const statusIcons = {
+const statusIcons: Record<string, typeof Check> = {
   "בוצע": Check,
   "טרם החל": Clock,
   "בטיפול": AlertCircle,
+};
+
+const statusOrder: Record<string, number> = {
+  "טרם החל": 0,
+  "בטיפול": 1,
+  "בוצע": 2,
 };
 
 const TaskSpreadsheetDb = ({ title, taskType, readOnly = false }: TaskSpreadsheetDbProps) => {
@@ -46,6 +52,30 @@ const TaskSpreadsheetDb = ({ title, taskType, readOnly = false }: TaskSpreadshee
   const [aiSuggestion, setAiSuggestion] = useState<string>("");
   const [aiLoading, setAiLoading] = useState(false);
   const [selectedTaskForAi, setSelectedTaskForAi] = useState<Task | null>(null);
+  const [sortByStatus, setSortByStatus] = useState(false);
+  const [descriptionInput, setDescriptionInput] = useState("");
+  const [editingTaskId, setEditingTaskId] = useState<string | null>(null);
+
+  // Similar task suggestions
+  const getSimilarTasks = useMemo(() => {
+    if (!descriptionInput.trim() || descriptionInput.length < 2) return [];
+    const input = descriptionInput.toLowerCase();
+    return tasks.filter(
+      (task) => 
+        task.id !== editingTaskId &&
+        task.description.toLowerCase().includes(input)
+    ).slice(0, 5);
+  }, [descriptionInput, tasks, editingTaskId]);
+
+  // Sorted tasks
+  const sortedTasks = useMemo(() => {
+    if (!sortByStatus) return tasks;
+    return [...tasks].sort((a, b) => {
+      const orderA = statusOrder[a.status] ?? 1;
+      const orderB = statusOrder[b.status] ?? 1;
+      return orderA - orderB;
+    });
+  }, [tasks, sortByStatus]);
 
   const handleCellChange = useCallback(
     (taskId: string, field: keyof Task, value: string) => {
@@ -137,6 +167,91 @@ const TaskSpreadsheetDb = ({ title, taskType, readOnly = false }: TaskSpreadshee
   const inProgressCount = tasks.filter((t) => t.status === "בטיפול").length;
   const completionRate = tasks.length > 0 ? Math.round((completedCount / tasks.length) * 100) : 0;
 
+  // Editable cell with suggestions for description
+  const EditableCellWithSuggestions = ({
+    value,
+    taskId,
+    className,
+    onSave,
+    onCancel,
+  }: {
+    value: string;
+    taskId: string;
+    className: string;
+    onSave: (value: string) => void;
+    onCancel: () => void;
+  }) => {
+    const [editValue, setEditValue] = useState(value);
+    const [showSuggestionsLocal, setShowSuggestionsLocal] = useState(false);
+
+    const similarTasks = useMemo(() => {
+      if (!editValue.trim() || editValue.length < 2) return [];
+      const input = editValue.toLowerCase();
+      return tasks.filter(
+        (task) => 
+          task.id !== taskId &&
+          task.description.toLowerCase().includes(input)
+      ).slice(0, 5);
+    }, [editValue, taskId]);
+
+    return (
+      <div className="relative">
+        <input
+          type="text"
+          value={editValue}
+          onChange={(e) => {
+            setEditValue(e.target.value);
+            setShowSuggestionsLocal(true);
+          }}
+          onBlur={() => {
+            setTimeout(() => {
+              setShowSuggestionsLocal(false);
+              onSave(editValue);
+            }, 200);
+          }}
+          onKeyDown={(e) => {
+            if (e.key === "Enter") {
+              setShowSuggestionsLocal(false);
+              onSave(editValue);
+            } else if (e.key === "Escape") {
+              setShowSuggestionsLocal(false);
+              onCancel();
+            }
+          }}
+          className={cn(
+            "w-full bg-transparent outline-none ring-2 ring-primary rounded px-1",
+            className
+          )}
+          autoFocus
+          dir="rtl"
+        />
+        {showSuggestionsLocal && similarTasks.length > 0 && (
+          <div className="absolute top-full right-0 left-0 mt-1 bg-popover border border-border rounded-md shadow-lg z-50 max-h-48 overflow-auto">
+            <div className="p-2 text-xs text-muted-foreground border-b">משימות דומות:</div>
+            {similarTasks.map((task) => (
+              <div
+                key={task.id}
+                className="px-3 py-2 text-sm hover:bg-accent cursor-pointer"
+                onMouseDown={(e) => {
+                  e.preventDefault();
+                  setEditValue(task.description);
+                }}
+              >
+                <span className="font-medium">{task.description}</span>
+                <span className={cn(
+                  "mr-2 text-xs px-1.5 py-0.5 rounded",
+                  statusColors[task.status]
+                )}>
+                  {task.status}
+                </span>
+              </div>
+            ))}
+          </div>
+        )}
+      </div>
+    );
+  };
+
   const EditableCellInput = ({
     value,
     field,
@@ -184,6 +299,22 @@ const TaskSpreadsheetDb = ({ title, taskType, readOnly = false }: TaskSpreadshee
     const isEditing = editingCell?.row === taskId && editingCell?.field === field;
 
     if (isEditing) {
+      // Use special component with suggestions for description field
+      if (field === "description") {
+        return (
+          <EditableCellWithSuggestions
+            value={value}
+            taskId={taskId}
+            className={className}
+            onSave={(newValue) => {
+              handleCellChange(taskId, field, newValue);
+              setEditingCell(null);
+            }}
+            onCancel={() => setEditingCell(null)}
+          />
+        );
+      }
+
       return (
         <EditableCellInput
           value={value}
@@ -269,7 +400,15 @@ const TaskSpreadsheetDb = ({ title, taskType, readOnly = false }: TaskSpreadshee
             </Button>
           </div>
         )}
-        <div className="mr-auto">
+        <div className="mr-auto flex items-center gap-2">
+          <Button
+            variant={sortByStatus ? "secondary" : "outline"}
+            size="sm"
+            onClick={() => setSortByStatus(!sortByStatus)}
+          >
+            <ArrowUpDown className="h-4 w-4 ml-1" />
+            מיון לפי סטטוס
+          </Button>
           <Button variant="secondary" size="sm" onClick={exportToCSV}>
             <Download className="h-4 w-4 ml-1" />
             ייצוא
@@ -304,7 +443,7 @@ const TaskSpreadsheetDb = ({ title, taskType, readOnly = false }: TaskSpreadshee
               </tr>
             </thead>
             <tbody>
-              {tasks.map((task, rowIndex) => {
+              {sortedTasks.map((task, rowIndex) => {
                 const StatusIcon = statusIcons[task.status] || Clock;
                 return (
                   <tr
