@@ -25,17 +25,15 @@ function createWindow() {
     trafficLightPosition: { x: 15, y: 15 },
   });
 
-  // In development, load from the dev server
-  // In production, load the built files
-  const isDev = process.env.NODE_ENV === 'development' || !app.isPackaged;
+  // Always load the live website
+  const liveUrl = 'https://excel-life-sync.lovable.app';
   
+  mainWindow.loadURL(liveUrl);
+  
+  // Open DevTools only in development
+  const isDev = process.env.NODE_ENV === 'development' || !app.isPackaged;
   if (isDev) {
-    mainWindow.loadURL('http://localhost:5173');
-    // Open DevTools in development
     mainWindow.webContents.openDevTools();
-  } else {
-    // Load the production build
-    mainWindow.loadFile(path.join(__dirname, '../dist/index.html'));
   }
 
   // Handle window title
