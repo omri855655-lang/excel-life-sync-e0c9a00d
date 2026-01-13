@@ -4,6 +4,9 @@
   "directories": {
     "output": "electron-dist"
   },
+  "extraMetadata": {
+    "main": "electron/main.cjs"
+  },
   "files": [
     "dist/**/*",
     "electron/**/*",
