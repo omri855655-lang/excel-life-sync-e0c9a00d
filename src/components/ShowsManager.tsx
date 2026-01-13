@@ -128,7 +128,7 @@ const ShowsManager = () => {
   }
 
   return (
-    <div className="p-4 space-y-4">
+    <div className="p-4 space-y-4" dir="rtl">
       <div className="flex items-center gap-2 mb-4">
         <Tv className="h-6 w-6 text-primary" />
         <h2 className="text-xl font-bold">הסדרות והסרטים שלי</h2>
@@ -142,6 +142,7 @@ const ShowsManager = () => {
           value={newShow.title}
           onChange={(e) => setNewShow({ ...newShow, title: e.target.value })}
           className="flex-1 min-w-[200px]"
+          dir="rtl"
         />
         <Select
           value={newShow.type}
@@ -169,6 +170,7 @@ const ShowsManager = () => {
           value={searchTerm}
           onChange={(e) => setSearchTerm(e.target.value)}
           className="pr-10"
+          dir="rtl"
         />
       </div>
 
@@ -247,6 +249,7 @@ const ShowsManager = () => {
                       value={show.notes || ''}
                       onChange={(e) => updateShowNotes(show.id, e.target.value)}
                       className="min-w-[150px]"
+                      dir="rtl"
                     />
                   </TableCell>
                   <TableCell>

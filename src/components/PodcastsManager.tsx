@@ -119,7 +119,7 @@ const PodcastsManager = () => {
   const toListenCount = podcasts.filter(p => p.status === 'להאזין').length;
 
   return (
-    <div className="h-full flex flex-col p-4">
+    <div className="h-full flex flex-col p-4" dir="rtl">
       {/* Stats Dashboard */}
       <div className="grid grid-cols-3 gap-4 mb-4">
         <div className="bg-green-500/10 border border-green-500/30 rounded-lg p-4 text-center">
@@ -150,12 +150,14 @@ const PodcastsManager = () => {
           value={newPodcast.title}
           onChange={(e) => setNewPodcast({ ...newPodcast, title: e.target.value })}
           className="flex-1 min-w-[200px]"
+          dir="rtl"
         />
         <Input
           placeholder="מגיש/ה"
           value={newPodcast.host}
           onChange={(e) => setNewPodcast({ ...newPodcast, host: e.target.value })}
           className="flex-1 min-w-[150px]"
+          dir="rtl"
         />
         <Button onClick={addPodcast}>
           <Plus className="h-4 w-4 ml-1" />
@@ -171,6 +173,7 @@ const PodcastsManager = () => {
           value={searchTerm}
           onChange={(e) => setSearchTerm(e.target.value)}
           className="pr-10"
+          dir="rtl"
         />
       </div>
 
@@ -220,6 +223,7 @@ const PodcastsManager = () => {
                       value={podcast.notes || ''}
                       onChange={(e) => updatePodcastNotes(podcast.id, e.target.value)}
                       className="min-w-[150px]"
+                      dir="rtl"
                     />
                   </TableCell>
                   <TableCell>
