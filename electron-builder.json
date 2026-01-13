@@ -1,0 +1,35 @@
+{
+  "appId": "app.lovable.excel-life-sync",
+  "productName": "Excel Life Sync",
+  "directories": {
+    "output": "electron-dist"
+  },
+  "files": [
+    "dist/**/*",
+    "electron/**/*",
+    "public/**/*"
+  ],
+  "mac": {
+    "category": "public.app-category.productivity",
+    "icon": "public/pwa-512x512.png",
+    "target": [
+      {
+        "target": "dmg",
+        "arch": ["x64", "arm64"]
+      }
+    ],
+    "darkModeSupport": true
+  },
+  "dmg": {
+    "title": "${productName}",
+    "icon": "public/pwa-512x512.png"
+  },
+  "win": {
+    "icon": "public/pwa-512x512.png",
+    "target": "nsis"
+  },
+  "linux": {
+    "icon": "public/pwa-512x512.png",
+    "target": "AppImage"
+  }
+}
