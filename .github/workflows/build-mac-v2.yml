@@ -3,6 +3,8 @@ name: Build Mac App (v2)
 on:
   push:
     branches: [main]
+    tags:
+      - 'v*'
   workflow_dispatch:
 
 jobs:
@@ -104,3 +106,46 @@ jobs:
           name: mac-${{ matrix.arch }}-${{ env.EXT }}
           path: artifacts/Excel-Life-Sync-${{ matrix.arch }}.${{ env.EXT }}
           retention-days: 30
+
+  release:
+    name: Create GitHub Release
+    needs: build-mac
+    runs-on: ubuntu-latest
+    if: startsWith(github.ref, 'refs/tags/v')
+    permissions:
+      contents: write
+
+    steps:
+      - name: Download all artifacts
+        uses: actions/download-artifact@v4
+        with:
+          path: release-assets
+          pattern: mac-*
+          merge-multiple: false
+
+      - name: Prepare release files
+        run: |
+          mkdir -p final-assets
+          find release-assets -type f \( -name "*.dmg" -o -name "*.zip" \) -exec cp {} final-assets/ \;
+          ls -la final-assets/
+
+      - name: Create Release
+        uses: softprops/action-gh-release@v2
+        with:
+          name: Excel Life Sync ${{ github.ref_name }}
+          body: |
+            ## Excel Life Sync ${{ github.ref_name }}
+            
+            ### Downloads
+            - **Intel Mac (x64)**: Excel-Life-Sync-x64.dmg
+            - **Apple Silicon (arm64)**: Excel-Life-Sync-arm64.zip
+            
+            ### Installation
+            1. Download the appropriate file for your Mac
+            2. For DMG: Open and drag to Applications
+            3. For ZIP: Extract and move to Applications
+          draft: false
+          prerelease: false
+          files: final-assets/*
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
