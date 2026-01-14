@@ -15,7 +15,7 @@ jobs:
       matrix:
         include:
           - arch: x64
-            os: macos-13
+            os: macos-14
           - arch: arm64
             os: macos-14
 
@@ -52,6 +52,8 @@ jobs:
         run: |
           set -euo pipefail
 
+          LOG="electron-builder-${{ matrix.arch }}.log"
+
           if [ "${{ matrix.arch }}" = "arm64" ]; then
             TARGET="zip"
             ARCH_FLAG="--arm64"
@@ -60,11 +62,19 @@ jobs:
             ARCH_FLAG="--x64"
           fi
 
-          echo "Building mac target=$TARGET arch=${{ matrix.arch }}"
-          npx electron-builder --mac "$TARGET" $ARCH_FLAG --publish never
+          echo "Building mac target=$TARGET arch=${{ matrix.arch }}" | tee "$LOG"
+          npx electron-builder --mac "$TARGET" $ARCH_FLAG --publish never 2>&1 | tee -a "$LOG"
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           CSC_IDENTITY_AUTO_DISCOVERY: "false"
+
+      - name: Upload build log
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: mac-${{ matrix.arch }}-buildlog
+          path: electron-builder-${{ matrix.arch }}.log
+          retention-days: 7
 
       - name: Collect artifact
         shell: bash
