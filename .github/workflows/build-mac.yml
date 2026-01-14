@@ -35,37 +35,49 @@ jobs:
       - name: Build web app
         run: npm run build
 
+      - name: Configure mac build (target + artifact)
+        shell: bash
+        run: |
+          set -euo pipefail
+          if [ "${{ matrix.arch }}" = "arm64" ]; then
+            echo "MAC_TARGET=zip" >> $GITHUB_ENV
+            echo "ARTIFACT_EXT=zip" >> $GITHUB_ENV
+            echo "ARCH_FLAG=--arm64" >> $GITHUB_ENV
+          else
+            echo "MAC_TARGET=dmg" >> $GITHUB_ENV
+            echo "ARTIFACT_EXT=dmg" >> $GITHUB_ENV
+            echo "ARCH_FLAG=--x64" >> $GITHUB_ENV
+          fi
+
       - name: Build Electron app
         shell: bash
         run: |
           set -euo pipefail
-          if [ "${{ matrix.arch }}" = "x64" ]; then
-            npx electron-builder --mac --x64 --publish never
-          else
-            npx electron-builder --mac --arm64 --publish never
-          fi
+          echo "Building mac target: $MAC_TARGET ($ARCH_FLAG)"
+          npx electron-builder --mac "$MAC_TARGET" $ARCH_FLAG --publish never
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          CSC_IDENTITY_AUTO_DISCOVERY: "false"
 
-      - name: Collect DMG
+      - name: Collect mac artifact
         shell: bash
         run: |
           set -euo pipefail
           mkdir -p artifacts
-          echo "Searching for DMG files under electron-dist/ ..."
-          find electron-dist -maxdepth 6 -type f -name "*.dmg" -print
-          DMG_PATH=$(find electron-dist -maxdepth 6 -type f -name "*.dmg" | head -n 1)
-          if [ -z "${DMG_PATH:-}" ]; then
-            echo "No DMG found in electron-dist. Build output:" >&2
+          echo "Searching for *.$ARTIFACT_EXT files under electron-dist/ ..."
+          find electron-dist -maxdepth 6 -type f -name "*.$ARTIFACT_EXT" -print
+          ARTIFACT_PATH=$(find electron-dist -maxdepth 6 -type f -name "*.$ARTIFACT_EXT" | head -n 1)
+          if [ -z "${ARTIFACT_PATH:-}" ]; then
+            echo "No .$ARTIFACT_EXT found in electron-dist. Build output:" >&2
             find electron-dist -maxdepth 6 -print >&2
             exit 1
           fi
-          cp "$DMG_PATH" "artifacts/Excel-Life-Sync-${{ matrix.arch }}.dmg"
-          echo "Copied: $DMG_PATH -> artifacts/Excel-Life-Sync-${{ matrix.arch }}.dmg"
+          cp "$ARTIFACT_PATH" "artifacts/Excel-Life-Sync-${{ matrix.arch }}.$ARTIFACT_EXT"
+          echo "Copied: $ARTIFACT_PATH -> artifacts/Excel-Life-Sync-${{ matrix.arch }}.$ARTIFACT_EXT"
 
-      - name: Upload DMG artifact
+      - name: Upload mac artifact
         uses: actions/upload-artifact@v4
         with:
-          name: mac-dmg-${{ matrix.arch }}
-          path: artifacts/Excel-Life-Sync-${{ matrix.arch }}.dmg
+          name: mac-${{ env.ARTIFACT_EXT }}-${{ matrix.arch }}
+          path: artifacts/Excel-Life-Sync-${{ matrix.arch }}.${{ env.ARTIFACT_EXT }}
           retention-days: 30
