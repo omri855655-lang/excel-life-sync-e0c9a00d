@@ -1,0 +1,80 @@
+name: Build Mac App (v2)
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+jobs:
+  build-mac:
+    name: Build macOS (${{ matrix.arch }})
+    runs-on: macos-13
+
+    strategy:
+      fail-fast: false
+      matrix:
+        arch: [x64, arm64]
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+          cache: "npm"
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Build web app
+        run: npm run build
+
+      - name: Build Electron app
+        shell: bash
+        run: |
+          set -euo pipefail
+
+          if [ "${{ matrix.arch }}" = "arm64" ]; then
+            TARGET="zip"
+            ARCH_FLAG="--arm64"
+          else
+            TARGET="dmg"
+            ARCH_FLAG="--x64"
+          fi
+
+          echo "Building mac target=$TARGET arch=${{ matrix.arch }}"
+          npx electron-builder --mac "$TARGET" $ARCH_FLAG --publish never
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          CSC_IDENTITY_AUTO_DISCOVERY: "false"
+
+      - name: Collect artifact
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p artifacts
+
+          echo "Build output (electron-dist):"
+          find electron-dist -maxdepth 6 -type f -print || true
+
+          FILE=$(find electron-dist -maxdepth 6 -type f \( -name "*.dmg" -o -name "*.zip" \) | head -n 1)
+          if [ -z "${FILE:-}" ]; then
+            echo "No .dmg or .zip found in electron-dist" >&2
+            exit 1
+          fi
+
+          EXT="${FILE##*.}"
+          echo "EXT=$EXT" >> "$GITHUB_ENV"
+
+          OUT="artifacts/Excel-Life-Sync-${{ matrix.arch }}.$EXT"
+          cp "$FILE" "$OUT"
+          echo "Copied: $FILE -> $OUT"
+
+      - name: Upload artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: mac-${{ matrix.arch }}-${{ env.EXT }}
+          path: artifacts/Excel-Life-Sync-${{ matrix.arch }}.${{ env.EXT }}
+          retention-days: 30
