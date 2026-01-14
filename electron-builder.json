@@ -1,6 +1,7 @@
 {
   "appId": "app.lovable.excel-life-sync",
   "productName": "Excel Life Sync",
+  "electronVersion": "39.2.7",
   "directories": {
     "output": "electron-dist"
   },
