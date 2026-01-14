@@ -65,7 +65,7 @@ jobs:
           fi
 
           echo "Building mac target=$TARGET arch=${{ matrix.arch }}" | tee "$LOG"
-          npx electron-builder --mac "$TARGET" $ARCH_FLAG --publish never 2>&1 | tee -a "$LOG"
+          npx --yes electron-builder@26.4.0 --mac "$TARGET" $ARCH_FLAG --publish never 2>&1 | tee -a "$LOG"
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           CSC_IDENTITY_AUTO_DISCOVERY: "false"
@@ -135,11 +135,11 @@ jobs:
           name: Excel Life Sync ${{ github.ref_name }}
           body: |
             ## Excel Life Sync ${{ github.ref_name }}
-            
+
             ### Downloads
             - **Intel Mac (x64)**: Excel-Life-Sync-x64.dmg
             - **Apple Silicon (arm64)**: Excel-Life-Sync-arm64.zip
-            
+
             ### Installation
             1. Download the appropriate file for your Mac
             2. For DMG: Open and drag to Applications
