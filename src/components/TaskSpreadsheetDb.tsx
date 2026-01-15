@@ -44,6 +44,8 @@ const statusOrder: Record<string, number> = {
   "בוצע": 2,
 };
 
+type SortOption = "none" | "status" | "plannedEnd" | "overdue";
+
 const TaskSpreadsheetDb = ({ title, taskType, readOnly = false }: TaskSpreadsheetDbProps) => {
   const { tasks, loading, addTask, updateTask, deleteTask } = useTasks(taskType);
   const [selectedRow, setSelectedRow] = useState<string | null>(null);
@@ -52,7 +54,7 @@ const TaskSpreadsheetDb = ({ title, taskType, readOnly = false }: TaskSpreadshee
   const [aiSuggestion, setAiSuggestion] = useState<string>("");
   const [aiLoading, setAiLoading] = useState(false);
   const [selectedTaskForAi, setSelectedTaskForAi] = useState<Task | null>(null);
-  const [sortByStatus, setSortByStatus] = useState(false);
+  const [sortBy, setSortBy] = useState<SortOption>("none");
   const [descriptionInput, setDescriptionInput] = useState("");
   const [editingTaskId, setEditingTaskId] = useState<string | null>(null);
 
@@ -69,13 +71,30 @@ const TaskSpreadsheetDb = ({ title, taskType, readOnly = false }: TaskSpreadshee
 
   // Sorted tasks
   const sortedTasks = useMemo(() => {
-    if (!sortByStatus) return tasks;
+    if (sortBy === "none") return tasks;
+    
     return [...tasks].sort((a, b) => {
-      const orderA = statusOrder[a.status] ?? 1;
-      const orderB = statusOrder[b.status] ?? 1;
-      return orderA - orderB;
+      switch (sortBy) {
+        case "status":
+          const orderA = statusOrder[a.status] ?? 1;
+          const orderB = statusOrder[b.status] ?? 1;
+          return orderA - orderB;
+        case "plannedEnd":
+          // Tasks without planned end go to the bottom
+          if (!a.plannedEnd && !b.plannedEnd) return 0;
+          if (!a.plannedEnd) return 1;
+          if (!b.plannedEnd) return -1;
+          return new Date(a.plannedEnd).getTime() - new Date(b.plannedEnd).getTime();
+        case "overdue":
+          // Overdue tasks first, then non-overdue
+          const aOverdue = a.overdue && a.status !== "בוצע" ? 0 : 1;
+          const bOverdue = b.overdue && b.status !== "בוצע" ? 0 : 1;
+          return aOverdue - bOverdue;
+        default:
+          return 0;
+      }
     });
-  }, [tasks, sortByStatus]);
+  }, [tasks, sortBy]);
 
   const handleCellChange = useCallback(
     (taskId: string, field: keyof Task, value: string) => {
@@ -401,14 +420,18 @@ const TaskSpreadsheetDb = ({ title, taskType, readOnly = false }: TaskSpreadshee
           </div>
         )}
         <div className="mr-auto flex items-center gap-2">
-          <Button
-            variant={sortByStatus ? "secondary" : "outline"}
-            size="sm"
-            onClick={() => setSortByStatus(!sortByStatus)}
-          >
-            <ArrowUpDown className="h-4 w-4 ml-1" />
-            מיון לפי סטטוס
-          </Button>
+          <Select value={sortBy} onValueChange={(value) => setSortBy(value as SortOption)}>
+            <SelectTrigger className="w-[160px] h-8">
+              <ArrowUpDown className="h-4 w-4 ml-1" />
+              <SelectValue placeholder="מיון" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="none">ללא מיון</SelectItem>
+              <SelectItem value="status">לפי סטטוס</SelectItem>
+              <SelectItem value="plannedEnd">לפי סיום מתוכנן</SelectItem>
+              <SelectItem value="overdue">לפי חריגה</SelectItem>
+            </SelectContent>
+          </Select>
           <Button variant="secondary" size="sm" onClick={exportToCSV}>
             <Download className="h-4 w-4 ml-1" />
             ייצוא
