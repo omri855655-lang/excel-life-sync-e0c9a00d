@@ -29,9 +29,11 @@ export interface Task {
   progress: string;
   plannedEnd: string;
   overdue: boolean;
+  urgent: boolean;
+  createdAt: string;
 }
 
-const mapDbTaskToTask = (dbTask: DbTask): Task => ({
+const mapDbTaskToTask = (dbTask: DbTask & { urgent?: boolean }): Task => ({
   id: dbTask.id,
   description: dbTask.description,
   category: dbTask.category || "",
@@ -41,6 +43,8 @@ const mapDbTaskToTask = (dbTask: DbTask): Task => ({
   progress: dbTask.progress || "",
   plannedEnd: dbTask.planned_end || "",
   overdue: dbTask.overdue,
+  urgent: dbTask.urgent || false,
+  createdAt: dbTask.created_at,
 });
 
 const mapTaskToDbInsert = (task: Partial<Task>, userId: string, taskType: "personal" | "work") => ({
@@ -53,6 +57,7 @@ const mapTaskToDbInsert = (task: Partial<Task>, userId: string, taskType: "perso
   progress: task.progress || null,
   planned_end: task.plannedEnd || null,
   overdue: task.overdue || false,
+  urgent: task.urgent || false,
   task_type: taskType,
 });
 
@@ -131,6 +136,7 @@ export function useTasks(taskType: "personal" | "work") {
         progress: "",
         plannedEnd: "",
         overdue: false,
+        urgent: false,
       },
       user.id,
       taskType
@@ -170,6 +176,7 @@ export function useTasks(taskType: "personal" | "work") {
     if (updates.progress !== undefined) dbUpdates.progress = updates.progress || null;
     if (updates.plannedEnd !== undefined) dbUpdates.planned_end = updates.plannedEnd || null;
     if (updates.overdue !== undefined) dbUpdates.overdue = updates.overdue;
+    if (updates.urgent !== undefined) dbUpdates.urgent = updates.urgent;
 
     // Recalculate overdue when plannedEnd or status changes
     const newPlannedEnd = updates.plannedEnd !== undefined ? updates.plannedEnd : currentTask?.plannedEnd;

@@ -67,7 +67,7 @@ export const workTasks: Task[] = [
 ];
 
 export const taskHeaders = [
-  "#",
+  "דחוף / #",
   "תיאור המשימה",
   "סיווג",
   "אחריות",

@@ -160,6 +160,7 @@ export type Database = {
           status_notes: string | null
           task_type: string
           updated_at: string
+          urgent: boolean | null
           user_id: string
         }
         Insert: {
@@ -175,6 +176,7 @@ export type Database = {
           status_notes?: string | null
           task_type?: string
           updated_at?: string
+          urgent?: boolean | null
           user_id: string
         }
         Update: {
@@ -190,6 +192,7 @@ export type Database = {
           status_notes?: string | null
           task_type?: string
           updated_at?: string
+          urgent?: boolean | null
           user_id?: string
         }
         Relationships: []
