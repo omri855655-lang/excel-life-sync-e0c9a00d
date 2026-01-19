@@ -1,6 +1,6 @@
 import { useState, useCallback, useMemo } from "react";
 import { Button } from "@/components/ui/button";
-import { Plus, Trash2, Download, Check, Clock, AlertCircle, Loader2, Sparkles, ArrowUpDown } from "lucide-react";
+import { Plus, Trash2, Download, Check, Clock, AlertCircle, Loader2, Sparkles, ArrowUpDown, Flame } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useTasks, Task } from "@/hooks/useTasks";
 import { taskHeaders } from "@/data/initialTasks";
@@ -44,7 +44,7 @@ const statusOrder: Record<string, number> = {
   "בוצע": 2,
 };
 
-type SortOption = "none" | "status" | "plannedEnd" | "overdue";
+type SortOption = "none" | "status" | "plannedEnd" | "overdue" | "createdAt" | "urgent";
 
 const TaskSpreadsheetDb = ({ title, taskType, readOnly = false }: TaskSpreadsheetDbProps) => {
   const { tasks, loading, addTask, updateTask, deleteTask } = useTasks(taskType);
@@ -90,6 +90,14 @@ const TaskSpreadsheetDb = ({ title, taskType, readOnly = false }: TaskSpreadshee
           const aOverdue = a.overdue && a.status !== "בוצע" ? 0 : 1;
           const bOverdue = b.overdue && b.status !== "בוצע" ? 0 : 1;
           return aOverdue - bOverdue;
+        case "createdAt":
+          // Newest first
+          return new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime();
+        case "urgent":
+          // Urgent tasks first
+          const aUrgent = a.urgent ? 0 : 1;
+          const bUrgent = b.urgent ? 0 : 1;
+          return aUrgent - bUrgent;
         default:
           return 0;
       }
@@ -429,7 +437,9 @@ const TaskSpreadsheetDb = ({ title, taskType, readOnly = false }: TaskSpreadshee
               <SelectItem value="none">ללא מיון</SelectItem>
               <SelectItem value="status">לפי סטטוס</SelectItem>
               <SelectItem value="plannedEnd">לפי סיום מתוכנן</SelectItem>
+              <SelectItem value="createdAt">לפי תאריך יצירה</SelectItem>
               <SelectItem value="overdue">לפי חריגה</SelectItem>
+              <SelectItem value="urgent">לפי דחיפות</SelectItem>
             </SelectContent>
           </Select>
           <Button variant="secondary" size="sm" onClick={exportToCSV}>
@@ -474,12 +484,32 @@ const TaskSpreadsheetDb = ({ title, taskType, readOnly = false }: TaskSpreadshee
                     className={cn(
                       "border-b border-border hover:bg-accent/30 transition-colors cursor-pointer",
                       selectedRow === task.id && "bg-primary/10",
-                      task.overdue && task.status !== "בוצע" && "bg-destructive/5"
+                      task.urgent && "bg-red-50 dark:bg-red-900/20 border-l-4 border-l-red-500",
+                      task.overdue && task.status !== "בוצע" && !task.urgent && "bg-destructive/5"
                     )}
                     onClick={() => setSelectedRow(task.id)}
                   >
-                    <td className="px-3 py-2 text-sm text-muted-foreground w-12">
-                      {rowIndex + 1}
+                    <td className="px-3 py-2 text-sm text-muted-foreground w-12 flex items-center gap-1">
+                      {task.urgent && <Flame className="h-4 w-4 text-red-500" />}
+                      <button
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          if (readOnly) return;
+                          updateTask(task.id, { urgent: !task.urgent });
+                        }}
+                        className={cn(
+                          "w-6 h-6 rounded border flex items-center justify-center transition-colors",
+                          task.urgent 
+                            ? "bg-red-500 border-red-500 text-white" 
+                            : "border-muted-foreground/30 hover:border-red-400 hover:bg-red-50 dark:hover:bg-red-900/20",
+                          readOnly && "cursor-default opacity-50"
+                        )}
+                        title={task.urgent ? "בטל דחיפות" : "סמן כדחוף"}
+                        disabled={readOnly}
+                      >
+                        <Flame className={cn("h-3 w-3", task.urgent ? "text-white" : "text-muted-foreground")} />
+                      </button>
+                      <span>{rowIndex + 1}</span>
                     </td>
                     <td className="px-3 py-2 text-sm max-w-[300px]">
                       {renderEditableCell(task.description, task.id, "description")}
