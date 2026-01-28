@@ -35,6 +35,7 @@ export interface Task {
   year: number;
   archived: boolean;
   createdAt: string;
+  updatedAt: string;
 }
 
 const mapDbTaskToTask = (dbTask: DbTask & { urgent?: boolean }): Task => ({
@@ -51,6 +52,7 @@ const mapDbTaskToTask = (dbTask: DbTask & { urgent?: boolean }): Task => ({
   year: dbTask.year || new Date().getFullYear(),
   archived: dbTask.archived || false,
   createdAt: dbTask.created_at,
+  updatedAt: dbTask.updated_at,
 });
 
 const mapTaskToDbInsert = (task: Partial<Task>, userId: string, taskType: "personal" | "work", year: number) => ({

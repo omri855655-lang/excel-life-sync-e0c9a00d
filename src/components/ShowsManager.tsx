@@ -17,6 +17,7 @@ interface Show {
   current_season: number | null;
   current_episode: number | null;
   notes: string | null;
+  updated_at: string;
 }
 
 const parseNullableNumber = (raw: string): number | null => {
@@ -198,13 +199,14 @@ const ShowsManager = () => {
               <TableHead className="text-right">עונה</TableHead>
               <TableHead className="text-right">פרק</TableHead>
               <TableHead className="text-right">הערות</TableHead>
+              <TableHead className="text-right">עודכן</TableHead>
               <TableHead className="w-[50px]"></TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>
             {filteredShows.length === 0 ? (
               <TableRow>
-                <TableCell colSpan={7} className="text-center text-muted-foreground">
+                <TableCell colSpan={8} className="text-center text-muted-foreground">
                   {searchTerm ? 'לא נמצאו תוצאות' : 'אין סדרות או סרטים עדיין'}
                 </TableCell>
               </TableRow>
@@ -278,6 +280,9 @@ const ShowsManager = () => {
                       className="min-w-[150px] text-right min-h-[60px] w-full resize-y"
                       dir="rtl"
                     />
+                  </TableCell>
+                  <TableCell className="text-muted-foreground text-sm whitespace-nowrap">
+                    {show.updated_at ? new Date(show.updated_at).toLocaleDateString('he-IL') : '-'}
                   </TableCell>
                   <TableCell>
                     <Button
