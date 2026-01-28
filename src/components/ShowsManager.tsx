@@ -18,7 +18,14 @@ interface Show {
   current_episode: number | null;
   notes: string | null;
   updated_at: string;
+  created_at: string;
 }
+
+const formatDateTime = (dateStr: string) => {
+  if (!dateStr) return '-';
+  const date = new Date(dateStr);
+  return date.toLocaleDateString('he-IL') + ' ' + date.toLocaleTimeString('he-IL', { hour: '2-digit', minute: '2-digit' });
+};
 
 const parseNullableNumber = (raw: string): number | null => {
   const trimmed = raw.trim();
@@ -199,6 +206,7 @@ const ShowsManager = () => {
               <TableHead className="text-right">עונה</TableHead>
               <TableHead className="text-right">פרק</TableHead>
               <TableHead className="text-right">הערות</TableHead>
+              <TableHead className="text-right">נוצר</TableHead>
               <TableHead className="text-right">עודכן</TableHead>
               <TableHead className="w-[50px]"></TableHead>
             </TableRow>
@@ -206,7 +214,7 @@ const ShowsManager = () => {
           <TableBody>
             {filteredShows.length === 0 ? (
               <TableRow>
-                <TableCell colSpan={8} className="text-center text-muted-foreground">
+                <TableCell colSpan={9} className="text-center text-muted-foreground">
                   {searchTerm ? 'לא נמצאו תוצאות' : 'אין סדרות או סרטים עדיין'}
                 </TableCell>
               </TableRow>
@@ -281,8 +289,11 @@ const ShowsManager = () => {
                       dir="rtl"
                     />
                   </TableCell>
-                  <TableCell className="text-muted-foreground text-sm whitespace-nowrap">
-                    {show.updated_at ? new Date(show.updated_at).toLocaleDateString('he-IL') : '-'}
+                  <TableCell className="text-muted-foreground text-xs whitespace-nowrap">
+                    {formatDateTime(show.created_at)}
+                  </TableCell>
+                  <TableCell className="text-muted-foreground text-xs whitespace-nowrap">
+                    {formatDateTime(show.updated_at)}
                   </TableCell>
                   <TableCell>
                     <Button

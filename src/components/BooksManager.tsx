@@ -16,7 +16,14 @@ interface Book {
   status: string | null;
   notes: string | null;
   updated_at: string;
+  created_at: string;
 }
+
+const formatDateTime = (dateStr: string) => {
+  if (!dateStr) return '-';
+  const date = new Date(dateStr);
+  return date.toLocaleDateString('he-IL') + ' ' + date.toLocaleTimeString('he-IL', { hour: '2-digit', minute: '2-digit' });
+};
 
 const BooksManager = () => {
   const { user } = useAuth();
@@ -192,6 +199,7 @@ const BooksManager = () => {
               <TableHead className="text-right">מחבר</TableHead>
               <TableHead className="text-right">סטטוס</TableHead>
               <TableHead className="text-right">הערות</TableHead>
+              <TableHead className="text-right">נוצר</TableHead>
               <TableHead className="text-right">עודכן</TableHead>
               <TableHead className="w-[50px]"></TableHead>
             </TableRow>
@@ -199,7 +207,7 @@ const BooksManager = () => {
           <TableBody>
             {filteredBooks.length === 0 ? (
               <TableRow>
-                <TableCell colSpan={6} className="text-center text-muted-foreground">
+                <TableCell colSpan={7} className="text-center text-muted-foreground">
                   {searchTerm ? 'לא נמצאו תוצאות' : 'אין ספרים עדיין'}
                 </TableCell>
               </TableRow>
@@ -232,8 +240,11 @@ const BooksManager = () => {
                       dir="rtl"
                     />
                   </TableCell>
-                  <TableCell className="text-muted-foreground text-sm whitespace-nowrap">
-                    {book.updated_at ? new Date(book.updated_at).toLocaleDateString('he-IL') : '-'}
+                  <TableCell className="text-muted-foreground text-xs whitespace-nowrap">
+                    {formatDateTime(book.created_at)}
+                  </TableCell>
+                  <TableCell className="text-muted-foreground text-xs whitespace-nowrap">
+                    {formatDateTime(book.updated_at)}
                   </TableCell>
                   <TableCell>
                     <Button
