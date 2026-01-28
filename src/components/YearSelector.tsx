@@ -2,11 +2,11 @@ import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { cn } from "@/lib/utils";
-import { Calendar, Plus, X, Check } from "lucide-react";
+import { Calendar, Plus, X, Check, List } from "lucide-react";
 
 interface YearSelectorProps {
-  selectedYear: number;
-  onYearChange: (year: number) => void;
+  selectedYear: number | null;
+  onYearChange: (year: number | null) => void;
   years: number[];
   onAddYear?: (year: number) => void;
 }
@@ -30,10 +30,24 @@ const YearSelector = ({
   };
 
   return (
-    <div className="flex items-center gap-2 px-4 py-2 bg-muted/30 border-b border-border">
+    <div className="flex items-center gap-2 px-4 py-2 bg-muted/30 border-b border-border" dir="rtl">
       <Calendar className="h-4 w-4 text-muted-foreground" />
-      <span className="text-sm text-muted-foreground ml-2">גליון שנתי:</span>
+      <span className="text-sm text-muted-foreground ml-2">גליון:</span>
       <div className="flex gap-1 items-center">
+        {/* All tasks button */}
+        <Button
+          variant={selectedYear === null ? "default" : "outline"}
+          size="sm"
+          onClick={() => onYearChange(null)}
+          className={cn(
+            "h-7 px-3 gap-1",
+            selectedYear === null && "font-bold"
+          )}
+        >
+          <List className="h-3.5 w-3.5" />
+          הכל
+        </Button>
+        
         {years.sort((a, b) => a - b).map((year) => (
           <Button
             key={year}

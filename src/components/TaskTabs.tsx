@@ -24,9 +24,9 @@ const TaskTabs = ({ tasks, activeTab, onTabChange, children }: TaskTabsProps) =>
   const completedCount = completedTasks.length;
 
   return (
-    <Tabs value={activeTab} onValueChange={onTabChange} className="flex flex-col h-full">
+    <Tabs value={activeTab} onValueChange={onTabChange} className="flex flex-col h-full" dir="rtl">
       <div className="border-b border-border bg-card/50 px-4 flex-shrink-0">
-        <TabsList className="h-10 bg-transparent">
+        <TabsList className="h-10 bg-transparent justify-start">
           <TabsTrigger value="active" className="gap-2">
             <ListTodo className="h-4 w-4" />
             משימות פעילות
