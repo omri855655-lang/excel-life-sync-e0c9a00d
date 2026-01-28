@@ -1,0 +1,63 @@
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { ListTodo, Archive, CheckCircle } from "lucide-react";
+import { Task } from "@/hooks/useTasks";
+
+interface TaskTabsProps {
+  tasks: Task[];
+  activeTab: string;
+  onTabChange: (tab: string) => void;
+  children: (filteredTasks: Task[], viewMode: "active" | "archive" | "completed") => React.ReactNode;
+}
+
+const TaskTabs = ({ tasks, activeTab, onTabChange, children }: TaskTabsProps) => {
+  // Active tasks: not archived
+  const activeTasks = tasks.filter(t => !t.archived);
+  
+  // Archived tasks
+  const archivedTasks = tasks.filter(t => t.archived);
+  
+  // Completed tasks (all completed, regardless of archive status)
+  const completedTasks = tasks.filter(t => t.status === "בוצע");
+
+  const activeCount = activeTasks.length;
+  const archivedCount = archivedTasks.length;
+  const completedCount = completedTasks.length;
+
+  return (
+    <Tabs value={activeTab} onValueChange={onTabChange} className="flex flex-col h-full">
+      <div className="border-b border-border bg-card/50 px-4 flex-shrink-0">
+        <TabsList className="h-10 bg-transparent">
+          <TabsTrigger value="active" className="gap-2">
+            <ListTodo className="h-4 w-4" />
+            משימות פעילות
+            <span className="text-xs bg-muted px-1.5 py-0.5 rounded-full">{activeCount}</span>
+          </TabsTrigger>
+          <TabsTrigger value="completed" className="gap-2">
+            <CheckCircle className="h-4 w-4" />
+            בוצעו
+            <span className="text-xs bg-green-500/20 text-green-700 dark:text-green-400 px-1.5 py-0.5 rounded-full">{completedCount}</span>
+          </TabsTrigger>
+          <TabsTrigger value="archive" className="gap-2">
+            <Archive className="h-4 w-4" />
+            ארכיון
+            <span className="text-xs bg-muted px-1.5 py-0.5 rounded-full">{archivedCount}</span>
+          </TabsTrigger>
+        </TabsList>
+      </div>
+
+      <TabsContent value="active" className="flex-1 overflow-hidden m-0 data-[state=inactive]:hidden">
+        {children(activeTasks, "active")}
+      </TabsContent>
+
+      <TabsContent value="completed" className="flex-1 overflow-hidden m-0 data-[state=inactive]:hidden">
+        {children(completedTasks, "completed")}
+      </TabsContent>
+
+      <TabsContent value="archive" className="flex-1 overflow-hidden m-0 data-[state=inactive]:hidden">
+        {children(archivedTasks, "archive")}
+      </TabsContent>
+    </Tabs>
+  );
+};
+
+export default TaskTabs;

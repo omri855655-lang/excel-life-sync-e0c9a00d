@@ -216,6 +216,7 @@ export type Database = {
       }
       tasks: {
         Row: {
+          archived: boolean
           category: string | null
           created_at: string
           description: string
@@ -233,6 +234,7 @@ export type Database = {
           year: number | null
         }
         Insert: {
+          archived?: boolean
           category?: string | null
           created_at?: string
           description: string
@@ -250,6 +252,7 @@ export type Database = {
           year?: number | null
         }
         Update: {
+          archived?: boolean
           category?: string | null
           created_at?: string
           description?: string

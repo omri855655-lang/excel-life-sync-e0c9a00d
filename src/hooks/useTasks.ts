@@ -16,6 +16,7 @@ export interface DbTask {
   overdue: boolean;
   task_type: "personal" | "work";
   year: number | null;
+  archived: boolean;
   created_at: string;
   updated_at: string;
 }
@@ -32,6 +33,7 @@ export interface Task {
   overdue: boolean;
   urgent: boolean;
   year: number;
+  archived: boolean;
   createdAt: string;
 }
 
@@ -47,6 +49,7 @@ const mapDbTaskToTask = (dbTask: DbTask & { urgent?: boolean }): Task => ({
   overdue: dbTask.overdue,
   urgent: dbTask.urgent || false,
   year: dbTask.year || new Date().getFullYear(),
+  archived: dbTask.archived || false,
   createdAt: dbTask.created_at,
 });
 
@@ -61,6 +64,7 @@ const mapTaskToDbInsert = (task: Partial<Task>, userId: string, taskType: "perso
   planned_end: task.plannedEnd || null,
   overdue: task.overdue || false,
   urgent: task.urgent || false,
+  archived: task.archived || false,
   task_type: taskType,
   year: year,
 });
@@ -143,6 +147,7 @@ export function useTasks(taskType: "personal" | "work", year?: number) {
         plannedEnd: "",
         overdue: false,
         urgent: false,
+        archived: false,
         year: selectedYear,
       },
       user.id,
@@ -185,6 +190,7 @@ export function useTasks(taskType: "personal" | "work", year?: number) {
     if (updates.plannedEnd !== undefined) dbUpdates.planned_end = updates.plannedEnd || null;
     if (updates.overdue !== undefined) dbUpdates.overdue = updates.overdue;
     if (updates.urgent !== undefined) dbUpdates.urgent = updates.urgent;
+    if (updates.archived !== undefined) dbUpdates.archived = updates.archived;
 
     // Recalculate overdue when plannedEnd or status changes
     const newPlannedEnd = updates.plannedEnd !== undefined ? updates.plannedEnd : currentTask?.plannedEnd;
