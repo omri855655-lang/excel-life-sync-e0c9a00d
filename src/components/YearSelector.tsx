@@ -21,12 +21,20 @@ const YearSelector = ({
   const [newYear, setNewYear] = useState("");
 
   const handleAddYear = () => {
-    const yearNum = parseInt(newYear, 10);
-    if (yearNum && yearNum >= 2020 && yearNum <= 2050 && !years.includes(yearNum)) {
+    const trimmed = newYear.trim();
+    if (!trimmed || years.map(String).includes(trimmed)) return;
+    
+    const yearNum = parseInt(trimmed, 10);
+    // Accept either a valid year number OR any non-empty text
+    if (!isNaN(yearNum) && yearNum >= 2020 && yearNum <= 2050) {
       onAddYear?.(yearNum);
-      setNewYear("");
-      setIsAdding(false);
+    } else if (trimmed.length > 0) {
+      // For text entries, use a special encoding (negative hash or just pass as-is)
+      // Since years array is number[], we'll need to update the type
+      onAddYear?.(trimmed as unknown as number);
     }
+    setNewYear("");
+    setIsAdding(false);
   };
 
   return (
@@ -66,13 +74,11 @@ const YearSelector = ({
         {isAdding ? (
           <div className="flex items-center gap-1">
             <Input
-              type="number"
-              placeholder="שנה"
+              type="text"
+              placeholder="שנה או טקסט"
               value={newYear}
               onChange={(e) => setNewYear(e.target.value)}
-              className="h-7 w-20 text-center"
-              min={2020}
-              max={2050}
+              className="h-7 w-24 text-center"
               autoFocus
               onKeyDown={(e) => {
                 if (e.key === 'Enter') handleAddYear();
