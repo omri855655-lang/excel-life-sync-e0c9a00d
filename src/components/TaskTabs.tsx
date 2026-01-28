@@ -45,16 +45,22 @@ const TaskTabs = ({ tasks, activeTab, onTabChange, children }: TaskTabsProps) =>
         </TabsList>
       </div>
 
-      <TabsContent value="active" className="flex-1 overflow-hidden m-0 data-[state=inactive]:hidden">
-        {children(activeTasks, "active")}
+      <TabsContent value="active" className="flex-1 overflow-hidden m-0 p-0 data-[state=inactive]:hidden">
+        <div className="h-full overflow-auto">
+          {children(activeTasks, "active")}
+        </div>
       </TabsContent>
 
-      <TabsContent value="completed" className="flex-1 overflow-hidden m-0 data-[state=inactive]:hidden">
-        {children(completedTasks, "completed")}
+      <TabsContent value="completed" className="flex-1 overflow-hidden m-0 p-0 data-[state=inactive]:hidden">
+        <div className="h-full overflow-auto">
+          {children(completedTasks, "completed")}
+        </div>
       </TabsContent>
 
-      <TabsContent value="archive" className="flex-1 overflow-hidden m-0 data-[state=inactive]:hidden">
-        {children(archivedTasks, "archive")}
+      <TabsContent value="archive" className="flex-1 overflow-hidden m-0 p-0 data-[state=inactive]:hidden">
+        <div className="h-full overflow-auto">
+          {children(archivedTasks, "archive")}
+        </div>
       </TabsContent>
     </Tabs>
   );

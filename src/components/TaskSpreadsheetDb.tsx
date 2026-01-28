@@ -563,7 +563,7 @@ const TaskSpreadsheetDb = ({ title, taskType, readOnly = false, showYearSelector
           }
           
           return (
-            <div className="flex-1 overflow-auto">
+            <div className="min-h-0">
               <table className="w-full border-collapse min-w-[1200px]">
             <thead className="sticky top-0 z-10">
               <tr className="bg-muted">
