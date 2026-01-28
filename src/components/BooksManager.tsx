@@ -15,6 +15,7 @@ interface Book {
   author: string | null;
   status: string | null;
   notes: string | null;
+  updated_at: string;
 }
 
 const BooksManager = () => {
@@ -191,13 +192,14 @@ const BooksManager = () => {
               <TableHead className="text-right">מחבר</TableHead>
               <TableHead className="text-right">סטטוס</TableHead>
               <TableHead className="text-right">הערות</TableHead>
+              <TableHead className="text-right">עודכן</TableHead>
               <TableHead className="w-[50px]"></TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>
             {filteredBooks.length === 0 ? (
               <TableRow>
-                <TableCell colSpan={5} className="text-center text-muted-foreground">
+                <TableCell colSpan={6} className="text-center text-muted-foreground">
                   {searchTerm ? 'לא נמצאו תוצאות' : 'אין ספרים עדיין'}
                 </TableCell>
               </TableRow>
@@ -229,6 +231,9 @@ const BooksManager = () => {
                       className="min-w-[150px] text-right min-h-[60px] w-full resize-y"
                       dir="rtl"
                     />
+                  </TableCell>
+                  <TableCell className="text-muted-foreground text-sm whitespace-nowrap">
+                    {book.updated_at ? new Date(book.updated_at).toLocaleDateString('he-IL') : '-'}
                   </TableCell>
                   <TableCell>
                     <Button

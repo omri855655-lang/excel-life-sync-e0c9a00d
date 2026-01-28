@@ -675,6 +675,9 @@ const TaskSpreadsheetDb = ({ title, taskType, readOnly = false, showYearSelector
                         <span className="text-muted-foreground">-</span>
                       )}
                     </td>
+                    <td className="px-3 py-2 text-sm text-muted-foreground whitespace-nowrap">
+                      {task.updatedAt ? new Date(task.updatedAt).toLocaleDateString('he-IL') : '-'}
+                    </td>
                     <td className="px-3 py-2 text-sm">
                       <div className="flex items-center gap-1">
                         <Button
