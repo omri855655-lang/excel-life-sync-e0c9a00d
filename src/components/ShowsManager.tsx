@@ -7,6 +7,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Plus, Trash2, Search, Tv } from 'lucide-react';
 import { toast } from 'sonner';
+import InlineNotesTextarea from '@/components/InlineNotesTextarea';
 
 interface Show {
   id: string;
@@ -17,6 +18,13 @@ interface Show {
   current_episode: number | null;
   notes: string | null;
 }
+
+const parseNullableNumber = (raw: string): number | null => {
+  const trimmed = raw.trim();
+  if (trimmed === '') return null;
+  const n = Number(trimmed);
+  return Number.isFinite(n) ? n : null;
+};
 
 const ShowsManager = () => {
   const { user } = useAuth();
@@ -78,11 +86,15 @@ const ShowsManager = () => {
     if (error) {
       toast.error('שגיאה בעדכון');
     } else {
-      fetchShows();
+      setShows((prev) => prev.map((s) => (s.id === id ? { ...s, status } : s)));
     }
   };
 
-  const updateShowProgress = async (id: string, field: 'current_season' | 'current_episode', value: number) => {
+  const updateShowProgress = async (
+    id: string,
+    field: 'current_season' | 'current_episode',
+    value: number | null,
+  ) => {
     const { error } = await supabase
       .from('shows')
       .update({ [field]: value })
@@ -91,7 +103,7 @@ const ShowsManager = () => {
     if (error) {
       toast.error('שגיאה בעדכון');
     } else {
-      fetchShows();
+      setShows((prev) => prev.map((s) => (s.id === id ? { ...s, [field]: value } : s)));
     }
   };
 
@@ -104,7 +116,7 @@ const ShowsManager = () => {
     if (error) {
       toast.error('שגיאה בעדכון ההערות');
     } else {
-      fetchShows();
+      setShows((prev) => prev.map((s) => (s.id === id ? { ...s, notes } : s)));
     }
   };
 
@@ -115,7 +127,7 @@ const ShowsManager = () => {
       toast.error('שגיאה במחיקה');
     } else {
       toast.success('נמחק בהצלחה');
-      fetchShows();
+      setShows((prev) => prev.filter((s) => s.id !== id));
     }
   };
 
@@ -221,10 +233,17 @@ const ShowsManager = () => {
                       <Input
                         type="number"
                         min="1"
-                        value={show.current_season || ''}
-                        onChange={(e) =>
-                          updateShowProgress(show.id, 'current_season', parseInt(e.target.value) || 0)
-                        }
+                        defaultValue={show.current_season ?? ''}
+                        onKeyDown={(e) => {
+                          if (e.key === 'Enter') (e.currentTarget as HTMLInputElement).blur();
+                        }}
+                        onBlur={(e) => {
+                          const next = parseNullableNumber(e.target.value);
+                          const prev = show.current_season ?? null;
+                          if (next !== prev) {
+                            updateShowProgress(show.id, 'current_season', next);
+                          }
+                        }}
                         className="w-16"
                         placeholder="-"
                       />
@@ -235,25 +254,28 @@ const ShowsManager = () => {
                       <Input
                         type="number"
                         min="1"
-                        value={show.current_episode || ''}
-                        onChange={(e) =>
-                          updateShowProgress(show.id, 'current_episode', parseInt(e.target.value) || 0)
-                        }
+                        defaultValue={show.current_episode ?? ''}
+                        onKeyDown={(e) => {
+                          if (e.key === 'Enter') (e.currentTarget as HTMLInputElement).blur();
+                        }}
+                        onBlur={(e) => {
+                          const next = parseNullableNumber(e.target.value);
+                          const prev = show.current_episode ?? null;
+                          if (next !== prev) {
+                            updateShowProgress(show.id, 'current_episode', next);
+                          }
+                        }}
                         className="w-16"
                         placeholder="-"
                       />
                     )}
                   </TableCell>
                   <TableCell>
-                    <textarea
+                    <InlineNotesTextarea
                       placeholder="הוסף הערות..."
-                      defaultValue={show.notes || ''}
-                      onBlur={(e) => {
-                        if (e.target.value !== (show.notes || '')) {
-                          updateShowNotes(show.id, e.target.value);
-                        }
-                      }}
-                      className="min-w-[150px] text-right flex min-h-[60px] w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50 resize-y"
+                      initialValue={show.notes}
+                      onCommit={(val) => updateShowNotes(show.id, val)}
+                      className="min-w-[150px] text-right min-h-[60px] w-full resize-y"
                       dir="rtl"
                     />
                   </TableCell>
