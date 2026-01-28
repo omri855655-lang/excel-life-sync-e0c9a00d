@@ -7,6 +7,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Plus, Trash2, Search, Headphones } from 'lucide-react';
 import { toast } from 'sonner';
+import InlineNotesTextarea from '@/components/InlineNotesTextarea';
 
 interface Podcast {
   id: string;
@@ -75,9 +76,10 @@ const PodcastsManager = () => {
 
     if (error) {
       toast.error('שגיאה בעדכון הסטטוס');
-    } else {
-      fetchPodcasts();
+      return;
     }
+
+    setPodcasts((prev) => prev.map((p) => (p.id === id ? { ...p, status } : p)));
   };
 
   const updatePodcastNotes = async (id: string, notes: string) => {
@@ -88,9 +90,10 @@ const PodcastsManager = () => {
 
     if (error) {
       toast.error('שגיאה בעדכון ההערות');
-    } else {
-      fetchPodcasts();
+      return;
     }
+
+    setPodcasts((prev) => prev.map((p) => (p.id === id ? { ...p, notes } : p)));
   };
 
   const deletePodcast = async (id: string) => {
@@ -98,10 +101,11 @@ const PodcastsManager = () => {
 
     if (error) {
       toast.error('שגיאה במחיקת הפודקאסט');
-    } else {
-      toast.success('הפודקאסט נמחק');
-      fetchPodcasts();
+      return;
     }
+
+    toast.success('הפודקאסט נמחק');
+    setPodcasts((prev) => prev.filter((p) => p.id !== id));
   };
 
   const filteredPodcasts = podcasts.filter(
@@ -218,15 +222,11 @@ const PodcastsManager = () => {
                     </Select>
                   </TableCell>
                   <TableCell>
-                    <textarea
+                    <InlineNotesTextarea
                       placeholder="הוסף הערות..."
-                      defaultValue={podcast.notes || ''}
-                      onBlur={(e) => {
-                        if (e.target.value !== (podcast.notes || '')) {
-                          updatePodcastNotes(podcast.id, e.target.value);
-                        }
-                      }}
-                      className="min-w-[150px] text-right flex min-h-[60px] w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50 resize-y"
+                      initialValue={podcast.notes}
+                      onCommit={(val) => updatePodcastNotes(podcast.id, val)}
+                      className="min-w-[150px] text-right min-h-[60px] w-full resize-y"
                       dir="rtl"
                     />
                   </TableCell>

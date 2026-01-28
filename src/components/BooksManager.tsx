@@ -7,6 +7,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Plus, Trash2, Search, BookOpen } from 'lucide-react';
 import { toast } from 'sonner';
+import InlineNotesTextarea from '@/components/InlineNotesTextarea';
 
 interface Book {
   id: string;
@@ -75,9 +76,10 @@ const BooksManager = () => {
 
     if (error) {
       toast.error('שגיאה בעדכון הסטטוס');
-    } else {
-      fetchBooks();
+      return;
     }
+
+    setBooks((prev) => prev.map((b) => (b.id === id ? { ...b, status } : b)));
   };
 
   const updateBookNotes = async (id: string, notes: string) => {
@@ -88,9 +90,10 @@ const BooksManager = () => {
 
     if (error) {
       toast.error('שגיאה בעדכון ההערות');
-    } else {
-      fetchBooks();
+      return;
     }
+
+    setBooks((prev) => prev.map((b) => (b.id === id ? { ...b, notes } : b)));
   };
 
   const deleteBook = async (id: string) => {
@@ -98,10 +101,11 @@ const BooksManager = () => {
 
     if (error) {
       toast.error('שגיאה במחיקת הספר');
-    } else {
-      toast.success('הספר נמחק');
-      fetchBooks();
+      return;
     }
+
+    toast.success('הספר נמחק');
+    setBooks((prev) => prev.filter((b) => b.id !== id));
   };
 
   const filteredBooks = books.filter(
@@ -218,15 +222,11 @@ const BooksManager = () => {
                     </Select>
                   </TableCell>
                   <TableCell>
-                    <textarea
+                    <InlineNotesTextarea
                       placeholder="הוסף הערות..."
-                      defaultValue={book.notes || ''}
-                      onBlur={(e) => {
-                        if (e.target.value !== (book.notes || '')) {
-                          updateBookNotes(book.id, e.target.value);
-                        }
-                      }}
-                      className="min-w-[150px] text-right flex min-h-[60px] w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50 resize-y"
+                      initialValue={book.notes}
+                      onCommit={(val) => updateBookNotes(book.id, val)}
+                      className="min-w-[150px] text-right min-h-[60px] w-full resize-y"
                       dir="rtl"
                     />
                   </TableCell>
