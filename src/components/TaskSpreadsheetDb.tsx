@@ -50,7 +50,9 @@ const statusOrder: Record<string, number> = {
 type SortOption = "none" | "status" | "plannedEnd" | "overdue" | "createdAt" | "urgent";
 
 const TaskSpreadsheetDb = ({ title, taskType, readOnly = false, showYearSelector = false }: TaskSpreadsheetDbProps) => {
-  const [selectedYear, setSelectedYear] = useState<number>(new Date().getFullYear());
+  const currentYear = new Date().getFullYear();
+  const [years, setYears] = useState<number[]>([2025, 2026, 2027]);
+  const [selectedYear, setSelectedYear] = useState<number>(currentYear);
   const { tasks, loading, addTask, updateTask, deleteTask, refetch } = useTasks(taskType, selectedYear);
   const [selectedRow, setSelectedRow] = useState<string | null>(null);
   const [editingCell, setEditingCell] = useState<{ row: string; field: keyof Task } | null>(null);
@@ -63,7 +65,13 @@ const TaskSpreadsheetDb = ({ title, taskType, readOnly = false, showYearSelector
   const [editingTaskId, setEditingTaskId] = useState<string | null>(null);
   const [moveDialogOpen, setMoveDialogOpen] = useState(false);
   const [taskToMove, setTaskToMove] = useState<Task | null>(null);
-  const [targetYear, setTargetYear] = useState<number>(new Date().getFullYear() + 1);
+  const [targetYear, setTargetYear] = useState<number>(currentYear + 1);
+
+  const handleAddYear = (year: number) => {
+    if (!years.includes(year)) {
+      setYears(prev => [...prev, year].sort((a, b) => a - b));
+    }
+  };
 
   // Similar task suggestions
   const getSimilarTasks = useMemo(() => {
@@ -414,6 +422,8 @@ const TaskSpreadsheetDb = ({ title, taskType, readOnly = false, showYearSelector
         <YearSelector 
           selectedYear={selectedYear} 
           onYearChange={setSelectedYear}
+          years={years}
+          onAddYear={handleAddYear}
         />
       )}
 

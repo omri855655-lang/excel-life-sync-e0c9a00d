@@ -149,8 +149,10 @@ const Personal = () => {
           </div>
         </TabsContent>
 
-        <TabsContent value="books" className="flex-1 overflow-auto m-0">
-          <BooksManager />
+        <TabsContent value="books" className="flex-1 flex flex-col overflow-hidden m-0">
+          <div className="flex-1 overflow-hidden">
+            <BooksManager />
+          </div>
         </TabsContent>
 
         <TabsContent value="shows" className="flex-1 overflow-auto m-0">
