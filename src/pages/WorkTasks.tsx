@@ -53,7 +53,12 @@ const WorkTasks = () => {
 
       {/* Content */}
       <div className="flex-1 overflow-hidden">
-        <TaskSpreadsheetDb title="לוז משימות עבודה" taskType="work" readOnly={!isAllowedUser} />
+        <TaskSpreadsheetDb 
+          title="לוז משימות עבודה" 
+          taskType="work" 
+          readOnly={!isAllowedUser} 
+          showYearSelector={isAllowedUser}
+        />
       </div>
     </div>
   );
