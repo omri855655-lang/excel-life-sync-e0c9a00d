@@ -1,6 +1,6 @@
 import { useState, useCallback, useMemo } from "react";
 import { Button } from "@/components/ui/button";
-import { Plus, Trash2, Download, Check, Clock, AlertCircle, Loader2, Sparkles, ArrowUpDown, Flame } from "lucide-react";
+import { Plus, Trash2, Download, Check, Clock, AlertCircle, Loader2, Sparkles, ArrowUpDown, Flame, MoveRight } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useTasks, Task } from "@/hooks/useTasks";
 import { taskHeaders } from "@/data/initialTasks";
@@ -18,12 +18,15 @@ import {
   DialogContent,
   DialogHeader,
   DialogTitle,
+  DialogFooter,
 } from "@/components/ui/dialog";
+import YearSelector from "@/components/YearSelector";
 
 interface TaskSpreadsheetDbProps {
   title: string;
   taskType: "personal" | "work";
   readOnly?: boolean;
+  showYearSelector?: boolean;
 }
 
 const statusColors: Record<string, string> = {
@@ -46,8 +49,9 @@ const statusOrder: Record<string, number> = {
 
 type SortOption = "none" | "status" | "plannedEnd" | "overdue" | "createdAt" | "urgent";
 
-const TaskSpreadsheetDb = ({ title, taskType, readOnly = false }: TaskSpreadsheetDbProps) => {
-  const { tasks, loading, addTask, updateTask, deleteTask } = useTasks(taskType);
+const TaskSpreadsheetDb = ({ title, taskType, readOnly = false, showYearSelector = false }: TaskSpreadsheetDbProps) => {
+  const [selectedYear, setSelectedYear] = useState<number>(new Date().getFullYear());
+  const { tasks, loading, addTask, updateTask, deleteTask, refetch } = useTasks(taskType, selectedYear);
   const [selectedRow, setSelectedRow] = useState<string | null>(null);
   const [editingCell, setEditingCell] = useState<{ row: string; field: keyof Task } | null>(null);
   const [aiDialogOpen, setAiDialogOpen] = useState(false);
@@ -57,6 +61,9 @@ const TaskSpreadsheetDb = ({ title, taskType, readOnly = false }: TaskSpreadshee
   const [sortBy, setSortBy] = useState<SortOption>("none");
   const [descriptionInput, setDescriptionInput] = useState("");
   const [editingTaskId, setEditingTaskId] = useState<string | null>(null);
+  const [moveDialogOpen, setMoveDialogOpen] = useState(false);
+  const [taskToMove, setTaskToMove] = useState<Task | null>(null);
+  const [targetYear, setTargetYear] = useState<number>(new Date().getFullYear() + 1);
 
   // Similar task suggestions
   const getSimilarTasks = useMemo(() => {
@@ -126,6 +133,27 @@ const TaskSpreadsheetDb = ({ title, taskType, readOnly = false }: TaskSpreadshee
     if (selectedRow) {
       await deleteTask(selectedRow);
       setSelectedRow(null);
+    }
+  };
+
+  const handleMoveTask = async () => {
+    if (!taskToMove) return;
+
+    try {
+      const { error } = await supabase
+        .from("tasks")
+        .update({ year: targetYear })
+        .eq("id", taskToMove.id);
+
+      if (error) throw error;
+
+      toast.success(`המשימה הועברה לגליון ${targetYear}`);
+      setMoveDialogOpen(false);
+      setTaskToMove(null);
+      refetch();
+    } catch (error: any) {
+      console.error("Error moving task:", error);
+      toast.error("שגיאה בהעברת משימה");
     }
   };
 
@@ -381,6 +409,14 @@ const TaskSpreadsheetDb = ({ title, taskType, readOnly = false }: TaskSpreadshee
 
   return (
     <div className="flex flex-col h-full bg-background" dir="rtl">
+      {/* Year Selector */}
+      {showYearSelector && (
+        <YearSelector 
+          selectedYear={selectedYear} 
+          onYearChange={setSelectedYear}
+        />
+      )}
+
       {/* Stats Bar */}
       <div className="flex items-center gap-6 px-4 py-3 bg-card border-b border-border">
         <div className="flex items-center gap-2">
@@ -574,19 +610,36 @@ const TaskSpreadsheetDb = ({ title, taskType, readOnly = false }: TaskSpreadshee
                       )}
                     </td>
                     <td className="px-3 py-2 text-sm">
-                      <Button
-                        variant="ghost"
-                        size="sm"
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          handleAiHelp(task);
-                        }}
-                        className="h-7 gap-1 text-primary hover:text-primary"
-                        title="קבל עזרה מ-AI"
-                      >
-                        <Sparkles className="h-3.5 w-3.5" />
-                        <span className="text-xs">AI</span>
-                      </Button>
+                      <div className="flex items-center gap-1">
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            handleAiHelp(task);
+                          }}
+                          className="h-7 gap-1 text-primary hover:text-primary"
+                          title="קבל עזרה מ-AI"
+                        >
+                          <Sparkles className="h-3.5 w-3.5" />
+                          <span className="text-xs">AI</span>
+                        </Button>
+                        {showYearSelector && !readOnly && (
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              setTaskToMove(task);
+                              setMoveDialogOpen(true);
+                            }}
+                            className="h-7 gap-1 text-muted-foreground hover:text-foreground"
+                            title="העבר לשנה אחרת"
+                          >
+                            <MoveRight className="h-3.5 w-3.5" />
+                          </Button>
+                        )}
+                      </div>
                     </td>
                   </tr>
                 );
@@ -623,6 +676,50 @@ const TaskSpreadsheetDb = ({ title, taskType, readOnly = false }: TaskSpreadshee
               </div>
             )}
           </div>
+        </DialogContent>
+      </Dialog>
+
+      {/* Move Task Dialog */}
+      <Dialog open={moveDialogOpen} onOpenChange={setMoveDialogOpen}>
+        <DialogContent className="max-w-sm" dir="rtl">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <MoveRight className="h-5 w-5 text-primary" />
+              העבר משימה לגליון אחר
+            </DialogTitle>
+          </DialogHeader>
+          <div className="space-y-4">
+            {taskToMove && (
+              <div className="bg-muted p-3 rounded-lg">
+                <p className="text-sm font-medium">משימה:</p>
+                <p className="text-sm text-muted-foreground">{taskToMove.description || "(ללא תיאור)"}</p>
+              </div>
+            )}
+            <div>
+              <label className="text-sm font-medium">העבר לשנת:</label>
+              <Select
+                value={String(targetYear)}
+                onValueChange={(v) => setTargetYear(Number(v))}
+              >
+                <SelectTrigger className="mt-1">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  {[2025, 2026, 2027].filter(y => y !== selectedYear).map((year) => (
+                    <SelectItem key={year} value={String(year)}>
+                      {year}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setMoveDialogOpen(false)}>
+              ביטול
+            </Button>
+            <Button onClick={handleMoveTask}>העבר משימה</Button>
+          </DialogFooter>
         </DialogContent>
       </Dialog>
     </div>

@@ -107,6 +107,74 @@ export type Database = {
         }
         Relationships: []
       }
+      recurring_task_completions: {
+        Row: {
+          completed_at: string
+          completed_date: string
+          id: string
+          recurring_task_id: string
+          user_id: string
+        }
+        Insert: {
+          completed_at?: string
+          completed_date?: string
+          id?: string
+          recurring_task_id: string
+          user_id: string
+        }
+        Update: {
+          completed_at?: string
+          completed_date?: string
+          id?: string
+          recurring_task_id?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "recurring_task_completions_recurring_task_id_fkey"
+            columns: ["recurring_task_id"]
+            isOneToOne: false
+            referencedRelation: "recurring_tasks"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      recurring_tasks: {
+        Row: {
+          created_at: string
+          day_of_month: number | null
+          day_of_week: number | null
+          description: string | null
+          frequency: string
+          id: string
+          title: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          day_of_month?: number | null
+          day_of_week?: number | null
+          description?: string | null
+          frequency?: string
+          id?: string
+          title: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          day_of_month?: number | null
+          day_of_week?: number | null
+          description?: string | null
+          frequency?: string
+          id?: string
+          title?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       shows: {
         Row: {
           created_at: string
@@ -162,6 +230,7 @@ export type Database = {
           updated_at: string
           urgent: boolean | null
           user_id: string
+          year: number | null
         }
         Insert: {
           category?: string | null
@@ -178,6 +247,7 @@ export type Database = {
           updated_at?: string
           urgent?: boolean | null
           user_id: string
+          year?: number | null
         }
         Update: {
           category?: string | null
@@ -194,6 +264,7 @@ export type Database = {
           updated_at?: string
           urgent?: boolean | null
           user_id?: string
+          year?: number | null
         }
         Relationships: []
       }

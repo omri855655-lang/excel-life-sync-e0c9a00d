@@ -47,7 +47,47 @@ serve(async (req: Request): Promise<Response> => {
       throw tasksError;
     }
 
-    if (!allTasks || allTasks.length === 0) {
+    // Get recurring tasks that are due today
+    const dayOfWeek = today.getDay();
+    const dayOfMonth = today.getDate();
+
+    const { data: recurringTasks, error: recurringError } = await supabase
+      .from("recurring_tasks")
+      .select("*");
+
+    if (recurringError) {
+      console.error("Error fetching recurring tasks:", recurringError);
+    }
+
+    // Get today's completions to know which recurring tasks are done
+    const { data: todayCompletions, error: completionsError } = await supabase
+      .from("recurring_task_completions")
+      .select("*")
+      .eq("completed_date", todayStr);
+
+    if (completionsError) {
+      console.error("Error fetching completions:", completionsError);
+    }
+
+    const completedTaskIds = new Set((todayCompletions || []).map(c => c.recurring_task_id));
+
+    // Filter recurring tasks that are due today and not completed
+    const recurringTasksDueToday = (recurringTasks || []).filter(task => {
+      if (completedTaskIds.has(task.id)) return false;
+      
+      switch (task.frequency) {
+        case "daily":
+          return true;
+        case "weekly":
+          return task.day_of_week === dayOfWeek;
+        case "monthly":
+          return task.day_of_month === dayOfMonth;
+        default:
+          return false;
+      }
+    });
+
+    if ((!allTasks || allTasks.length === 0) && recurringTasksDueToday.length === 0) {
       return new Response(
         JSON.stringify({ message: "No pending tasks found", sent: 0 }),
         { status: 200, headers: { "Content-Type": "application/json", ...corsHeaders } }
@@ -61,9 +101,10 @@ serve(async (req: Request): Promise<Response> => {
       dueThreeDays: typeof allTasks;
       overdue: typeof allTasks;
       urgent: typeof allTasks;
+      recurring: typeof recurringTasksDueToday;
     }> = {};
 
-    for (const task of allTasks) {
+    for (const task of (allTasks || [])) {
       if (!tasksByUser[task.user_id]) {
         tasksByUser[task.user_id] = {
           dueToday: [],
@@ -71,6 +112,7 @@ serve(async (req: Request): Promise<Response> => {
           dueThreeDays: [],
           overdue: [],
           urgent: [],
+          recurring: [],
         };
       }
 
@@ -95,6 +137,21 @@ serve(async (req: Request): Promise<Response> => {
       }
     }
 
+    // Add recurring tasks to their users
+    for (const task of recurringTasksDueToday) {
+      if (!tasksByUser[task.user_id]) {
+        tasksByUser[task.user_id] = {
+          dueToday: [],
+          dueTomorrow: [],
+          dueThreeDays: [],
+          overdue: [],
+          urgent: [],
+          recurring: [],
+        };
+      }
+      tasksByUser[task.user_id].recurring.push(task);
+    }
+
     let emailsSent = 0;
 
     // Send notifications to each user
@@ -104,7 +161,8 @@ serve(async (req: Request): Promise<Response> => {
         categories.dueToday.length > 0 || 
         categories.dueTomorrow.length > 0 || 
         categories.overdue.length > 0 || 
-        categories.urgent.length > 0;
+        categories.urgent.length > 0 ||
+        categories.recurring.length > 0;
 
       if (!hasImportantTasks) {
         continue;
@@ -123,12 +181,28 @@ serve(async (req: Request): Promise<Response> => {
       const formatTasks = (tasks: typeof allTasks) => 
         tasks.map((t) => `• ${t.description} (${t.task_type === 'work' ? 'עבודה' : 'אישי'})`).join("<br/>");
 
+      const formatRecurringTasks = (tasks: typeof recurringTasksDueToday) =>
+        tasks.map((t) => {
+          const freqLabel = t.frequency === 'daily' ? 'יומי' : t.frequency === 'weekly' ? 'שבועי' : 'חודשי';
+          return `• ${t.title} (${freqLabel})`;
+        }).join("<br/>");
+
       let emailContent = `
         <div dir="rtl" style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
           <h1 style="color: #8b5cf6;">🔔 סיכום משימות יומי</h1>
           <p>שלום,</p>
           <p>הנה סיכום המשימות שדורשות את תשומת ליבך:</p>
       `;
+
+      // Recurring tasks (purple section - show first!)
+      if (categories.recurring.length > 0) {
+        emailContent += `
+          <div style="background: #faf5ff; border-right: 4px solid #a855f7; padding: 16px; border-radius: 8px; margin: 16px 0;">
+            <h3 style="color: #9333ea; margin: 0 0 8px 0;">🔄 לוז יומי - משימות קבועות להיום (${categories.recurring.length})</h3>
+            <p style="margin: 0;">${formatRecurringTasks(categories.recurring)}</p>
+          </div>
+        `;
+      }
 
       // Urgent tasks (red section)
       if (categories.urgent.length > 0) {
@@ -198,6 +272,8 @@ serve(async (req: Request): Promise<Response> => {
         subject = `📅 ${categories.dueToday.length} משימות מגיעות היום`;
       } else if (categories.dueTomorrow.length > 0) {
         subject = `📆 ${categories.dueTomorrow.length} משימות מגיעות מחר`;
+      } else if (categories.recurring.length > 0) {
+        subject = `🔄 ${categories.recurring.length} משימות קבועות להיום`;
       }
 
       console.log(`Sending email to ${userEmail}: ${subject}`);
@@ -233,7 +309,8 @@ serve(async (req: Request): Promise<Response> => {
       JSON.stringify({ 
         message: `Sent ${emailsSent} reminder emails`, 
         sent: emailsSent,
-        tasksProcessed: allTasks.length 
+        tasksProcessed: (allTasks || []).length,
+        recurringTasksIncluded: recurringTasksDueToday.length 
       }),
       { status: 200, headers: { "Content-Type": "application/json", ...corsHeaders } }
     );

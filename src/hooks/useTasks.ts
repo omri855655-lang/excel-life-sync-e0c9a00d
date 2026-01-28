@@ -15,6 +15,7 @@ export interface DbTask {
   planned_end: string | null;
   overdue: boolean;
   task_type: "personal" | "work";
+  year: number | null;
   created_at: string;
   updated_at: string;
 }
@@ -30,6 +31,7 @@ export interface Task {
   plannedEnd: string;
   overdue: boolean;
   urgent: boolean;
+  year: number;
   createdAt: string;
 }
 
@@ -44,10 +46,11 @@ const mapDbTaskToTask = (dbTask: DbTask & { urgent?: boolean }): Task => ({
   plannedEnd: dbTask.planned_end || "",
   overdue: dbTask.overdue,
   urgent: dbTask.urgent || false,
+  year: dbTask.year || new Date().getFullYear(),
   createdAt: dbTask.created_at,
 });
 
-const mapTaskToDbInsert = (task: Partial<Task>, userId: string, taskType: "personal" | "work") => ({
+const mapTaskToDbInsert = (task: Partial<Task>, userId: string, taskType: "personal" | "work", year: number) => ({
   user_id: userId,
   description: task.description || "",
   category: task.category || null,
@@ -59,12 +62,14 @@ const mapTaskToDbInsert = (task: Partial<Task>, userId: string, taskType: "perso
   overdue: task.overdue || false,
   urgent: task.urgent || false,
   task_type: taskType,
+  year: year,
 });
 
-export function useTasks(taskType: "personal" | "work") {
+export function useTasks(taskType: "personal" | "work", year?: number) {
   const { user } = useAuth();
   const [tasks, setTasks] = useState<Task[]>([]);
   const [loading, setLoading] = useState(true);
+  const selectedYear = year || new Date().getFullYear();
 
   const fetchTasks = useCallback(async () => {
     // Personal tasks require login; work tasks are meant to be public-read
@@ -81,6 +86,7 @@ export function useTasks(taskType: "personal" | "work") {
         .from("tasks")
         .select("*")
         .eq("task_type", taskType)
+        .eq("year", selectedYear)
         .order("created_at", { ascending: true });
 
       if (taskType === "personal" && user) {
@@ -117,7 +123,7 @@ export function useTasks(taskType: "personal" | "work") {
     } finally {
       setLoading(false);
     }
-  }, [user, taskType]);
+  }, [user, taskType, selectedYear]);
 
   useEffect(() => {
     fetchTasks();
@@ -137,9 +143,11 @@ export function useTasks(taskType: "personal" | "work") {
         plannedEnd: "",
         overdue: false,
         urgent: false,
+        year: selectedYear,
       },
       user.id,
-      taskType
+      taskType,
+      selectedYear
     );
 
     try {
@@ -159,7 +167,7 @@ export function useTasks(taskType: "personal" | "work") {
       toast.error("שגיאה בהוספת משימה");
       return null;
     }
-  }, [user, taskType]);
+  }, [user, taskType, selectedYear]);
 
   const updateTask = useCallback(async (taskId: string, updates: Partial<Task>) => {
     if (!user) return;
