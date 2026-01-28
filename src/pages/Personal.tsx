@@ -105,8 +105,8 @@ const Personal = () => {
       </header>
 
       {/* Main Tabs */}
-      <Tabs value={activeTab} onValueChange={setActiveTab} className="flex-1 flex flex-col">
-        <div className="border-b border-border bg-card px-4">
+      <Tabs value={activeTab} onValueChange={setActiveTab} className="flex-1 flex flex-col min-h-0">
+        <div className="border-b border-border bg-card px-4 flex-shrink-0">
           <TabsList className="h-12 bg-transparent">
             <TabsTrigger value="dashboard" className="gap-2">
               <LayoutDashboard className="h-4 w-4" />
@@ -135,35 +135,31 @@ const Personal = () => {
           </TabsList>
         </div>
 
-        <TabsContent value="dashboard" className="flex-1 overflow-auto m-0">
+        <TabsContent value="dashboard" className="flex-1 min-h-0 overflow-auto m-0 p-0">
           <Dashboard />
         </TabsContent>
 
-        <TabsContent value="tasks" className="flex-1 flex flex-col overflow-hidden m-0">
-          <div className="flex-1 overflow-hidden">
-            <TaskSpreadsheetDb
-              title="משימות אישיות"
-              taskType="personal"
-              showYearSelector={true}
-            />
-          </div>
+        <TabsContent value="tasks" className="flex-1 min-h-0 overflow-hidden m-0 p-0">
+          <TaskSpreadsheetDb
+            title="משימות אישיות"
+            taskType="personal"
+            showYearSelector={true}
+          />
         </TabsContent>
 
-        <TabsContent value="books" className="flex-1 flex flex-col overflow-hidden m-0">
-          <div className="flex-1 overflow-hidden">
-            <BooksManager />
-          </div>
+        <TabsContent value="books" className="flex-1 min-h-0 overflow-hidden m-0 p-0">
+          <BooksManager />
         </TabsContent>
 
-        <TabsContent value="shows" className="flex-1 overflow-auto m-0">
+        <TabsContent value="shows" className="flex-1 min-h-0 overflow-hidden m-0 p-0">
           <ShowsManager />
         </TabsContent>
 
-        <TabsContent value="podcasts" className="flex-1 overflow-auto m-0">
+        <TabsContent value="podcasts" className="flex-1 min-h-0 overflow-hidden m-0 p-0">
           <PodcastsManager />
         </TabsContent>
 
-        <TabsContent value="routine" className="flex-1 overflow-auto m-0">
+        <TabsContent value="routine" className="flex-1 min-h-0 overflow-auto m-0 p-0">
           <DailyRoutine />
         </TabsContent>
       </Tabs>

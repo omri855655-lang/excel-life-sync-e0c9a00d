@@ -136,7 +136,7 @@ const ShowsManager = () => {
       </div>
 
       {/* Add new show */}
-      <div className="flex gap-2 flex-wrap">
+      <div className="flex gap-2 flex-wrap mb-4 flex-shrink-0">
         <Input
           placeholder="שם הסדרה/סרט"
           value={newShow.title}
@@ -163,7 +163,7 @@ const ShowsManager = () => {
       </div>
 
       {/* Search */}
-      <div className="relative">
+      <div className="relative mb-4 flex-shrink-0">
         <Search className="absolute right-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
         <Input
           placeholder="חפש סדרה או סרט..."
