@@ -1,6 +1,6 @@
 import { useState, useCallback, useMemo } from "react";
 import { Button } from "@/components/ui/button";
-import { Plus, Trash2, Download, Check, Clock, AlertCircle, Loader2, Sparkles, ArrowUpDown, Flame, MoveRight } from "lucide-react";
+import { Plus, Trash2, Download, Check, Clock, AlertCircle, Loader2, Sparkles, ArrowUpDown, Flame, MoveRight, Archive, ArchiveRestore } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useTasks, Task } from "@/hooks/useTasks";
 import { taskHeaders } from "@/data/initialTasks";
@@ -21,6 +21,7 @@ import {
   DialogFooter,
 } from "@/components/ui/dialog";
 import YearSelector from "@/components/YearSelector";
+import TaskTabs from "@/components/TaskTabs";
 
 interface TaskSpreadsheetDbProps {
   title: string;
@@ -66,6 +67,7 @@ const TaskSpreadsheetDb = ({ title, taskType, readOnly = false, showYearSelector
   const [moveDialogOpen, setMoveDialogOpen] = useState(false);
   const [taskToMove, setTaskToMove] = useState<Task | null>(null);
   const [targetYear, setTargetYear] = useState<number>(currentYear + 1);
+  const [activeTaskTab, setActiveTaskTab] = useState<string>("active");
 
   const handleAddYear = (year: number) => {
     if (!years.includes(year)) {
@@ -162,6 +164,16 @@ const TaskSpreadsheetDb = ({ title, taskType, readOnly = false, showYearSelector
     } catch (error: any) {
       console.error("Error moving task:", error);
       toast.error("שגיאה בהעברת משימה");
+    }
+  };
+
+  const handleArchiveTask = async (task: Task) => {
+    try {
+      await updateTask(task.id, { archived: !task.archived });
+      toast.success(task.archived ? "המשימה הוחזרה מהארכיון" : "המשימה הועברה לארכיון");
+    } catch (error: any) {
+      console.error("Error archiving task:", error);
+      toast.error("שגיאה בארכוב משימה");
     }
   };
 
@@ -495,20 +507,62 @@ const TaskSpreadsheetDb = ({ title, taskType, readOnly = false, showYearSelector
         </div>
       </div>
 
-      {/* Table */}
-      <div className="flex-1 overflow-auto">
-        {tasks.length === 0 ? (
-          <div className="flex flex-col items-center justify-center h-full text-muted-foreground">
-            <p className="text-lg">אין משימות עדיין</p>
-            {!readOnly && (
-              <Button variant="outline" className="mt-4" onClick={handleAddTask}>
-                <Plus className="h-4 w-4 ml-1" />
-                הוסף משימה ראשונה
-              </Button>
-            )}
-          </div>
-        ) : (
-          <table className="w-full border-collapse min-w-[1200px]">
+      {/* Task Tabs with Table */}
+      <TaskTabs 
+        tasks={tasks} 
+        activeTab={activeTaskTab} 
+        onTabChange={setActiveTaskTab}
+      >
+        {(filteredTasks, viewMode) => {
+          // Sort the filtered tasks
+          const displayTasks = [...filteredTasks].sort((a, b) => {
+            if (sortBy === "none") return 0;
+            switch (sortBy) {
+              case "status":
+                const orderA = statusOrder[a.status] ?? 1;
+                const orderB = statusOrder[b.status] ?? 1;
+                return orderA - orderB;
+              case "plannedEnd":
+                if (!a.plannedEnd && !b.plannedEnd) return 0;
+                if (!a.plannedEnd) return 1;
+                if (!b.plannedEnd) return -1;
+                return new Date(a.plannedEnd).getTime() - new Date(b.plannedEnd).getTime();
+              case "overdue":
+                const aOverdue = a.overdue && a.status !== "בוצע" ? 0 : 1;
+                const bOverdue = b.overdue && b.status !== "בוצע" ? 0 : 1;
+                return aOverdue - bOverdue;
+              case "createdAt":
+                return new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime();
+              case "urgent":
+                const aUrgent = a.urgent ? 0 : 1;
+                const bUrgent = b.urgent ? 0 : 1;
+                return aUrgent - bUrgent;
+              default:
+                return 0;
+            }
+          });
+
+          if (filteredTasks.length === 0) {
+            return (
+              <div className="flex flex-col items-center justify-center h-full text-muted-foreground">
+                <p className="text-lg">
+                  {viewMode === "archive" ? "אין משימות בארכיון" : 
+                   viewMode === "completed" ? "אין משימות שבוצעו" : 
+                   "אין משימות עדיין"}
+                </p>
+                {!readOnly && viewMode === "active" && (
+                  <Button variant="outline" className="mt-4" onClick={handleAddTask}>
+                    <Plus className="h-4 w-4 ml-1" />
+                    הוסף משימה ראשונה
+                  </Button>
+                )}
+              </div>
+            );
+          }
+          
+          return (
+            <div className="flex-1 overflow-auto">
+              <table className="w-full border-collapse min-w-[1200px]">
             <thead className="sticky top-0 z-10">
               <tr className="bg-muted">
                 {taskHeaders.map((header, i) => (
@@ -522,7 +576,7 @@ const TaskSpreadsheetDb = ({ title, taskType, readOnly = false, showYearSelector
               </tr>
             </thead>
             <tbody>
-              {sortedTasks.map((task, rowIndex) => {
+              {displayTasks.map((task, rowIndex) => {
                 const StatusIcon = statusIcons[task.status] || Clock;
                 return (
                   <tr
@@ -634,6 +688,24 @@ const TaskSpreadsheetDb = ({ title, taskType, readOnly = false, showYearSelector
                           <Sparkles className="h-3.5 w-3.5" />
                           <span className="text-xs">AI</span>
                         </Button>
+                        {!readOnly && (
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              handleArchiveTask(task);
+                            }}
+                            className="h-7 gap-1 text-muted-foreground hover:text-foreground"
+                            title={task.archived ? "החזר מארכיון" : "העבר לארכיון"}
+                          >
+                            {task.archived ? (
+                              <ArchiveRestore className="h-3.5 w-3.5" />
+                            ) : (
+                              <Archive className="h-3.5 w-3.5" />
+                            )}
+                          </Button>
+                        )}
                         {showYearSelector && !readOnly && (
                           <Button
                             variant="ghost"
@@ -656,8 +728,10 @@ const TaskSpreadsheetDb = ({ title, taskType, readOnly = false, showYearSelector
               })}
             </tbody>
           </table>
-        )}
-      </div>
+            </div>
+          );
+        }}
+      </TaskTabs>
 
       {/* AI Dialog */}
       <Dialog open={aiDialogOpen} onOpenChange={setAiDialogOpen}>
@@ -715,7 +789,7 @@ const TaskSpreadsheetDb = ({ title, taskType, readOnly = false, showYearSelector
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
-                  {[2025, 2026, 2027].filter(y => y !== selectedYear).map((year) => (
+                  {years.filter(y => y !== selectedYear).map((year) => (
                     <SelectItem key={year} value={String(year)}>
                       {year}
                     </SelectItem>
