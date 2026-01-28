@@ -128,7 +128,7 @@ const ShowsManager = () => {
   }
 
   return (
-    <div className="p-4 space-y-4" dir="rtl">
+    <div className="h-full flex flex-col p-4 overflow-hidden" dir="rtl">
       <div className="flex items-center gap-2 mb-4">
         <Tv className="h-6 w-6 text-primary" />
         <h2 className="text-xl font-bold">הסדרות והסרטים שלי</h2>
@@ -174,8 +174,9 @@ const ShowsManager = () => {
         />
       </div>
 
-      {/* Shows table */}
-      <div className="border rounded-lg overflow-hidden">
+      {/* Shows table with scroll */}
+      <div className="flex-1 min-h-0 border rounded-lg overflow-hidden">
+        <div className="h-full overflow-auto">
         <Table>
           <TableHeader>
             <TableRow>
@@ -244,11 +245,11 @@ const ShowsManager = () => {
                     )}
                   </TableCell>
                   <TableCell>
-                    <Input
+                    <textarea
                       placeholder="הוסף הערות..."
                       value={show.notes || ''}
                       onChange={(e) => updateShowNotes(show.id, e.target.value)}
-                      className="min-w-[150px]"
+                      className="min-w-[150px] text-right flex min-h-[60px] w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50 resize-y"
                       dir="rtl"
                     />
                   </TableCell>
@@ -267,6 +268,7 @@ const ShowsManager = () => {
             )}
           </TableBody>
         </Table>
+        </div>
       </div>
     </div>
   );
