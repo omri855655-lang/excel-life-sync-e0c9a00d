@@ -69,11 +69,10 @@ const mapTaskToDbInsert = (task: Partial<Task>, userId: string, taskType: "perso
   year: year,
 });
 
-export function useTasks(taskType: "personal" | "work", year?: number) {
+export function useTasks(taskType: "personal" | "work", year?: number | null) {
   const { user } = useAuth();
   const [tasks, setTasks] = useState<Task[]>([]);
   const [loading, setLoading] = useState(true);
-  const selectedYear = year || new Date().getFullYear();
 
   const fetchTasks = useCallback(async () => {
     // Personal tasks require login; work tasks are meant to be public-read
@@ -90,8 +89,12 @@ export function useTasks(taskType: "personal" | "work", year?: number) {
         .from("tasks")
         .select("*")
         .eq("task_type", taskType)
-        .eq("year", selectedYear)
         .order("created_at", { ascending: true });
+
+      // Only filter by year if it's specified (not null/undefined)
+      if (year !== null && year !== undefined) {
+        query = query.eq("year", year);
+      }
 
       if (taskType === "personal" && user) {
         query = query.eq("user_id", user.id);
@@ -127,15 +130,17 @@ export function useTasks(taskType: "personal" | "work", year?: number) {
     } finally {
       setLoading(false);
     }
-  }, [user, taskType, selectedYear]);
+  }, [user, taskType, year]);
 
   useEffect(() => {
     fetchTasks();
   }, [fetchTasks]);
 
-  const addTask = useCallback(async (): Promise<Task | null> => {
+  const addTask = useCallback(async (targetYear?: number): Promise<Task | null> => {
     if (!user) return null;
 
+    const taskYear = targetYear ?? year ?? new Date().getFullYear();
+    
     const newDbTask = mapTaskToDbInsert(
       {
         description: "",
@@ -148,11 +153,11 @@ export function useTasks(taskType: "personal" | "work", year?: number) {
         overdue: false,
         urgent: false,
         archived: false,
-        year: selectedYear,
+        year: taskYear,
       },
       user.id,
       taskType,
-      selectedYear
+      taskYear
     );
 
     try {
@@ -172,7 +177,7 @@ export function useTasks(taskType: "personal" | "work", year?: number) {
       toast.error("שגיאה בהוספת משימה");
       return null;
     }
-  }, [user, taskType, selectedYear]);
+  }, [user, taskType, year]);
 
   const updateTask = useCallback(async (taskId: string, updates: Partial<Task>) => {
     if (!user) return;

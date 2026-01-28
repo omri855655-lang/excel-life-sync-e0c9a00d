@@ -53,7 +53,8 @@ type SortOption = "none" | "status" | "plannedEnd" | "overdue" | "createdAt" | "
 const TaskSpreadsheetDb = ({ title, taskType, readOnly = false, showYearSelector = false }: TaskSpreadsheetDbProps) => {
   const currentYear = new Date().getFullYear();
   const [years, setYears] = useState<number[]>([2025, 2026, 2027]);
-  const [selectedYear, setSelectedYear] = useState<number>(currentYear);
+  // null means "all years", a number means specific year
+  const [selectedYear, setSelectedYear] = useState<number | null>(null);
   const { tasks, loading, addTask, updateTask, deleteTask, refetch } = useTasks(taskType, selectedYear);
   const [selectedRow, setSelectedRow] = useState<string | null>(null);
   const [editingCell, setEditingCell] = useState<{ row: string; field: keyof Task } | null>(null);
@@ -66,7 +67,7 @@ const TaskSpreadsheetDb = ({ title, taskType, readOnly = false, showYearSelector
   const [editingTaskId, setEditingTaskId] = useState<string | null>(null);
   const [moveDialogOpen, setMoveDialogOpen] = useState(false);
   const [taskToMove, setTaskToMove] = useState<Task | null>(null);
-  const [targetYear, setTargetYear] = useState<number>(currentYear + 1);
+  const [targetYear, setTargetYear] = useState<number>(currentYear);
   const [activeTaskTab, setActiveTaskTab] = useState<string>("active");
 
   const handleAddYear = (year: number) => {
@@ -136,7 +137,8 @@ const TaskSpreadsheetDb = ({ title, taskType, readOnly = false, showYearSelector
   );
 
   const handleAddTask = async () => {
-    await addTask();
+    // When adding a task, use selected year or current year if showing all
+    await addTask(selectedYear ?? currentYear);
   };
 
   const handleDeleteTask = async () => {
@@ -789,7 +791,7 @@ const TaskSpreadsheetDb = ({ title, taskType, readOnly = false, showYearSelector
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
-                  {years.filter(y => y !== selectedYear).map((year) => (
+                  {years.map((year) => (
                     <SelectItem key={year} value={String(year)}>
                       {year}
                     </SelectItem>
