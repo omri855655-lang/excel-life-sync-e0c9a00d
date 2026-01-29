@@ -5,9 +5,12 @@ import TaskSpreadsheetDb from "@/components/TaskSpreadsheetDb";
 import BooksManager from "@/components/BooksManager";
 import ShowsManager from "@/components/ShowsManager";
 import PodcastsManager from "@/components/PodcastsManager";
+import ProjectsManager from "@/components/ProjectsManager";
+import CoursesManager from "@/components/CoursesManager";
 import Dashboard from "@/components/Dashboard";
 import DailyRoutine from "@/components/DailyRoutine";
-import { FileSpreadsheet, Moon, Sun, LogOut, BookOpen, Tv, LayoutDashboard, ListTodo, Briefcase, Download, Headphones, CalendarCheck } from "lucide-react";
+import AiDailyPlanner from "@/components/AiDailyPlanner";
+import { FileSpreadsheet, Moon, Sun, LogOut, BookOpen, Tv, LayoutDashboard, ListTodo, Briefcase, Download, Headphones, CalendarCheck, FolderKanban, GraduationCap } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { toast } from "sonner";
@@ -132,6 +135,14 @@ const Personal = () => {
               <CalendarCheck className="h-4 w-4" />
               לוז יומי
             </TabsTrigger>
+            <TabsTrigger value="projects" className="gap-2">
+              <FolderKanban className="h-4 w-4" />
+              פרויקטים
+            </TabsTrigger>
+            <TabsTrigger value="courses" className="gap-2">
+              <GraduationCap className="h-4 w-4" />
+              קורסים
+            </TabsTrigger>
           </TabsList>
         </div>
 
@@ -162,7 +173,18 @@ const Personal = () => {
         <TabsContent value="routine" className="flex-1 min-h-0 overflow-auto m-0 p-0">
           <DailyRoutine />
         </TabsContent>
+
+        <TabsContent value="projects" className="flex-1 min-h-0 overflow-hidden m-0 p-0">
+          <ProjectsManager />
+        </TabsContent>
+
+        <TabsContent value="courses" className="flex-1 min-h-0 overflow-hidden m-0 p-0">
+          <CoursesManager />
+        </TabsContent>
       </Tabs>
+
+      {/* AI Daily Planner floating button */}
+      <AiDailyPlanner />
     </div>
   );
 };
