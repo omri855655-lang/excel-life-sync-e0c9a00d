@@ -5,9 +5,8 @@ import { Button } from '@/components/ui/button';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Input } from '@/components/ui/input';
-import { CalendarClock, Loader2, Sparkles, AlertTriangle, Clock, CheckCircle2, Send } from 'lucide-react';
+import { CalendarClock, Loader2, Sparkles, AlertTriangle, Clock, CheckCircle2, Send, Copy, FileText } from 'lucide-react';
 import { toast } from 'sonner';
-
 interface PlannerTask {
   type: 'task' | 'project_task' | 'course_lesson';
   id: string;
@@ -125,23 +124,23 @@ const AiDailyPlanner = () => {
       }
 
       const taskSummary = buildTaskSummary(tasks);
+      const now = new Date();
+      const currentHour = now.getHours().toString().padStart(2, '0');
+      const currentMinute = now.getMinutes().toString().padStart(2, '0');
 
       const { data, error } = await supabase.functions.invoke('task-ai-helper', {
         body: {
-          taskDescription: `אתה מתכנן יום אישי. בהתבסס על רשימת המשימות הפתוחות הבאה, צור לו"ז יומי מומלץ להיום.
+          taskDescription: `צור לו"ז יומי מסודר בפורמט טבלה.
 
-קחה בחשבון:
-1. משימות דחופות ובאיחור קודמות
-2. חלק את היום לבלוקים של זמן (בוקר, צהריים, אחה"צ, ערב)
-3. תן הערכת זמן לכל משימה
-4. השאר הפסקות
-5. אל תכלול יותר ממה שאפשר לעשות ביום אחד
-6. תן טיפים לפרודוקטיביות
+השעה הנוכחית: ${currentHour}:${currentMinute}
 
-רשימת משימות:
+רשימת המשימות הפתוחות שלי:
 ${taskSummary}
 
-צור לו"ז יומי מפורט בעברית.`,
+צור טבלה מסודרת עם העמודות: שעה | משימה | משך | הערות
+התחל מהשעה הנוכחית או מעט אחריה.
+סדר לפי שיקול דעתך המקצועי - משימות דחופות קודם, הפסקות, ארוחות.
+השתמש בפורמט markdown table שאפשר להעתיק לוורד.`,
           taskCategory: 'daily_planning'
         }
       });
@@ -173,7 +172,7 @@ ${taskSummary}
 
       const { data, error } = await supabase.functions.invoke('task-ai-helper', {
         body: {
-          taskDescription: `אתה מתכנן יום אישי. המשתמש ביקש תיקונים ללו"ז.
+          taskDescription: `המשתמש ביקש תיקונים ללו"ז.
 
 רשימת המשימות הפתוחות:
 ${taskSummary}
@@ -181,11 +180,16 @@ ${taskSummary}
 השיחה עד כה:
 ${conversationHistory}
 
-בקשת המשתמש החדשה: ${userMessage}
+בקשת המשתמש: ${userMessage}
 
-עדכן את הלו"ז לפי הבקשה. אם המשתמש מבקש להוסיף פעילות (כמו נקיון הבית), הוסף אותה. אם הוא אומר מה השעה עכשיו, התחל את הלו"ז מהשעה הזו. אם הוא מבקש להסיר משימות עבודה, הסר אותן.
+חשוב מאוד:
+- אם המשתמש אומר "19 בערב" או "19:00" - זו השעה 19:00 בדיוק!
+- עדכן את הלו"ז בפורמט טבלה מסודרת (markdown table)
+- אם מבקש להוסיף פעילות - הוסף אותה בזמן מתאים
+- אם נותן שעה נוכחית - התחל מאותה שעה
+- אם מבקש להסיר משימות מסוג מסוים - הסר אותן
 
-תן לו"ז מעודכן מלא בעברית.`,
+תן לו"ז מעודכן מלא בטבלה.`,
           taskCategory: 'daily_planning_feedback'
         }
       });
@@ -210,6 +214,53 @@ ${conversationHistory}
 
   const urgentCount = allTasks.filter(t => t.urgent).length;
   const overdueCount = allTasks.filter(t => t.overdue).length;
+
+  const copyToClipboard = () => {
+    const lastAssistantMessage = messages.filter(m => m.role === 'assistant').pop();
+    if (lastAssistantMessage) {
+      navigator.clipboard.writeText(lastAssistantMessage.content);
+      toast.success('הלו"ז הועתק! אפשר להדביק בוורד');
+    }
+  };
+
+  const exportToWord = () => {
+    const lastAssistantMessage = messages.filter(m => m.role === 'assistant').pop();
+    if (!lastAssistantMessage) return;
+
+    // Convert markdown table to HTML table for better Word compatibility
+    let content = lastAssistantMessage.content;
+    
+    // Create HTML document with RTL support
+    const html = `
+<!DOCTYPE html>
+<html dir="rtl" lang="he">
+<head>
+  <meta charset="UTF-8">
+  <style>
+    body { font-family: Arial, sans-serif; direction: rtl; }
+    table { border-collapse: collapse; width: 100%; margin: 20px 0; }
+    th, td { border: 1px solid #333; padding: 8px 12px; text-align: right; }
+    th { background-color: #f0f0f0; font-weight: bold; }
+    h1 { text-align: center; }
+  </style>
+</head>
+<body>
+  <h1>לו"ז יומי - ${new Date().toLocaleDateString('he-IL')}</h1>
+  <pre style="white-space: pre-wrap; font-family: Arial;">${content}</pre>
+</body>
+</html>`;
+
+    const blob = new Blob([html], { type: 'application/msword' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `לוז-יומי-${new Date().toLocaleDateString('he-IL')}.doc`;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
+    toast.success('הקובץ הורד! אפשר לפתוח בוורד');
+  };
 
   return (
     <Dialog open={open} onOpenChange={setOpen}>
@@ -299,12 +350,24 @@ ${conversationHistory}
           </div>
         )}
 
-        {/* Refresh button */}
-        <div className="flex justify-center pt-2">
+        {/* Action buttons */}
+        <div className="flex justify-center gap-2 pt-2 flex-wrap">
           <Button variant="outline" onClick={generateDailyPlan} disabled={loading} size="sm">
             <Sparkles className="h-4 w-4 ml-1" />
             צור לו"ז חדש
           </Button>
+          {messages.some(m => m.role === 'assistant') && (
+            <>
+              <Button variant="outline" onClick={copyToClipboard} size="sm">
+                <Copy className="h-4 w-4 ml-1" />
+                העתק
+              </Button>
+              <Button variant="outline" onClick={exportToWord} size="sm">
+                <FileText className="h-4 w-4 ml-1" />
+                הורד לוורד
+              </Button>
+            </>
+          )}
         </div>
       </DialogContent>
     </Dialog>
