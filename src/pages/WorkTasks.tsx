@@ -1,5 +1,6 @@
 import { useState } from "react";
 import TaskSpreadsheetDb from "@/components/TaskSpreadsheetDb";
+import AiDailyPlanner from "@/components/AiDailyPlanner";
 import { Download, FileSpreadsheet, Moon, Sun, Lock } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useNavigate } from "react-router-dom";
@@ -60,6 +61,9 @@ const WorkTasks = () => {
           showYearSelector={isAllowedUser}
         />
       </div>
+
+      {/* AI Daily Planner floating button - only for allowed user */}
+      {isAllowedUser && <AiDailyPlanner />}
     </div>
   );
 };

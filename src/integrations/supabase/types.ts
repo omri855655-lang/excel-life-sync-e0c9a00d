@@ -47,6 +47,92 @@ export type Database = {
         }
         Relationships: []
       }
+      course_lessons: {
+        Row: {
+          completed: boolean | null
+          course_id: string
+          created_at: string
+          description: string | null
+          duration_minutes: number | null
+          id: string
+          scheduled_date: string | null
+          sort_order: number | null
+          title: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          completed?: boolean | null
+          course_id: string
+          created_at?: string
+          description?: string | null
+          duration_minutes?: number | null
+          id?: string
+          scheduled_date?: string | null
+          sort_order?: number | null
+          title: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          completed?: boolean | null
+          course_id?: string
+          created_at?: string
+          description?: string | null
+          duration_minutes?: number | null
+          id?: string
+          scheduled_date?: string | null
+          sort_order?: number | null
+          title?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "course_lessons_course_id_fkey"
+            columns: ["course_id"]
+            isOneToOne: false
+            referencedRelation: "courses"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      courses: {
+        Row: {
+          ai_recommendations: string | null
+          created_at: string
+          id: string
+          notes: string | null
+          status: string | null
+          syllabus: string | null
+          title: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          ai_recommendations?: string | null
+          created_at?: string
+          id?: string
+          notes?: string | null
+          status?: string | null
+          syllabus?: string | null
+          title: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          ai_recommendations?: string | null
+          created_at?: string
+          id?: string
+          notes?: string | null
+          status?: string | null
+          syllabus?: string | null
+          title?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       podcasts: {
         Row: {
           created_at: string
@@ -74,6 +160,83 @@ export type Database = {
           id?: string
           notes?: string | null
           status?: string | null
+          title?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
+      project_tasks: {
+        Row: {
+          completed: boolean | null
+          created_at: string
+          id: string
+          project_id: string
+          sort_order: number | null
+          title: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          completed?: boolean | null
+          created_at?: string
+          id?: string
+          project_id: string
+          sort_order?: number | null
+          title: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          completed?: boolean | null
+          created_at?: string
+          id?: string
+          project_id?: string
+          sort_order?: number | null
+          title?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "project_tasks_project_id_fkey"
+            columns: ["project_id"]
+            isOneToOne: false
+            referencedRelation: "projects"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      projects: {
+        Row: {
+          created_at: string
+          description: string | null
+          id: string
+          links: string[] | null
+          status: string | null
+          target_date: string | null
+          title: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          description?: string | null
+          id?: string
+          links?: string[] | null
+          status?: string | null
+          target_date?: string | null
+          title: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          description?: string | null
+          id?: string
+          links?: string[] | null
+          status?: string | null
+          target_date?: string | null
           title?: string
           updated_at?: string
           user_id?: string

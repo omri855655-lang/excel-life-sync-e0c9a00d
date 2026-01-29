@@ -273,8 +273,7 @@ const TaskSpreadsheetDb = ({ title, taskType, readOnly = false, showYearSelector
 
     return (
       <div className="relative">
-        <input
-          type="text"
+        <textarea
           value={editValue}
           onChange={(e) => {
             setEditValue(e.target.value);
@@ -287,7 +286,22 @@ const TaskSpreadsheetDb = ({ title, taskType, readOnly = false, showYearSelector
             }, 200);
           }}
           onKeyDown={(e) => {
-            if (e.key === "Enter") {
+            // Ctrl+K or Ctrl+Enter for new line
+            if ((e.ctrlKey || e.metaKey) && (e.key === 'k' || e.key === 'K' || e.key === 'Enter')) {
+              e.preventDefault();
+              const target = e.target as HTMLTextAreaElement;
+              const start = target.selectionStart;
+              const end = target.selectionEnd;
+              const newValue = editValue.substring(0, start) + '\n' + editValue.substring(end);
+              setEditValue(newValue);
+              // Set cursor position after the newline
+              setTimeout(() => {
+                target.selectionStart = target.selectionEnd = start + 1;
+              }, 0);
+              return;
+            }
+            if (e.key === "Enter" && !e.ctrlKey && !e.metaKey && !e.shiftKey) {
+              e.preventDefault();
               setShowSuggestionsLocal(false);
               onSave(editValue);
             } else if (e.key === "Escape") {
@@ -296,11 +310,12 @@ const TaskSpreadsheetDb = ({ title, taskType, readOnly = false, showYearSelector
             }
           }}
           className={cn(
-            "w-full bg-transparent outline-none ring-2 ring-primary rounded px-1",
+            "w-full bg-transparent outline-none ring-2 ring-primary rounded px-1 resize-none min-h-[32px]",
             className
           )}
           autoFocus
           dir="rtl"
+          rows={Math.max(1, editValue.split('\n').length)}
         />
         {showSuggestionsLocal && similarTasks.length > 0 && (
           <div className="absolute top-full right-0 left-0 mt-1 bg-popover border border-border rounded-md shadow-lg z-50 max-h-48 overflow-auto">
@@ -344,25 +359,65 @@ const TaskSpreadsheetDb = ({ title, taskType, readOnly = false, showYearSelector
   }) => {
     const [editValue, setEditValue] = useState(value);
 
+    // For date fields, use input type date
+    if (field === "plannedEnd") {
+      return (
+        <input
+          type="date"
+          value={editValue}
+          onChange={(e) => setEditValue(e.target.value)}
+          onBlur={() => onSave(editValue)}
+          onKeyDown={(e) => {
+            if (e.key === "Enter") {
+              onSave(editValue);
+            } else if (e.key === "Escape") {
+              onCancel();
+            }
+          }}
+          className={cn(
+            "w-full bg-transparent outline-none ring-2 ring-primary rounded px-1",
+            className
+          )}
+          autoFocus
+          dir="auto"
+        />
+      );
+    }
+
+    // For text fields, use textarea to support multiline with Ctrl+K
     return (
-      <input
-        type={field === "plannedEnd" ? "date" : "text"}
+      <textarea
         value={editValue}
         onChange={(e) => setEditValue(e.target.value)}
         onBlur={() => onSave(editValue)}
         onKeyDown={(e) => {
-          if (e.key === "Enter") {
+          // Ctrl+K or Ctrl+Enter for new line
+          if ((e.ctrlKey || e.metaKey) && (e.key === 'k' || e.key === 'K' || e.key === 'Enter')) {
+            e.preventDefault();
+            const target = e.target as HTMLTextAreaElement;
+            const start = target.selectionStart;
+            const end = target.selectionEnd;
+            const newValue = editValue.substring(0, start) + '\n' + editValue.substring(end);
+            setEditValue(newValue);
+            setTimeout(() => {
+              target.selectionStart = target.selectionEnd = start + 1;
+            }, 0);
+            return;
+          }
+          if (e.key === "Enter" && !e.ctrlKey && !e.metaKey && !e.shiftKey) {
+            e.preventDefault();
             onSave(editValue);
           } else if (e.key === "Escape") {
             onCancel();
           }
         }}
         className={cn(
-          "w-full bg-transparent outline-none ring-2 ring-primary rounded px-1",
+          "w-full bg-transparent outline-none ring-2 ring-primary rounded px-1 resize-none min-h-[32px]",
           className
         )}
         autoFocus
         dir="auto"
+        rows={Math.max(1, editValue.split('\n').length)}
       />
     );
   };
