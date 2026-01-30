@@ -1,7 +1,7 @@
 import { useState } from "react";
 import TaskSpreadsheetDb from "@/components/TaskSpreadsheetDb";
 import AiDailyPlanner from "@/components/AiDailyPlanner";
-import { Download, FileSpreadsheet, Moon, Sun, Lock } from "lucide-react";
+import { Download, FileSpreadsheet, Moon, Sun, Lock, LogIn, User } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useNavigate } from "react-router-dom";
 import { useAuth } from "@/hooks/useAuth";
@@ -9,7 +9,7 @@ import { useAuth } from "@/hooks/useAuth";
 const WorkTasks = () => {
   const [isDark, setIsDark] = useState(false);
   const navigate = useNavigate();
-  const { user } = useAuth();
+  const { user, loading } = useAuth();
 
   const ALLOWED_EMAIL = "omri855655@gmail.com";
   const isAllowedUser = user?.email === ALLOWED_EMAIL;
@@ -35,17 +35,39 @@ const WorkTasks = () => {
             <Download className="h-4 w-4" />
             <span className="hidden sm:inline">התקנת אפליקציה</span>
           </Button>
-          {isAllowedUser && (
+          
+          {/* Show login or personal area button based on auth state */}
+          {loading ? null : user ? (
             <Button
               variant="outline"
               size="sm"
               onClick={() => navigate("/personal")}
               className="gap-2"
             >
-              <Lock className="h-4 w-4" />
-              אזור אישי
+              {isAllowedUser ? (
+                <>
+                  <Lock className="h-4 w-4" />
+                  אזור אישי
+                </>
+              ) : (
+                <>
+                  <User className="h-4 w-4" />
+                  החשבון שלי
+                </>
+              )}
+            </Button>
+          ) : (
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => navigate("/auth")}
+              className="gap-2"
+            >
+              <LogIn className="h-4 w-4" />
+              התחברות
             </Button>
           )}
+          
           <Button variant="ghost" size="icon" onClick={toggleTheme}>
             {isDark ? <Sun className="h-5 w-5" /> : <Moon className="h-5 w-5" />}
           </Button>
