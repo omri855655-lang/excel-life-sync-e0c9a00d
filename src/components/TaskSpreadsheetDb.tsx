@@ -1,4 +1,4 @@
-import { useState, useCallback, useMemo } from "react";
+import { useState, useCallback, useMemo, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Plus, Trash2, Download, Check, Clock, AlertCircle, Loader2, Sparkles, ArrowUpDown, Flame, MoveRight, Archive, ArchiveRestore } from "lucide-react";
 import { cn } from "@/lib/utils";
@@ -52,7 +52,8 @@ type SortOption = "none" | "status" | "plannedEnd" | "overdue" | "createdAt" | "
 
 const TaskSpreadsheetDb = ({ title, taskType, readOnly = false, showYearSelector = false }: TaskSpreadsheetDbProps) => {
   const currentYear = new Date().getFullYear();
-  const [years, setYears] = useState<number[]>([2025, 2026, 2027]);
+  const [availableYears, setAvailableYears] = useState<number[]>([]);
+  const [yearsLoading, setYearsLoading] = useState(true);
   // null means "all years", a number means specific year
   const [selectedYear, setSelectedYear] = useState<number | null>(null);
   const { tasks, loading, addTask, updateTask, deleteTask, refetch } = useTasks(taskType, selectedYear);
@@ -70,9 +71,45 @@ const TaskSpreadsheetDb = ({ title, taskType, readOnly = false, showYearSelector
   const [targetYear, setTargetYear] = useState<number>(currentYear);
   const [activeTaskTab, setActiveTaskTab] = useState<string>("active");
 
-  const handleAddYear = (year: number) => {
-    if (!years.includes(year)) {
-      setYears(prev => [...prev, year].sort((a, b) => a - b));
+  // Fetch available years from the database
+  const fetchAvailableYears = useCallback(async () => {
+    try {
+      const { data, error } = await supabase
+        .from("tasks")
+        .select("year")
+        .eq("task_type", taskType)
+        .not("year", "is", null);
+
+      if (error) throw error;
+
+      // Get unique years
+      const uniqueYears = [...new Set(data?.map(t => t.year) || [])].filter(Boolean) as number[];
+      
+      // Always include current year if not present
+      if (!uniqueYears.includes(currentYear)) {
+        uniqueYears.push(currentYear);
+      }
+      
+      setAvailableYears(uniqueYears.sort((a, b) => a - b));
+    } catch (error) {
+      console.error("Error fetching years:", error);
+      // Fallback to current year
+      setAvailableYears([currentYear]);
+    } finally {
+      setYearsLoading(false);
+    }
+  }, [taskType, currentYear]);
+
+  useEffect(() => {
+    fetchAvailableYears();
+  }, [fetchAvailableYears]);
+
+  const handleAddYear = async (year: number) => {
+    if (!availableYears.includes(year)) {
+      // Add year to local state immediately for UI responsiveness
+      setAvailableYears(prev => [...prev, year].sort((a, b) => a - b));
+      // Switch to the new year
+      setSelectedYear(year);
     }
   };
 
@@ -88,7 +125,7 @@ const TaskSpreadsheetDb = ({ title, taskType, readOnly = false, showYearSelector
       if (error) throw error;
 
       // Remove year from local state
-      setYears(prev => prev.filter(y => y !== year));
+      setAvailableYears(prev => prev.filter(y => y !== year));
       
       // If currently viewing this year, switch to "all"
       if (selectedYear === year) {
@@ -518,7 +555,7 @@ const TaskSpreadsheetDb = ({ title, taskType, readOnly = false, showYearSelector
         <YearSelector 
           selectedYear={selectedYear} 
           onYearChange={setSelectedYear}
-          years={years}
+          years={availableYears}
           onAddYear={handleAddYear}
           onDeleteYear={handleDeleteYear}
         />
@@ -880,7 +917,7 @@ const TaskSpreadsheetDb = ({ title, taskType, readOnly = false, showYearSelector
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
-                  {years.map((year) => (
+                  {availableYears.map((year) => (
                     <SelectItem key={year} value={String(year)}>
                       {year}
                     </SelectItem>
