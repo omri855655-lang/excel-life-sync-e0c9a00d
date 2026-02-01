@@ -76,6 +76,33 @@ const TaskSpreadsheetDb = ({ title, taskType, readOnly = false, showYearSelector
     }
   };
 
+  const handleDeleteYear = async (year: number) => {
+    try {
+      // Delete all tasks for this year
+      const { error } = await supabase
+        .from("tasks")
+        .delete()
+        .eq("task_type", taskType)
+        .eq("year", year);
+
+      if (error) throw error;
+
+      // Remove year from local state
+      setYears(prev => prev.filter(y => y !== year));
+      
+      // If currently viewing this year, switch to "all"
+      if (selectedYear === year) {
+        setSelectedYear(null);
+      }
+      
+      toast.success(`גליון ${year} נמחק בהצלחה`);
+      refetch();
+    } catch (error: any) {
+      console.error("Error deleting year:", error);
+      toast.error("שגיאה במחיקת הגליון");
+    }
+  };
+
   // Similar task suggestions
   const getSimilarTasks = useMemo(() => {
     if (!descriptionInput.trim() || descriptionInput.length < 2) return [];
@@ -493,6 +520,7 @@ const TaskSpreadsheetDb = ({ title, taskType, readOnly = false, showYearSelector
           onYearChange={setSelectedYear}
           years={years}
           onAddYear={handleAddYear}
+          onDeleteYear={handleDeleteYear}
         />
       )}
 
