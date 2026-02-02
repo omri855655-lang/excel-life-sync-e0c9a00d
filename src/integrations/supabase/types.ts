@@ -133,6 +133,36 @@ export type Database = {
         }
         Relationships: []
       }
+      planner_conversations: {
+        Row: {
+          conversation_date: string
+          created_at: string
+          id: string
+          messages: Json
+          tasks_snapshot: Json | null
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          conversation_date?: string
+          created_at?: string
+          id?: string
+          messages?: Json
+          tasks_snapshot?: Json | null
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          conversation_date?: string
+          created_at?: string
+          id?: string
+          messages?: Json
+          tasks_snapshot?: Json | null
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       podcasts: {
         Row: {
           created_at: string
