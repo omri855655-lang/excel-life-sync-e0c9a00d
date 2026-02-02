@@ -381,26 +381,26 @@ export type Database = {
         Row: {
           created_at: string
           id: string
+          sheet_name: string
           task_type: string
           updated_at: string
           user_id: string
-          year: number
         }
         Insert: {
           created_at?: string
           id?: string
+          sheet_name: string
           task_type: string
           updated_at?: string
           user_id: string
-          year: number
         }
         Update: {
           created_at?: string
           id?: string
+          sheet_name?: string
           task_type?: string
           updated_at?: string
           user_id?: string
-          year?: number
         }
         Relationships: []
       }
@@ -415,13 +415,13 @@ export type Database = {
           planned_end: string | null
           progress: string | null
           responsible: string | null
+          sheet_name: string | null
           status: string | null
           status_notes: string | null
           task_type: string
           updated_at: string
           urgent: boolean | null
           user_id: string
-          year: number | null
         }
         Insert: {
           archived?: boolean
@@ -433,13 +433,13 @@ export type Database = {
           planned_end?: string | null
           progress?: string | null
           responsible?: string | null
+          sheet_name?: string | null
           status?: string | null
           status_notes?: string | null
           task_type?: string
           updated_at?: string
           urgent?: boolean | null
           user_id: string
-          year?: number | null
         }
         Update: {
           archived?: boolean
@@ -451,13 +451,13 @@ export type Database = {
           planned_end?: string | null
           progress?: string | null
           responsible?: string | null
+          sheet_name?: string | null
           status?: string | null
           status_notes?: string | null
           task_type?: string
           updated_at?: string
           urgent?: boolean | null
           user_id?: string
-          year?: number | null
         }
         Relationships: []
       }
