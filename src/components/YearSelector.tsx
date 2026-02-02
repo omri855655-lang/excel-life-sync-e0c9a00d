@@ -15,11 +15,11 @@ import {
 } from "@/components/ui/alert-dialog";
 
 interface YearSelectorProps {
-  selectedYear: number | null;
-  onYearChange: (year: number | null) => void;
-  years: number[];
-  onAddYear?: (year: number) => void;
-  onDeleteYear?: (year: number) => void;
+  selectedYear: string | null;
+  onYearChange: (year: string | null) => void;
+  years: string[];
+  onAddYear?: (year: string) => void;
+  onDeleteYear?: (year: string) => void;
 }
 
 const YearSelector = ({ 
@@ -31,26 +31,20 @@ const YearSelector = ({
 }: YearSelectorProps) => {
   const [isAdding, setIsAdding] = useState(false);
   const [newYear, setNewYear] = useState("");
-  const [yearToDelete, setYearToDelete] = useState<number | null>(null);
+  const [yearToDelete, setYearToDelete] = useState<string | null>(null);
 
   const handleAddYear = () => {
     const trimmed = newYear.trim();
     if (!trimmed) return;
     
-    const yearNum = parseInt(trimmed, 10);
-    // Only accept valid year numbers between 2020 and 2050
-    if (isNaN(yearNum) || yearNum < 2020 || yearNum > 2050) {
-      return; // Invalid year, do nothing
-    }
-    
-    if (years.includes(yearNum)) {
-      // Year already exists, just close the input
+    // Check if already exists
+    if (years.includes(trimmed)) {
       setNewYear("");
       setIsAdding(false);
       return;
     }
     
-    onAddYear?.(yearNum);
+    onAddYear?.(trimmed);
     setNewYear("");
     setIsAdding(false);
   };
@@ -86,7 +80,16 @@ const YearSelector = ({
             הכל
           </Button>
           
-          {years.sort((a, b) => a - b).map((year) => (
+          {[...years].sort((a, b) => {
+            const aNum = parseInt(a, 10);
+            const bNum = parseInt(b, 10);
+            const aIsNum = !isNaN(aNum);
+            const bIsNum = !isNaN(bNum);
+            if (aIsNum && bIsNum) return aNum - bNum;
+            if (aIsNum) return -1;
+            if (bIsNum) return 1;
+            return a.localeCompare(b, 'he');
+          }).map((year) => (
             <div key={year} className="relative group">
               <Button
                 variant={selectedYear === year ? "default" : "outline"}
@@ -163,9 +166,9 @@ const YearSelector = ({
       <AlertDialog open={yearToDelete !== null} onOpenChange={(open) => !open && setYearToDelete(null)}>
         <AlertDialogContent dir="rtl">
           <AlertDialogHeader>
-            <AlertDialogTitle>מחיקת גליון {yearToDelete}</AlertDialogTitle>
+            <AlertDialogTitle>מחיקת גליון "{yearToDelete}"</AlertDialogTitle>
             <AlertDialogDescription>
-              האם אתה בטוח שברצונך למחוק את גליון {yearToDelete}?
+              האם אתה בטוח שברצונך למחוק את גליון "{yearToDelete}"?
               <br />
               <strong className="text-destructive">פעולה זו תמחק את כל המשימות בגליון זה לצמיתות!</strong>
             </AlertDialogDescription>

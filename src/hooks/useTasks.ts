@@ -15,7 +15,7 @@ export interface DbTask {
   planned_end: string | null;
   overdue: boolean;
   task_type: "personal" | "work";
-  year: number | null;
+  sheet_name: string | null;
   archived: boolean;
   created_at: string;
   updated_at: string;
@@ -32,7 +32,7 @@ export interface Task {
   plannedEnd: string;
   overdue: boolean;
   urgent: boolean;
-  year: number;
+  sheetName: string;
   archived: boolean;
   createdAt: string;
   updatedAt: string;
@@ -49,13 +49,13 @@ const mapDbTaskToTask = (dbTask: DbTask & { urgent?: boolean }): Task => ({
   plannedEnd: dbTask.planned_end || "",
   overdue: dbTask.overdue,
   urgent: dbTask.urgent || false,
-  year: dbTask.year || new Date().getFullYear(),
+  sheetName: dbTask.sheet_name || String(new Date().getFullYear()),
   archived: dbTask.archived || false,
   createdAt: dbTask.created_at,
   updatedAt: dbTask.updated_at,
 });
 
-const mapTaskToDbInsert = (task: Partial<Task>, userId: string, taskType: "personal" | "work", year: number) => ({
+const mapTaskToDbInsert = (task: Partial<Task>, userId: string, taskType: "personal" | "work", sheetName: string) => ({
   user_id: userId,
   description: task.description || "",
   category: task.category || null,
@@ -68,10 +68,10 @@ const mapTaskToDbInsert = (task: Partial<Task>, userId: string, taskType: "perso
   urgent: task.urgent || false,
   archived: task.archived || false,
   task_type: taskType,
-  year: year,
+  sheet_name: sheetName,
 });
 
-export function useTasks(taskType: "personal" | "work", year?: number | null) {
+export function useTasks(taskType: "personal" | "work", sheetName?: string | null) {
   const { user } = useAuth();
   const [tasks, setTasks] = useState<Task[]>([]);
   const [loading, setLoading] = useState(true);
@@ -93,9 +93,9 @@ export function useTasks(taskType: "personal" | "work", year?: number | null) {
         .eq("task_type", taskType)
         .order("created_at", { ascending: true });
 
-      // Only filter by year if it's specified (not null/undefined)
-      if (year !== null && year !== undefined) {
-        query = query.eq("year", year);
+      // Only filter by sheet_name if it's specified (not null/undefined)
+      if (sheetName !== null && sheetName !== undefined) {
+        query = query.eq("sheet_name", sheetName);
       }
 
       if (taskType === "personal" && user) {
@@ -110,7 +110,7 @@ export function useTasks(taskType: "personal" | "work", year?: number | null) {
       const today = new Date();
       today.setHours(0, 0, 0, 0);
 
-      const mappedTasks = (data as DbTask[]).map((dbTask) => {
+      const mappedTasks = (data as unknown as DbTask[]).map((dbTask) => {
         const task = mapDbTaskToTask(dbTask);
         
         // Calculate overdue: only if planned_end exists, date has PASSED, and status is not "בוצע"
@@ -132,16 +132,16 @@ export function useTasks(taskType: "personal" | "work", year?: number | null) {
     } finally {
       setLoading(false);
     }
-  }, [user, taskType, year]);
+  }, [user, taskType, sheetName]);
 
   useEffect(() => {
     fetchTasks();
   }, [fetchTasks]);
 
-  const addTask = useCallback(async (targetYear?: number): Promise<Task | null> => {
+  const addTask = useCallback(async (targetSheetName?: string): Promise<Task | null> => {
     if (!user) return null;
 
-    const taskYear = targetYear ?? year ?? new Date().getFullYear();
+    const taskSheetName = targetSheetName ?? sheetName ?? String(new Date().getFullYear());
     
     const newDbTask = mapTaskToDbInsert(
       {
@@ -155,11 +155,11 @@ export function useTasks(taskType: "personal" | "work", year?: number | null) {
         overdue: false,
         urgent: false,
         archived: false,
-        year: taskYear,
+        sheetName: taskSheetName,
       },
       user.id,
       taskType,
-      taskYear
+      taskSheetName
     );
 
     try {
@@ -171,7 +171,7 @@ export function useTasks(taskType: "personal" | "work", year?: number | null) {
 
       if (error) throw error;
 
-      const newTask = mapDbTaskToTask(data as DbTask);
+      const newTask = mapDbTaskToTask(data as unknown as DbTask);
       setTasks((prev) => [...prev, newTask]);
       return newTask;
     } catch (error: any) {
@@ -179,7 +179,7 @@ export function useTasks(taskType: "personal" | "work", year?: number | null) {
       toast.error("שגיאה בהוספת משימה");
       return null;
     }
-  }, [user, taskType, year]);
+  }, [user, taskType, sheetName]);
 
   const updateTask = useCallback(async (taskId: string, updates: Partial<Task>) => {
     if (!user) return;

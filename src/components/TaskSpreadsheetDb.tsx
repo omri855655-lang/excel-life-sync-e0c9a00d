@@ -53,12 +53,12 @@ type SortOption = "none" | "status" | "plannedEnd" | "overdue" | "createdAt" | "
 
 const TaskSpreadsheetDb = ({ title, taskType, readOnly = false, showYearSelector = false }: TaskSpreadsheetDbProps) => {
   const { user } = useAuth();
-  const currentYear = new Date().getFullYear();
-  const [availableYears, setAvailableYears] = useState<number[]>([]);
-  const [yearsLoading, setYearsLoading] = useState(true);
-  // null means "all years", a number means specific year
-  const [selectedYear, setSelectedYear] = useState<number | null>(null);
-  const { tasks, loading, addTask, updateTask, deleteTask, refetch } = useTasks(taskType, selectedYear);
+  const currentYear = String(new Date().getFullYear());
+  const [availableSheets, setAvailableSheets] = useState<string[]>([]);
+  const [sheetsLoading, setSheetsLoading] = useState(true);
+  // null means "all sheets", a string means specific sheet
+  const [selectedSheet, setSelectedSheet] = useState<string | null>(null);
+  const { tasks, loading, addTask, updateTask, deleteTask, refetch } = useTasks(taskType, selectedSheet);
   const [selectedRow, setSelectedRow] = useState<string | null>(null);
   const [editingCell, setEditingCell] = useState<{ row: string; field: keyof Task } | null>(null);
   const [aiDialogOpen, setAiDialogOpen] = useState(false);
@@ -70,45 +70,56 @@ const TaskSpreadsheetDb = ({ title, taskType, readOnly = false, showYearSelector
   const [editingTaskId, setEditingTaskId] = useState<string | null>(null);
   const [moveDialogOpen, setMoveDialogOpen] = useState(false);
   const [taskToMove, setTaskToMove] = useState<Task | null>(null);
-  const [targetYear, setTargetYear] = useState<number>(currentYear);
+  const [targetSheet, setTargetSheet] = useState<string>(currentYear);
   const [activeTaskTab, setActiveTaskTab] = useState<string>("active");
 
-  // Fetch available years from the task_sheets table (persisted)
-  const fetchAvailableYears = useCallback(async () => {
+  // Fetch available sheets from the task_sheets table (persisted)
+  const fetchAvailableSheets = useCallback(async () => {
     try {
       const { data, error } = await supabase
         .from("task_sheets")
-        .select("year")
+        .select("sheet_name")
         .eq("task_type", taskType);
 
       if (error) throw error;
 
-      // Get unique years from sheets
-      const sheetYears = [...new Set(data?.map(s => s.year) || [])].filter(Boolean) as number[];
+      // Get unique sheet names
+      const sheetNames = [...new Set(data?.map(s => s.sheet_name) || [])].filter(Boolean) as string[];
       
       // Always include current year if not present
-      if (!sheetYears.includes(currentYear)) {
-        sheetYears.push(currentYear);
+      if (!sheetNames.includes(currentYear)) {
+        sheetNames.push(currentYear);
       }
       
-      setAvailableYears(sheetYears.sort((a, b) => a - b));
+      // Sort: numbers first (ascending), then text (alphabetically)
+      setAvailableSheets(sheetNames.sort((a, b) => {
+        const aNum = parseInt(a, 10);
+        const bNum = parseInt(b, 10);
+        const aIsNum = !isNaN(aNum);
+        const bIsNum = !isNaN(bNum);
+        
+        if (aIsNum && bIsNum) return aNum - bNum;
+        if (aIsNum) return -1;
+        if (bIsNum) return 1;
+        return a.localeCompare(b, 'he');
+      }));
     } catch (error) {
-      console.error("Error fetching years:", error);
+      console.error("Error fetching sheets:", error);
       // Fallback to current year
-      setAvailableYears([currentYear]);
+      setAvailableSheets([currentYear]);
     } finally {
-      setYearsLoading(false);
+      setSheetsLoading(false);
     }
   }, [taskType, currentYear]);
 
   useEffect(() => {
-    fetchAvailableYears();
-  }, [fetchAvailableYears]);
+    fetchAvailableSheets();
+  }, [fetchAvailableSheets]);
 
-  const handleAddYear = async (year: number) => {
-    if (availableYears.includes(year)) {
-      // Year already exists, just switch to it
-      setSelectedYear(year);
+  const handleAddSheet = async (sheetName: string) => {
+    if (availableSheets.includes(sheetName)) {
+      // Sheet already exists, just switch to it
+      setSelectedSheet(sheetName);
       return;
     }
 
@@ -124,29 +135,42 @@ const TaskSpreadsheetDb = ({ title, taskType, readOnly = false, showYearSelector
         .insert([{
           user_id: user.id,
           task_type: taskType,
-          year: year,
+          sheet_name: sheetName,
         }]);
 
       if (error) throw error;
 
       // Update local state
-      setAvailableYears(prev => [...prev, year].sort((a, b) => a - b));
-      setSelectedYear(year);
-      toast.success(`גליון ${year} נוצר בהצלחה`);
+      setAvailableSheets(prev => {
+        const updated = [...prev, sheetName];
+        return updated.sort((a, b) => {
+          const aNum = parseInt(a, 10);
+          const bNum = parseInt(b, 10);
+          const aIsNum = !isNaN(aNum);
+          const bIsNum = !isNaN(bNum);
+          
+          if (aIsNum && bIsNum) return aNum - bNum;
+          if (aIsNum) return -1;
+          if (bIsNum) return 1;
+          return a.localeCompare(b, 'he');
+        });
+      });
+      setSelectedSheet(sheetName);
+      toast.success(`גליון "${sheetName}" נוצר בהצלחה`);
     } catch (error: any) {
-      console.error("Error adding year:", error);
+      console.error("Error adding sheet:", error);
       toast.error("שגיאה ביצירת גליון חדש");
     }
   };
 
-  const handleDeleteYear = async (year: number) => {
+  const handleDeleteSheet = async (sheetName: string) => {
     try {
-      // Delete all tasks for this year first
+      // Delete all tasks for this sheet first
       const { error: tasksError } = await supabase
         .from("tasks")
         .delete()
         .eq("task_type", taskType)
-        .eq("year", year);
+        .eq("sheet_name", sheetName);
 
       if (tasksError) throw tasksError;
 
@@ -155,22 +179,22 @@ const TaskSpreadsheetDb = ({ title, taskType, readOnly = false, showYearSelector
         .from("task_sheets")
         .delete()
         .eq("task_type", taskType)
-        .eq("year", year);
+        .eq("sheet_name", sheetName);
 
       if (sheetError) throw sheetError;
 
-      // Remove year from local state
-      setAvailableYears(prev => prev.filter(y => y !== year));
+      // Remove sheet from local state
+      setAvailableSheets(prev => prev.filter(s => s !== sheetName));
       
-      // If currently viewing this year, switch to "all"
-      if (selectedYear === year) {
-        setSelectedYear(null);
+      // If currently viewing this sheet, switch to "all"
+      if (selectedSheet === sheetName) {
+        setSelectedSheet(null);
       }
       
-      toast.success(`גליון ${year} נמחק בהצלחה`);
+      toast.success(`גליון "${sheetName}" נמחק בהצלחה`);
       refetch();
     } catch (error: any) {
-      console.error("Error deleting year:", error);
+      console.error("Error deleting sheet:", error);
       toast.error("שגיאה במחיקת הגליון");
     }
   };
@@ -236,8 +260,8 @@ const TaskSpreadsheetDb = ({ title, taskType, readOnly = false, showYearSelector
   );
 
   const handleAddTask = async () => {
-    // When adding a task, use selected year or current year if showing all
-    await addTask(selectedYear ?? currentYear);
+    // When adding a task, use selected sheet or current year if showing all
+    await addTask(selectedSheet ?? currentYear);
   };
 
   const handleDeleteTask = async () => {
@@ -253,12 +277,12 @@ const TaskSpreadsheetDb = ({ title, taskType, readOnly = false, showYearSelector
     try {
       const { error } = await supabase
         .from("tasks")
-        .update({ year: targetYear })
+        .update({ sheet_name: targetSheet })
         .eq("id", taskToMove.id);
 
       if (error) throw error;
 
-      toast.success(`המשימה הועברה לגליון ${targetYear}`);
+      toast.success(`המשימה הועברה לגליון "${targetSheet}"`);
       setMoveDialogOpen(false);
       setTaskToMove(null);
       refetch();
@@ -585,14 +609,14 @@ const TaskSpreadsheetDb = ({ title, taskType, readOnly = false, showYearSelector
 
   return (
     <div className="flex flex-col h-full bg-background" dir="rtl">
-      {/* Year Selector */}
+      {/* Sheet Selector */}
       {showYearSelector && (
         <YearSelector 
-          selectedYear={selectedYear} 
-          onYearChange={setSelectedYear}
-          years={availableYears}
-          onAddYear={handleAddYear}
-          onDeleteYear={handleDeleteYear}
+          selectedYear={selectedSheet} 
+          onYearChange={setSelectedSheet}
+          years={availableSheets}
+          onAddYear={handleAddSheet}
+          onDeleteYear={handleDeleteSheet}
         />
       )}
 
@@ -943,18 +967,18 @@ const TaskSpreadsheetDb = ({ title, taskType, readOnly = false, showYearSelector
               </div>
             )}
             <div>
-              <label className="text-sm font-medium">העבר לשנת:</label>
+              <label className="text-sm font-medium">העבר לגליון:</label>
               <Select
-                value={String(targetYear)}
-                onValueChange={(v) => setTargetYear(Number(v))}
+                value={targetSheet}
+                onValueChange={(v) => setTargetSheet(v)}
               >
                 <SelectTrigger className="mt-1">
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
-                  {availableYears.map((year) => (
-                    <SelectItem key={year} value={String(year)}>
-                      {year}
+                  {availableSheets.map((sheet) => (
+                    <SelectItem key={sheet} value={sheet}>
+                      {sheet}
                     </SelectItem>
                   ))}
                 </SelectContent>
