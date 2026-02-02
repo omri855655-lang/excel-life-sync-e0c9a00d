@@ -74,11 +74,13 @@ const TaskSpreadsheetDb = ({ title, taskType, readOnly = false, showYearSelector
   // Fetch available years from the database
   const fetchAvailableYears = useCallback(async () => {
     try {
-      const { data, error } = await supabase
+      let query = supabase
         .from("tasks")
         .select("year")
         .eq("task_type", taskType)
         .not("year", "is", null);
+
+      const { data, error } = await query;
 
       if (error) throw error;
 
@@ -108,9 +110,9 @@ const TaskSpreadsheetDb = ({ title, taskType, readOnly = false, showYearSelector
     if (!availableYears.includes(year)) {
       // Add year to local state immediately for UI responsiveness
       setAvailableYears(prev => [...prev, year].sort((a, b) => a - b));
-      // Switch to the new year
-      setSelectedYear(year);
     }
+    // Switch to the new year (even if it already exists)
+    setSelectedYear(year);
   };
 
   const handleDeleteYear = async (year: number) => {
