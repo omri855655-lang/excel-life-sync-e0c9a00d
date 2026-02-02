@@ -3,6 +3,7 @@ import { Button } from "@/components/ui/button";
 import { Plus, Trash2, Download, Check, Clock, AlertCircle, Loader2, Sparkles, ArrowUpDown, Flame, MoveRight, Archive, ArchiveRestore } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useTasks, Task } from "@/hooks/useTasks";
+import { useAuth } from "@/hooks/useAuth";
 import { taskHeaders } from "@/data/initialTasks";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
@@ -51,6 +52,7 @@ const statusOrder: Record<string, number> = {
 type SortOption = "none" | "status" | "plannedEnd" | "overdue" | "createdAt" | "urgent";
 
 const TaskSpreadsheetDb = ({ title, taskType, readOnly = false, showYearSelector = false }: TaskSpreadsheetDbProps) => {
+  const { user } = useAuth();
   const currentYear = new Date().getFullYear();
   const [availableYears, setAvailableYears] = useState<number[]>([]);
   const [yearsLoading, setYearsLoading] = useState(true);
@@ -71,28 +73,25 @@ const TaskSpreadsheetDb = ({ title, taskType, readOnly = false, showYearSelector
   const [targetYear, setTargetYear] = useState<number>(currentYear);
   const [activeTaskTab, setActiveTaskTab] = useState<string>("active");
 
-  // Fetch available years from the database
+  // Fetch available years from the task_sheets table (persisted)
   const fetchAvailableYears = useCallback(async () => {
     try {
-      let query = supabase
-        .from("tasks")
+      const { data, error } = await supabase
+        .from("task_sheets")
         .select("year")
-        .eq("task_type", taskType)
-        .not("year", "is", null);
-
-      const { data, error } = await query;
+        .eq("task_type", taskType);
 
       if (error) throw error;
 
-      // Get unique years
-      const uniqueYears = [...new Set(data?.map(t => t.year) || [])].filter(Boolean) as number[];
+      // Get unique years from sheets
+      const sheetYears = [...new Set(data?.map(s => s.year) || [])].filter(Boolean) as number[];
       
       // Always include current year if not present
-      if (!uniqueYears.includes(currentYear)) {
-        uniqueYears.push(currentYear);
+      if (!sheetYears.includes(currentYear)) {
+        sheetYears.push(currentYear);
       }
       
-      setAvailableYears(uniqueYears.sort((a, b) => a - b));
+      setAvailableYears(sheetYears.sort((a, b) => a - b));
     } catch (error) {
       console.error("Error fetching years:", error);
       // Fallback to current year
@@ -107,24 +106,58 @@ const TaskSpreadsheetDb = ({ title, taskType, readOnly = false, showYearSelector
   }, [fetchAvailableYears]);
 
   const handleAddYear = async (year: number) => {
-    if (!availableYears.includes(year)) {
-      // Add year to local state immediately for UI responsiveness
-      setAvailableYears(prev => [...prev, year].sort((a, b) => a - b));
+    if (availableYears.includes(year)) {
+      // Year already exists, just switch to it
+      setSelectedYear(year);
+      return;
     }
-    // Switch to the new year (even if it already exists)
-    setSelectedYear(year);
+
+    if (!user) {
+      toast.error("יש להתחבר כדי ליצור גליון חדש");
+      return;
+    }
+
+    try {
+      // Insert new sheet into database
+      const { error } = await supabase
+        .from("task_sheets")
+        .insert([{
+          user_id: user.id,
+          task_type: taskType,
+          year: year,
+        }]);
+
+      if (error) throw error;
+
+      // Update local state
+      setAvailableYears(prev => [...prev, year].sort((a, b) => a - b));
+      setSelectedYear(year);
+      toast.success(`גליון ${year} נוצר בהצלחה`);
+    } catch (error: any) {
+      console.error("Error adding year:", error);
+      toast.error("שגיאה ביצירת גליון חדש");
+    }
   };
 
   const handleDeleteYear = async (year: number) => {
     try {
-      // Delete all tasks for this year
-      const { error } = await supabase
+      // Delete all tasks for this year first
+      const { error: tasksError } = await supabase
         .from("tasks")
         .delete()
         .eq("task_type", taskType)
         .eq("year", year);
 
-      if (error) throw error;
+      if (tasksError) throw tasksError;
+
+      // Delete the sheet record
+      const { error: sheetError } = await supabase
+        .from("task_sheets")
+        .delete()
+        .eq("task_type", taskType)
+        .eq("year", year);
+
+      if (sheetError) throw sheetError;
 
       // Remove year from local state
       setAvailableYears(prev => prev.filter(y => y !== year));
