@@ -35,17 +35,22 @@ const YearSelector = ({
 
   const handleAddYear = () => {
     const trimmed = newYear.trim();
-    if (!trimmed || years.map(String).includes(trimmed)) return;
+    if (!trimmed) return;
     
     const yearNum = parseInt(trimmed, 10);
-    // Accept either a valid year number OR any non-empty text
-    if (!isNaN(yearNum) && yearNum >= 2020 && yearNum <= 2050) {
-      onAddYear?.(yearNum);
-    } else if (trimmed.length > 0) {
-      // For text entries, use a special encoding (negative hash or just pass as-is)
-      // Since years array is number[], we'll need to update the type
-      onAddYear?.(trimmed as unknown as number);
+    // Only accept valid year numbers between 2020 and 2050
+    if (isNaN(yearNum) || yearNum < 2020 || yearNum > 2050) {
+      return; // Invalid year, do nothing
     }
+    
+    if (years.includes(yearNum)) {
+      // Year already exists, just close the input
+      setNewYear("");
+      setIsAdding(false);
+      return;
+    }
+    
+    onAddYear?.(yearNum);
     setNewYear("");
     setIsAdding(false);
   };
