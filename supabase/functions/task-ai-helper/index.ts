@@ -11,33 +11,59 @@ serve(async (req) => {
   }
 
   try {
-    const { taskDescription, taskCategory } = await req.json();
+    const { taskDescription, taskCategory, conversationHistory, startTime } = await req.json();
     const LOVABLE_API_KEY = Deno.env.get("LOVABLE_API_KEY");
     
     if (!LOVABLE_API_KEY) {
       throw new Error("LOVABLE_API_KEY is not configured");
     }
 
-    const systemPrompt = taskCategory?.startsWith('daily_planning') 
-      ? `אתה מתכנן יום אישי מקצועי. אתה מבין עברית ושעון ישראלי (24 שעות).
+    let systemPrompt: string;
+    let userPrompt: string;
 
-כללים חשובים:
-1. כשהמשתמש אומר "19 בערב" או "19:00" - זו השעה 19:00, לא 21:00
-2. תמיד השתמש בפורמט שעון 24 שעות (07:00, 14:30, 19:00 וכו')
-3. צור לו"ז בפורמט טבלאי מסודר שאפשר להעתיק לוורד
+    if (taskCategory?.startsWith('daily_planning')) {
+      systemPrompt = `אתה מתכנן יום אישי מקצועי ומנוסה. אתה מבין עברית ועובד לפי שעון ישראלי (פורמט 24 שעות).
 
-פורמט הטבלה:
+כללים קריטיים לשעות:
+1. כשהמשתמש נותן שעת התחלה (למשל "14:00" או "14 בצהריים") - חייב להתחיל בדיוק מאותה שעה!
+2. אם נאמר "עכשיו 14:00" - הלו"ז מתחיל ב-14:00 בדיוק, לא מאוחר יותר
+3. אם נאמר "19 בערב" או "19:00" - זו השעה 19:00 בדיוק
+4. תמיד השתמש בפורמט שעון 24 שעות (07:00, 14:30, 19:00 וכו')
+
+פורמט הלו"ז (חובה להשתמש בטבלת Markdown):
 | שעה | משימה | משך | הערות |
 |-----|--------|-----|-------|
-| 07:00 | משימה 1 | 30 דק' | פרטים |
+| 14:00 | משימה 1 | 30 דק' | פרטים |
+| 14:30 | משימה 2 | 45 דק' | פרטים |
 
-עקרונות תכנון:
-- משימות דחופות ובאיחור קודם כל
-- הפסקות קצרות כל שעה-שעתיים
-- משימות קשות בבוקר כשהריכוז גבוה
-- אל תכלול יותר ממה שאפשר לעשות ביום אחד
-- השאר זמן לארוחות ומנוחה`
-      : `אתה עוזר אישי מומחה בניהול משימות. המשתמש יתן לך תיאור של משימה, ואתה צריך לספק:
+עקרונות תכנון חכם:
+- משימות דחופות ובאיחור - תעדוף ראשון!
+- משימות שדורשות ריכוז גבוה - בשעות הבוקר/צהריים
+- הפסקות קצרות (5-10 דק') כל שעה-שעתיים
+- ארוחות ומנוחה - אל תדלג עליהן
+- אל תדחוס יותר מדי - היה ריאליסטי
+- תן המלצות ותובנות בסוף הטבלה
+
+המלצות שכדאי להוסיף:
+- טכניקות פרודוקטיביות (פומודורו, time blocking)
+- הצעות לסדר ביצוע אופטימלי
+- אזהרות אם יש עומס יתר
+- הצעות להפסקות אקטיביות`;
+
+      const startTimeStr = startTime || "עכשיו";
+      userPrompt = taskCategory === 'daily_planning_feedback' 
+        ? taskDescription 
+        : `שעת התחלה: ${startTimeStr}
+
+רשימת המשימות הפתוחות שלי:
+${taskDescription}
+
+צור לו"ז יומי מסודר בטבלת Markdown.
+התחל בדיוק מהשעה ${startTimeStr}.
+בסוף הטבלה, הוסף המלצות ותובנות לפרודוקטיביות.`;
+
+    } else {
+      systemPrompt = `אתה עוזר אישי מומחה בניהול משימות. המשתמש יתן לך תיאור של משימה, ואתה צריך לספק:
 1. הצעה קצרה וברורה איך הכי כדאי לבצע את המשימה (2-3 משפטים)
 2. הערכת זמן ריאליסטית לביצוע המשימה
 
@@ -46,9 +72,28 @@ serve(async (req) => {
 💡 איך לבצע: [הסבר קצר]
 ⏱️ זמן משוער: [הערכת זמן]`;
 
-    const userPrompt = taskCategory 
-      ? `משימה: ${taskDescription}\nקטגוריה: ${taskCategory}`
-      : `משימה: ${taskDescription}`;
+      userPrompt = taskCategory 
+        ? `משימה: ${taskDescription}\nקטגוריה: ${taskCategory}`
+        : `משימה: ${taskDescription}`;
+    }
+
+    // Build messages array with conversation history if provided
+    const messages: { role: string; content: string }[] = [
+      { role: "system", content: systemPrompt },
+    ];
+
+    // Add conversation history if exists
+    if (conversationHistory && Array.isArray(conversationHistory)) {
+      for (const msg of conversationHistory) {
+        messages.push({
+          role: msg.role === 'user' ? 'user' : 'assistant',
+          content: msg.content
+        });
+      }
+    }
+
+    // Add current user message
+    messages.push({ role: "user", content: userPrompt });
 
     const response = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
       method: "POST",
@@ -58,10 +103,7 @@ serve(async (req) => {
       },
       body: JSON.stringify({
         model: "google/gemini-2.5-flash",
-        messages: [
-          { role: "system", content: systemPrompt },
-          { role: "user", content: userPrompt },
-        ],
+        messages,
       }),
     });
 

@@ -1,12 +1,17 @@
 import { useState, useRef, useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/hooks/useAuth';
+import { usePlannerConversations } from '@/hooks/usePlannerConversations';
 import { Button } from '@/components/ui/button';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Input } from '@/components/ui/input';
-import { CalendarClock, Loader2, Sparkles, AlertTriangle, Clock, CheckCircle2, Send, Copy, FileText } from 'lucide-react';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { CalendarClock, Loader2, Sparkles, AlertTriangle, Clock, CheckCircle2, Send, Copy, FileText, History, Plus } from 'lucide-react';
 import { toast } from 'sonner';
+import { format } from 'date-fns';
+import { he } from 'date-fns/locale';
+
 interface PlannerTask {
   type: 'task' | 'project_task' | 'course_lesson';
   id: string;
@@ -25,11 +30,22 @@ interface ChatMessage {
 
 const AiDailyPlanner = () => {
   const { user } = useAuth();
+  const { 
+    conversations, 
+    currentConversation, 
+    loadTodayConversation,
+    loadConversation,
+    saveConversation,
+    startNewConversation,
+    today 
+  } = usePlannerConversations();
+
   const [open, setOpen] = useState(false);
   const [loading, setLoading] = useState(false);
   const [allTasks, setAllTasks] = useState<PlannerTask[]>([]);
   const [messages, setMessages] = useState<ChatMessage[]>([]);
   const [userInput, setUserInput] = useState('');
+  const [selectedDate, setSelectedDate] = useState<string>(today);
   const scrollRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
@@ -37,6 +53,14 @@ const AiDailyPlanner = () => {
       scrollRef.current.scrollTop = scrollRef.current.scrollHeight;
     }
   }, [messages]);
+
+  // Load conversation when dialog opens or date changes
+  useEffect(() => {
+    if (open && currentConversation) {
+      setMessages(currentConversation.messages);
+      setAllTasks(currentConversation.tasks_snapshot);
+    }
+  }, [open, currentConversation]);
 
   const fetchAllOpenTasks = async () => {
     if (!user) return [];
@@ -110,6 +134,11 @@ const AiDailyPlanner = () => {
     }).join('\n');
   };
 
+  const getCurrentTime = () => {
+    const now = new Date();
+    return `${now.getHours().toString().padStart(2, '0')}:${now.getMinutes().toString().padStart(2, '0')}`;
+  };
+
   const generateDailyPlan = async () => {
     setLoading(true);
     setMessages([]);
@@ -119,35 +148,29 @@ const AiDailyPlanner = () => {
       setAllTasks(tasks);
 
       if (tasks.length === 0) {
-        setMessages([{ role: 'assistant', content: '🎉 אין משימות פתוחות! אתה מעודכן לגמרי.' }]);
+        const emptyMsg: ChatMessage[] = [{ role: 'assistant', content: '🎉 אין משימות פתוחות! אתה מעודכן לגמרי.' }];
+        setMessages(emptyMsg);
+        await saveConversation(emptyMsg, []);
         return;
       }
 
       const taskSummary = buildTaskSummary(tasks);
-      const now = new Date();
-      const currentHour = now.getHours().toString().padStart(2, '0');
-      const currentMinute = now.getMinutes().toString().padStart(2, '0');
+      const currentTime = getCurrentTime();
 
       const { data, error } = await supabase.functions.invoke('task-ai-helper', {
         body: {
-          taskDescription: `צור לו"ז יומי מסודר בפורמט טבלה.
-
-השעה הנוכחית: ${currentHour}:${currentMinute}
-
-רשימת המשימות הפתוחות שלי:
-${taskSummary}
-
-צור טבלה מסודרת עם העמודות: שעה | משימה | משך | הערות
-התחל מהשעה הנוכחית או מעט אחריה.
-סדר לפי שיקול דעתך המקצועי - משימות דחופות קודם, הפסקות, ארוחות.
-השתמש בפורמט markdown table שאפשר להעתיק לוורד.`,
-          taskCategory: 'daily_planning'
+          taskDescription: taskSummary,
+          taskCategory: 'daily_planning',
+          startTime: currentTime,
+          conversationHistory: []
         }
       });
 
       if (error) throw error;
 
-      setMessages([{ role: 'assistant', content: data.suggestion }]);
+      const newMessages: ChatMessage[] = [{ role: 'assistant', content: data.suggestion }];
+      setMessages(newMessages);
+      await saveConversation(newMessages, tasks);
     } catch (error) {
       console.error(error);
       toast.error('שגיאה ביצירת הלו"ז');
@@ -161,14 +184,12 @@ ${taskSummary}
 
     const userMessage = userInput.trim();
     setUserInput('');
-    setMessages(prev => [...prev, { role: 'user', content: userMessage }]);
+    const newMessages: ChatMessage[] = [...messages, { role: 'user', content: userMessage }];
+    setMessages(newMessages);
     setLoading(true);
 
     try {
       const taskSummary = buildTaskSummary(allTasks);
-      const conversationHistory = messages.map(m => 
-        m.role === 'user' ? `המשתמש: ${m.content}` : `המתכנן: ${m.content}`
-      ).join('\n\n');
 
       const { data, error } = await supabase.functions.invoke('task-ai-helper', {
         body: {
@@ -177,26 +198,24 @@ ${taskSummary}
 רשימת המשימות הפתוחות:
 ${taskSummary}
 
-השיחה עד כה:
-${conversationHistory}
-
 בקשת המשתמש: ${userMessage}
 
 חשוב מאוד:
-- אם המשתמש אומר "19 בערב" או "19:00" - זו השעה 19:00 בדיוק!
-- עדכן את הלו"ז בפורמט טבלה מסודרת (markdown table)
+- אם המשתמש נותן שעה (למשל "14:00" או "19 בערב") - התחל מאותה שעה בדיוק!
+- עדכן את הלו"ז בפורמט טבלת Markdown מסודרת
 - אם מבקש להוסיף פעילות - הוסף אותה בזמן מתאים
-- אם נותן שעה נוכחית - התחל מאותה שעה
-- אם מבקש להסיר משימות מסוג מסוים - הסר אותן
-
-תן לו"ז מעודכן מלא בטבלה.`,
-          taskCategory: 'daily_planning_feedback'
+- אם מבקש להסיר משימות - הסר אותן
+- בסוף הוסף המלצות ותובנות`,
+          taskCategory: 'daily_planning_feedback',
+          conversationHistory: messages
         }
       });
 
       if (error) throw error;
 
-      setMessages(prev => [...prev, { role: 'assistant', content: data.suggestion }]);
+      const updatedMessages: ChatMessage[] = [...newMessages, { role: 'assistant', content: data.suggestion }];
+      setMessages(updatedMessages);
+      await saveConversation(updatedMessages, allTasks);
     } catch (error) {
       console.error(error);
       toast.error('שגיאה בעדכון הלו"ז');
@@ -209,6 +228,34 @@ ${conversationHistory}
     if (e.key === 'Enter' && !e.shiftKey) {
       e.preventDefault();
       sendFeedback();
+    }
+  };
+
+  const handleDateChange = async (date: string) => {
+    setSelectedDate(date);
+    if (date === 'new') {
+      startNewConversation();
+      setMessages([]);
+      setAllTasks([]);
+      setSelectedDate(today);
+    } else {
+      await loadConversation(date);
+    }
+  };
+
+  const handleDialogOpen = async (isOpen: boolean) => {
+    setOpen(isOpen);
+    if (isOpen) {
+      // Try to load today's conversation first
+      const todayConv = await loadTodayConversation();
+      if (todayConv) {
+        setMessages(todayConv.messages);
+        setAllTasks(todayConv.tasks_snapshot);
+        setSelectedDate(today);
+      } else {
+        // No conversation today - auto-generate
+        generateDailyPlan();
+      }
     }
   };
 
@@ -227,10 +274,8 @@ ${conversationHistory}
     const lastAssistantMessage = messages.filter(m => m.role === 'assistant').pop();
     if (!lastAssistantMessage) return;
 
-    // Convert markdown table to HTML table for better Word compatibility
-    let content = lastAssistantMessage.content;
+    const content = lastAssistantMessage.content;
     
-    // Create HTML document with RTL support
     const html = `
 <!DOCTYPE html>
 <html dir="rtl" lang="he">
@@ -262,17 +307,18 @@ ${conversationHistory}
     toast.success('הקובץ הורד! אפשר לפתוח בוורד');
   };
 
+  const formatDateLabel = (dateStr: string) => {
+    const date = new Date(dateStr);
+    if (dateStr === today) return 'היום';
+    return format(date, 'd בMMMM yyyy', { locale: he });
+  };
+
   return (
-    <Dialog open={open} onOpenChange={setOpen}>
+    <Dialog open={open} onOpenChange={handleDialogOpen}>
       <DialogTrigger asChild>
         <Button
           className="fixed bottom-6 left-6 h-14 w-14 rounded-full shadow-lg z-50"
           size="icon"
-          onClick={() => {
-            if (!open) {
-              generateDailyPlan();
-            }
-          }}
         >
           <CalendarClock className="h-6 w-6" />
         </Button>
@@ -284,6 +330,29 @@ ${conversationHistory}
             תכנון יומי חכם
           </DialogTitle>
         </DialogHeader>
+
+        {/* History selector */}
+        <div className="flex items-center gap-2">
+          <History className="h-4 w-4 text-muted-foreground" />
+          <Select value={selectedDate} onValueChange={handleDateChange}>
+            <SelectTrigger className="w-48">
+              <SelectValue placeholder="בחר תאריך" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="new">
+                <span className="flex items-center gap-2">
+                  <Plus className="h-4 w-4" />
+                  שיחה חדשה
+                </span>
+              </SelectItem>
+              {conversations.map(conv => (
+                <SelectItem key={conv.id} value={conv.conversation_date}>
+                  {formatDateLabel(conv.conversation_date)}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+        </div>
 
         {/* Stats */}
         {allTasks.length > 0 && (
@@ -340,7 +409,7 @@ ${conversationHistory}
               value={userInput}
               onChange={(e) => setUserInput(e.target.value)}
               onKeyDown={handleKeyDown}
-              placeholder="בקש תיקונים... (למשל: הוסף נקיון הבית, עכשיו 14:00 בלי משימות עבודה)"
+              placeholder="בקש תיקונים... (למשל: 'התחל מ-14:00', 'הוסף נקיון הבית', 'בלי משימות עבודה')"
               disabled={loading}
               className="flex-1"
             />
