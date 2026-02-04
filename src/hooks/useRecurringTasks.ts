@@ -292,6 +292,77 @@ export function useRecurringTasks() {
     [completions]
   );
 
+  // Calculate task statistics for tracking
+  const getTaskStats = useCallback(
+    (task: RecurringTask, days: number = 30): {
+      completedCount: number;
+      expectedCount: number;
+      successRate: number;
+      currentStreak: number;
+      longestStreak: number;
+    } => {
+      const today = new Date();
+      let completedCount = 0;
+      let expectedCount = 0;
+      let currentStreak = 0;
+      let longestStreak = 0;
+      let tempStreak = 0;
+      let streakBroken = false;
+
+      for (let i = 0; i < days; i++) {
+        const date = new Date(today);
+        date.setDate(date.getDate() - i);
+        const dateStr = date.toISOString().split("T")[0];
+        const dayOfWeek = date.getDay();
+        const dayOfMonth = date.getDate();
+
+        // Check if task was due on this date
+        let isDue = false;
+        switch (task.frequency) {
+          case "daily":
+            isDue = true;
+            break;
+          case "weekly":
+            isDue = task.dayOfWeek === dayOfWeek;
+            break;
+          case "monthly":
+            isDue = task.dayOfMonth === dayOfMonth;
+            break;
+        }
+
+        if (isDue) {
+          expectedCount++;
+          const wasCompleted = completions.some(
+            (c) => c.recurringTaskId === task.id && c.completedDate === dateStr
+          );
+
+          if (wasCompleted) {
+            completedCount++;
+            tempStreak++;
+            if (!streakBroken) {
+              currentStreak = tempStreak;
+            }
+            longestStreak = Math.max(longestStreak, tempStreak);
+          } else {
+            tempStreak = 0;
+            if (i > 0) streakBroken = true; // Only break streak if not today
+          }
+        }
+      }
+
+      const successRate = expectedCount > 0 ? Math.round((completedCount / expectedCount) * 100) : 0;
+
+      return {
+        completedCount,
+        expectedCount,
+        successRate,
+        currentStreak,
+        longestStreak,
+      };
+    },
+    [completions]
+  );
+
   return {
     tasks,
     completions,
@@ -303,6 +374,7 @@ export function useRecurringTasks() {
     isTaskDueToday,
     isTaskCompletedToday,
     getCompletionHistory,
+    getTaskStats,
     refetch: fetchData,
   };
 }

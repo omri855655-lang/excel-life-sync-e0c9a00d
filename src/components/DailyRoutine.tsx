@@ -3,6 +3,7 @@ import { useRecurringTasks, RecurringTask } from "@/hooks/useRecurringTasks";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Checkbox } from "@/components/ui/checkbox";
+import { Progress } from "@/components/ui/progress";
 import {
   Select,
   SelectContent,
@@ -26,7 +27,7 @@ import {
   DialogFooter,
 } from "@/components/ui/dialog";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Plus, Trash2, CalendarCheck, History, Loader2, Flame, Calendar, RefreshCw } from "lucide-react";
+import { Plus, Trash2, CalendarCheck, History, Loader2, Flame, Calendar, RefreshCw, TrendingUp, Award } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { toast } from "sonner";
 
@@ -56,6 +57,7 @@ const DailyRoutine = () => {
     isTaskDueToday,
     isTaskCompletedToday,
     getCompletionHistory,
+    getTaskStats,
   } = useRecurringTasks();
 
   const [activeTab, setActiveTab] = useState<"today" | "all" | "history">("today");
@@ -272,57 +274,151 @@ const DailyRoutine = () => {
           </div>
         </TabsContent>
 
-        {/* History */}
+        {/* History & Stats */}
         <TabsContent value="history" className="flex-1 overflow-auto m-0">
-          <div className="border rounded-lg overflow-hidden">
-            <Table>
-              <TableHeader>
-                <TableRow>
-                  <TableHead className="text-right">משימה</TableHead>
-                  {Array.from({ length: 7 }, (_, i) => {
-                    const date = new Date();
-                    date.setDate(date.getDate() - (6 - i));
-                    return (
-                      <TableHead key={i} className="text-center w-16">
-                        {formatDate(date.toISOString().split("T")[0])}
-                      </TableHead>
-                    );
-                  })}
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {tasks.length === 0 ? (
-                  <TableRow>
-                    <TableCell colSpan={8} className="text-center text-muted-foreground">
-                      אין היסטוריה להצגה
-                    </TableCell>
-                  </TableRow>
-                ) : (
-                  tasks.map((task) => {
-                    const history = getCompletionHistory(task.id, 7);
-                    return (
-                      <TableRow key={task.id}>
-                        <TableCell className="font-medium">{task.title}</TableCell>
-                        {history.map((day, i) => (
-                          <TableCell key={i} className="text-center">
-                            <div
-                              className={cn(
-                                "w-6 h-6 rounded-full mx-auto flex items-center justify-center",
-                                day.completed
-                                  ? "bg-green-500 text-white"
-                                  : "bg-muted"
-                              )}
-                            >
-                              {day.completed && "✓"}
-                            </div>
-                          </TableCell>
-                        ))}
-                      </TableRow>
-                    );
-                  })
-                )}
-              </TableBody>
-            </Table>
+          <div className="space-y-6">
+            {/* Stats Cards */}
+            <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
+              {tasks.map((task) => {
+                const stats = getTaskStats(task, 30);
+                return (
+                  <div
+                    key={task.id}
+                    className="p-4 rounded-lg border bg-card space-y-3"
+                  >
+                    <div className="flex items-start justify-between">
+                      <div>
+                        <h4 className="font-medium">{task.title}</h4>
+                        <span
+                          className={cn(
+                            "text-xs px-2 py-0.5 rounded",
+                            task.frequency === "daily"
+                              ? "bg-blue-100 text-blue-800 dark:bg-blue-900/30 dark:text-blue-400"
+                              : task.frequency === "weekly"
+                              ? "bg-purple-100 text-purple-800 dark:bg-purple-900/30 dark:text-purple-400"
+                              : "bg-orange-100 text-orange-800 dark:bg-orange-900/30 dark:text-orange-400"
+                          )}
+                        >
+                          {FREQUENCY_LABELS[task.frequency]}
+                        </span>
+                      </div>
+                      <div
+                        className={cn(
+                          "text-2xl font-bold",
+                          stats.successRate >= 80
+                            ? "text-green-600 dark:text-green-400"
+                            : stats.successRate >= 50
+                            ? "text-yellow-600 dark:text-yellow-400"
+                            : "text-red-600 dark:text-red-400"
+                        )}
+                      >
+                        {stats.successRate}%
+                      </div>
+                    </div>
+
+                    <Progress value={stats.successRate} className="h-2" />
+
+                    <div className="grid grid-cols-2 gap-2 text-sm">
+                      <div className="flex items-center gap-2">
+                        <TrendingUp className="h-4 w-4 text-muted-foreground" />
+                        <span className="text-muted-foreground">רצף נוכחי:</span>
+                        <span className="font-medium">{stats.currentStreak}</span>
+                      </div>
+                      <div className="flex items-center gap-2">
+                        <Award className="h-4 w-4 text-muted-foreground" />
+                        <span className="text-muted-foreground">שיא:</span>
+                        <span className="font-medium">{stats.longestStreak}</span>
+                      </div>
+                    </div>
+
+                    <div className="text-xs text-muted-foreground">
+                      {stats.completedCount} מתוך {stats.expectedCount} ב-30 יום אחרונים
+                    </div>
+
+                    {/* Mini calendar for last 7 days */}
+                    <div className="flex gap-1 justify-center pt-2 border-t">
+                      {getCompletionHistory(task.id, 7).map((day, i) => (
+                        <div
+                          key={i}
+                          className={cn(
+                            "w-6 h-6 rounded-full flex items-center justify-center text-xs",
+                            day.completed
+                              ? "bg-green-500 text-white"
+                              : "bg-muted text-muted-foreground"
+                          )}
+                          title={formatDate(day.date)}
+                        >
+                          {day.completed ? "✓" : new Date(day.date).getDate()}
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+
+            {tasks.length === 0 && (
+              <div className="flex flex-col items-center justify-center py-12 text-muted-foreground">
+                <History className="h-12 w-12 mb-4 opacity-50" />
+                <p className="text-lg">אין משימות למעקב</p>
+                <Button variant="outline" className="mt-4" onClick={() => setAddDialogOpen(true)}>
+                  <Plus className="h-4 w-4 ml-1" />
+                  הוסף משימה ראשונה
+                </Button>
+              </div>
+            )}
+
+            {/* Full History Table */}
+            {tasks.length > 0 && (
+              <div className="border rounded-lg overflow-hidden">
+                <div className="p-3 bg-muted/50 border-b">
+                  <h4 className="font-medium flex items-center gap-2">
+                    <History className="h-4 w-4" />
+                    היסטוריית 7 ימים אחרונים
+                  </h4>
+                </div>
+                <Table>
+                  <TableHeader>
+                    <TableRow>
+                      <TableHead className="text-right">משימה</TableHead>
+                      {Array.from({ length: 7 }, (_, i) => {
+                        const date = new Date();
+                        date.setDate(date.getDate() - (6 - i));
+                        return (
+                          <TableHead key={i} className="text-center w-16">
+                            {formatDate(date.toISOString().split("T")[0])}
+                          </TableHead>
+                        );
+                      })}
+                    </TableRow>
+                  </TableHeader>
+                  <TableBody>
+                    {tasks.map((task) => {
+                      const history = getCompletionHistory(task.id, 7);
+                      return (
+                        <TableRow key={task.id}>
+                          <TableCell className="font-medium">{task.title}</TableCell>
+                          {history.map((day, i) => (
+                            <TableCell key={i} className="text-center">
+                              <div
+                                className={cn(
+                                  "w-6 h-6 rounded-full mx-auto flex items-center justify-center",
+                                  day.completed
+                                    ? "bg-green-500 text-white"
+                                    : "bg-muted"
+                                )}
+                              >
+                                {day.completed && "✓"}
+                              </div>
+                            </TableCell>
+                          ))}
+                        </TableRow>
+                      );
+                    })}
+                  </TableBody>
+                </Table>
+              </div>
+            )}
           </div>
         </TabsContent>
       </Tabs>
