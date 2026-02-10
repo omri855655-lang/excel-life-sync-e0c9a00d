@@ -1,9 +1,9 @@
-import { useState, useEffect, useMemo } from "react";
+import { useState, useEffect, useMemo, useRef, useCallback } from "react";
 import { useAuth } from "@/hooks/useAuth";
 import { useTasks, Task } from "@/hooks/useTasks";
 import { useCalendarEvents, CalendarEvent, getCategoryColor, CATEGORIES } from "@/hooks/useCalendarEvents";
 import { supabase } from "@/integrations/supabase/client";
-import { format, addDays, startOfWeek, endOfWeek, startOfMonth, endOfMonth, startOfDay, endOfDay, addHours, isSameDay, addMonths, subMonths, addWeeks, subWeeks, isWithinInterval, differenceInMinutes, setHours, setMinutes } from "date-fns";
+import { format, addDays, startOfWeek, endOfWeek, startOfMonth, endOfMonth, startOfDay, endOfDay, addHours, isSameDay, addMonths, subMonths, addWeeks, subWeeks, isWithinInterval, differenceInMinutes, setHours, setMinutes, addMinutes } from "date-fns";
 import { he } from "date-fns/locale";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -11,7 +11,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
 import { Textarea } from "@/components/ui/textarea";
 import { toast } from "sonner";
-import { ChevronRight, ChevronLeft, Plus, GripVertical, Clock, Trash2, Download, Flame, AlertTriangle, Calendar as CalendarIcon } from "lucide-react";
+import { ChevronRight, ChevronLeft, Plus, GripVertical, Clock, Trash2, Download, Flame, AlertTriangle } from "lucide-react";
 import { ScrollArea } from "@/components/ui/scroll-area";
 
 interface AggregatedTask {
@@ -30,6 +30,7 @@ type ViewMode = "day" | "week" | "month";
 
 const HOURS = Array.from({ length: 24 }, (_, i) => i);
 const HOUR_HEIGHT = 60; // px per hour
+const SNAP_MINUTES = 15; // snap to 15-min intervals
 
 const PersonalPlanner = () => {
   const { user } = useAuth();
@@ -52,6 +53,21 @@ const PersonalPlanner = () => {
     sourceType: "custom" as string,
     sourceId: null as string | null,
   });
+
+  // Resize state
+  const [resizingEvent, setResizingEvent] = useState<{ eventId: string; startY: number; originalEndTime: string } | null>(null);
+  const [resizePreviewHeight, setResizePreviewHeight] = useState<number | null>(null);
+
+  // Drag-to-create state (drag from sidebar and stretch across hours)
+  const [dragCreateState, setDragCreateState] = useState<{
+    day: Date;
+    startHour: number;
+    startMinute: number;
+    currentHour: number;
+    currentMinute: number;
+  } | null>(null);
+
+  const gridRef = useRef<HTMLDivElement>(null);
 
   // Fetch project tasks
   useEffect(() => {
@@ -117,7 +133,6 @@ const PersonalPlanner = () => {
       })
     );
 
-    // Sort: overdue first, then urgent, then by creation date
     return tasks.sort((a, b) => {
       if (a.overdue !== b.overdue) return a.overdue ? -1 : 1;
       if (a.urgent !== b.urgent) return a.urgent ? -1 : 1;
@@ -136,7 +151,6 @@ const PersonalPlanner = () => {
       const days = Array.from({ length: 7 }, (_, i) => addDays(start, i));
       return { start, end, days };
     }
-    // month
     const start = startOfMonth(currentDate);
     const end = endOfMonth(currentDate);
     const monthStart = startOfWeek(start, { weekStartsOn: 0 });
@@ -166,17 +180,84 @@ const PersonalPlanner = () => {
     else setCurrentDate((d) => addMonths(d, dir));
   };
 
+  // Snap to 15-minute intervals
+  const snapMinutes = (minutes: number) => Math.round(minutes / SNAP_MINUTES) * SNAP_MINUTES;
+
+  // Get hour and minute from Y position relative to grid
+  const getTimeFromY = (y: number): { hour: number; minute: number } => {
+    const totalMinutes = (y / HOUR_HEIGHT) * 60;
+    const hour = Math.floor(totalMinutes / 60);
+    const minute = snapMinutes(totalMinutes % 60);
+    return { hour: Math.max(0, Math.min(23, hour)), minute: Math.min(45, minute) };
+  };
+
   const handleDragStart = (task: AggregatedTask) => {
     setDraggedTask(task);
   };
 
-  const handleDrop = (day: Date, hour?: number) => {
+  // Handle dragover on hour slots to track position for stretch-drag
+  const handleSlotDragOver = (e: React.DragEvent, day: Date, slotHour: number) => {
+    e.preventDefault();
     if (!draggedTask) return;
 
-    const start = hour !== undefined
-      ? setMinutes(setHours(day, hour), 0)
-      : setMinutes(setHours(day, 9), 0);
-    const end = addHours(start, 1);
+    const rect = e.currentTarget.getBoundingClientRect();
+    const yInSlot = e.clientY - rect.top;
+    const minute = snapMinutes((yInSlot / HOUR_HEIGHT) * 60);
+    const currentHour = slotHour;
+    const currentMinute = Math.min(45, minute);
+
+    if (!dragCreateState) {
+      // First entry - set start
+      setDragCreateState({
+        day,
+        startHour: currentHour,
+        startMinute: currentMinute,
+        currentHour,
+        currentMinute,
+      });
+    } else if (isSameDay(dragCreateState.day, day)) {
+      // Update current position
+      setDragCreateState((prev) =>
+        prev ? { ...prev, currentHour, currentMinute } : null
+      );
+    }
+  };
+
+  const handleDrop = (day: Date, hour?: number, e?: React.DragEvent) => {
+    if (!draggedTask) return;
+
+    let start: Date;
+    let end: Date;
+
+    if (dragCreateState && isSameDay(dragCreateState.day, day)) {
+      // Use stretched range
+      const sH = dragCreateState.startHour;
+      const sM = dragCreateState.startMinute;
+      const cH = dragCreateState.currentHour;
+      const cM = dragCreateState.currentMinute;
+
+      const startTotal = sH * 60 + sM;
+      const endTotal = cH * 60 + cM;
+
+      if (endTotal > startTotal) {
+        start = setMinutes(setHours(day, sH), sM);
+        end = setMinutes(setHours(day, cH), cM);
+        // Minimum 15 min
+        if (differenceInMinutes(end, start) < 15) {
+          end = addMinutes(start, 30);
+        }
+      } else {
+        start = hour !== undefined
+          ? setMinutes(setHours(day, hour), 0)
+          : setMinutes(setHours(day, 9), 0);
+        end = addHours(start, 1);
+      }
+    } else {
+      start = hour !== undefined
+        ? setMinutes(setHours(day, hour), 0)
+        : setMinutes(setHours(day, 9), 0);
+      end = addHours(start, 1);
+    }
 
     const sourceType = draggedTask.source === "work"
       ? "work_task"
@@ -196,7 +277,68 @@ const PersonalPlanner = () => {
     setEditingEvent(null);
     setShowEventDialog(true);
     setDraggedTask(null);
+    setDragCreateState(null);
   };
+
+  const handleDragEnd = () => {
+    setDraggedTask(null);
+    setDragCreateState(null);
+  };
+
+  // --- Resize handlers ---
+  const handleResizeStart = (e: React.MouseEvent, event: CalendarEvent) => {
+    e.stopPropagation();
+    e.preventDefault();
+    setResizingEvent({
+      eventId: event.id,
+      startY: e.clientY,
+      originalEndTime: event.endTime,
+    });
+
+    const duration = differenceInMinutes(new Date(event.endTime), new Date(event.startTime));
+    setResizePreviewHeight((duration / 60) * HOUR_HEIGHT);
+  };
+
+  useEffect(() => {
+    if (!resizingEvent) return;
+
+    const handleMouseMove = (e: MouseEvent) => {
+      const deltaY = e.clientY - resizingEvent.startY;
+      const deltaMinutes = snapMinutes((deltaY / HOUR_HEIGHT) * 60);
+      const originalDuration = differenceInMinutes(
+        new Date(resizingEvent.originalEndTime),
+        new Date(events.find((ev) => ev.id === resizingEvent.eventId)?.startTime || "")
+      );
+      const newDuration = Math.max(15, originalDuration + deltaMinutes);
+      setResizePreviewHeight((newDuration / 60) * HOUR_HEIGHT);
+    };
+
+    const handleMouseUp = async (e: MouseEvent) => {
+      const deltaY = e.clientY - resizingEvent.startY;
+      const deltaMinutes = snapMinutes((deltaY / HOUR_HEIGHT) * 60);
+      const event = events.find((ev) => ev.id === resizingEvent.eventId);
+
+      if (event) {
+        const originalDuration = differenceInMinutes(
+          new Date(resizingEvent.originalEndTime),
+          new Date(event.startTime)
+        );
+        const newDuration = Math.max(15, originalDuration + deltaMinutes);
+        const newEnd = addMinutes(new Date(event.startTime), newDuration);
+        await updateEvent(resizingEvent.eventId, { endTime: newEnd.toISOString() });
+      }
+
+      setResizingEvent(null);
+      setResizePreviewHeight(null);
+    };
+
+    document.addEventListener("mousemove", handleMouseMove);
+    document.addEventListener("mouseup", handleMouseUp);
+    return () => {
+      document.removeEventListener("mousemove", handleMouseMove);
+      document.removeEventListener("mouseup", handleMouseUp);
+    };
+  }, [resizingEvent, events, updateEvent]);
 
   const handleSaveEvent = async () => {
     if (!newEventData.title.trim()) {
@@ -231,6 +373,7 @@ const PersonalPlanner = () => {
   };
 
   const handleClickEvent = (event: CalendarEvent) => {
+    if (resizingEvent) return; // Don't open dialog while resizing
     setEditingEvent(event);
     setNewEventData({
       title: event.title,
@@ -331,10 +474,10 @@ const PersonalPlanner = () => {
     const days = viewMode === "day" ? [currentDate] : dateRange.days;
 
     return (
-      <div className="flex flex-1 min-h-0 overflow-auto">
+      <div className="flex flex-1 min-h-0 overflow-auto" ref={gridRef}>
         {/* Time column */}
         <div className="w-16 flex-shrink-0 border-l border-border">
-          <div className="h-10 border-b border-border" /> {/* header spacer */}
+          <div className="h-10 border-b border-border" />
           {HOURS.map((h) => (
             <div
               key={h}
@@ -349,7 +492,7 @@ const PersonalPlanner = () => {
         {/* Day columns */}
         <div className="flex flex-1">
           {days.map((day) => (
-            <div key={day.toISOString()} className="flex-1 border-l border-border min-w-[100px]">
+            <div key={day.toISOString()} className="flex-1 border-l border-border min-w-[100px] relative">
               {/* Day header */}
               <div className={`h-10 border-b border-border flex flex-col items-center justify-center text-sm sticky top-0 bg-card z-10 ${isSameDay(day, new Date()) ? "bg-primary/10 font-bold" : ""}`}>
                 <span>{format(day, "EEEE", { locale: he })}</span>
@@ -363,30 +506,65 @@ const PersonalPlanner = () => {
                   return isSameDay(eStart, day) && eStart.getHours() === h;
                 });
 
+                // Drag preview for this slot
+                const showDragPreview = dragCreateState && isSameDay(dragCreateState.day, day) && (() => {
+                  const startTotal = dragCreateState.startHour * 60 + dragCreateState.startMinute;
+                  const endTotal = dragCreateState.currentHour * 60 + dragCreateState.currentMinute;
+                  const slotStart = h * 60;
+                  const slotEnd = (h + 1) * 60;
+                  return startTotal < slotEnd && endTotal >= slotStart && endTotal > startTotal;
+                })();
+
                 return (
                   <div
                     key={h}
                     className="border-b border-border/50 relative group hover:bg-muted/30 transition-colors"
                     style={{ height: HOUR_HEIGHT }}
-                    onDragOver={(e) => e.preventDefault()}
-                    onDrop={() => handleDrop(day, h)}
+                    onDragOver={(e) => handleSlotDragOver(e, day, h)}
+                    onDrop={(e) => handleDrop(day, h, e)}
+                    onDragLeave={() => {}}
                   >
+                    {/* Drag stretch preview */}
+                    {showDragPreview && dragCreateState && h === dragCreateState.startHour && (
+                      <div
+                        className="absolute inset-x-1 rounded-md bg-primary/20 border-2 border-dashed border-primary z-30 pointer-events-none"
+                        style={{
+                          top: (dragCreateState.startMinute / 60) * HOUR_HEIGHT,
+                          height: Math.max(
+                            ((dragCreateState.currentHour * 60 + dragCreateState.currentMinute) -
+                              (dragCreateState.startHour * 60 + dragCreateState.startMinute)) / 60 * HOUR_HEIGHT,
+                            15
+                          ),
+                        }}
+                      >
+                        <div className="text-[10px] text-primary font-medium px-1 pt-0.5">
+                          {String(dragCreateState.startHour).padStart(2, "0")}:{String(dragCreateState.startMinute).padStart(2, "0")}
+                          {" - "}
+                          {String(dragCreateState.currentHour).padStart(2, "0")}:{String(dragCreateState.currentMinute).padStart(2, "0")}
+                        </div>
+                      </div>
+                    )}
+
+                    {/* Events */}
                     {slotEvents.map((event) => {
                       const startMin = new Date(event.startTime).getMinutes();
                       const duration = differenceInMinutes(
                         new Date(event.endTime),
                         new Date(event.startTime)
                       );
-                      const height = (duration / 60) * HOUR_HEIGHT;
+                      const isResizing = resizingEvent?.eventId === event.id;
+                      const height = isResizing && resizePreviewHeight !== null
+                        ? resizePreviewHeight
+                        : (duration / 60) * HOUR_HEIGHT;
                       const top = (startMin / 60) * HOUR_HEIGHT;
 
                       return (
                         <div
                           key={event.id}
-                          className="absolute inset-x-1 rounded-md px-2 py-1 text-xs cursor-pointer overflow-hidden z-20 shadow-sm hover:shadow-md transition-shadow border"
+                          className="absolute inset-x-1 rounded-md px-2 py-1 text-xs cursor-pointer overflow-hidden z-20 shadow-sm hover:shadow-md transition-shadow border select-none"
                           style={{
                             top,
-                            height: Math.max(height, 24),
+                            height: Math.max(height, 20),
                             backgroundColor: event.color + "22",
                             borderColor: event.color,
                             borderRightWidth: 3,
@@ -396,8 +574,18 @@ const PersonalPlanner = () => {
                           <div className="font-medium truncate" style={{ color: event.color }}>
                             {event.title}
                           </div>
-                          <div className="text-muted-foreground truncate">
-                            {format(new Date(event.startTime), "HH:mm")}-{format(new Date(event.endTime), "HH:mm")}
+                          {height >= 36 && (
+                            <div className="text-muted-foreground truncate">
+                              {format(new Date(event.startTime), "HH:mm")}-{format(new Date(event.endTime), "HH:mm")}
+                            </div>
+                          )}
+
+                          {/* Resize handle */}
+                          <div
+                            className="absolute bottom-0 left-0 right-0 h-3 cursor-s-resize flex items-center justify-center hover:bg-black/10 dark:hover:bg-white/10 rounded-b-md transition-colors group/resize"
+                            onMouseDown={(e) => handleResizeStart(e, event)}
+                          >
+                            <div className="w-8 h-1 rounded-full bg-current opacity-0 group-hover/resize:opacity-40 transition-opacity" style={{ color: event.color }} />
                           </div>
                         </div>
                       );
@@ -421,7 +609,6 @@ const PersonalPlanner = () => {
 
     return (
       <div className="flex-1 overflow-auto">
-        {/* Weekday headers */}
         <div className="grid grid-cols-7 border-b border-border sticky top-0 bg-card z-10">
           {["ראשון", "שני", "שלישי", "רביעי", "חמישי", "שישי", "שבת"].map((d) => (
             <div key={d} className="p-2 text-center text-sm font-medium text-muted-foreground border-l border-border">
@@ -430,7 +617,6 @@ const PersonalPlanner = () => {
           ))}
         </div>
 
-        {/* Weeks */}
         {weeks.map((week, wi) => (
           <div key={wi} className="grid grid-cols-7 min-h-[100px]">
             {week.map((day) => {
@@ -475,7 +661,7 @@ const PersonalPlanner = () => {
       <div className="w-72 border-l border-border flex flex-col bg-card flex-shrink-0">
         <div className="p-3 border-b border-border">
           <h3 className="font-bold text-sm mb-2">משימות פתוחות ({allTasks.length})</h3>
-          <p className="text-xs text-muted-foreground">גרור משימה ללוח השנה</p>
+          <p className="text-xs text-muted-foreground">גרור משימה ללוח ומתח לפי השעות</p>
         </div>
         <ScrollArea className="flex-1">
           <div className="p-2 space-y-1.5">
@@ -484,6 +670,7 @@ const PersonalPlanner = () => {
                 key={`${task.source}-${task.id}`}
                 draggable
                 onDragStart={() => handleDragStart(task)}
+                onDragEnd={handleDragEnd}
                 className={`p-2 rounded-lg border cursor-grab active:cursor-grabbing text-sm transition-colors hover:shadow-sm ${getSourceBg(task.source)} ${task.overdue ? "ring-1 ring-red-400" : ""}`}
               >
                 <div className="flex items-center gap-1 mb-1">
@@ -491,7 +678,7 @@ const PersonalPlanner = () => {
                   <span className={`text-[10px] px-1.5 rounded-full font-medium ${task.source === "work" ? "bg-orange-200 text-orange-800" : task.source === "personal" ? "bg-purple-200 text-purple-800" : "bg-cyan-200 text-cyan-800"}`}>
                     {getSourceLabel(task.source)}
                   </span>
-                  {task.urgent && <Flame className="h-3 w-3 text-red-500" />}
+                  {task.urgent && <Flame className="h-3 w-3 text-destructive" />}
                   {task.overdue && <AlertTriangle className="h-3 w-3 text-amber-500" />}
                 </div>
                 <div className="text-xs font-medium line-clamp-2 pr-4">{task.title || "(ללא כותרת)"}</div>
