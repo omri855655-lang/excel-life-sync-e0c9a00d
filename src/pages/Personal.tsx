@@ -10,7 +10,8 @@ import CoursesManager from "@/components/CoursesManager";
 import Dashboard from "@/components/Dashboard";
 import DailyRoutine from "@/components/DailyRoutine";
 import AiDailyPlanner from "@/components/AiDailyPlanner";
-import { FileSpreadsheet, Moon, Sun, LogOut, BookOpen, Tv, LayoutDashboard, ListTodo, Briefcase, Download, Headphones, CalendarCheck, FolderKanban, GraduationCap } from "lucide-react";
+import PersonalPlanner from "@/components/PersonalPlanner";
+import { FileSpreadsheet, Moon, Sun, LogOut, BookOpen, Tv, LayoutDashboard, ListTodo, Briefcase, Download, Headphones, CalendarCheck, FolderKanban, GraduationCap, CalendarDays } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { toast } from "sonner";
@@ -143,6 +144,10 @@ const Personal = () => {
               <GraduationCap className="h-4 w-4" />
               קורסים
             </TabsTrigger>
+            <TabsTrigger value="planner" className="gap-2">
+              <CalendarDays className="h-4 w-4" />
+              מתכנן לוז
+            </TabsTrigger>
           </TabsList>
         </div>
 
@@ -176,6 +181,10 @@ const Personal = () => {
 
         <TabsContent value="projects" className="flex-1 min-h-0 overflow-hidden m-0 p-0">
           <ProjectsManager />
+        </TabsContent>
+
+        <TabsContent value="planner" className="flex-1 min-h-0 overflow-hidden m-0 p-0">
+          <PersonalPlanner />
         </TabsContent>
 
         <TabsContent value="courses" className="flex-1 min-h-0 overflow-hidden m-0 p-0">
