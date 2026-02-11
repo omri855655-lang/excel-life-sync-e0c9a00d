@@ -2,6 +2,7 @@ import { useState, useEffect, useMemo, useRef, useCallback } from "react";
 import { useAuth } from "@/hooks/useAuth";
 import { useTasks, Task } from "@/hooks/useTasks";
 import { useCalendarEvents, CalendarEvent, getCategoryColor, CATEGORIES } from "@/hooks/useCalendarEvents";
+import { useRecurringTasks } from "@/hooks/useRecurringTasks";
 import { supabase } from "@/integrations/supabase/client";
 import { format, addDays, startOfWeek, endOfWeek, startOfMonth, endOfMonth, startOfDay, endOfDay, addHours, isSameDay, addMonths, subMonths, addWeeks, subWeeks, isWithinInterval, differenceInMinutes, setHours, setMinutes, addMinutes } from "date-fns";
 import { he } from "date-fns/locale";
@@ -11,13 +12,13 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
 import { Textarea } from "@/components/ui/textarea";
 import { toast } from "sonner";
-import { ChevronRight, ChevronLeft, Plus, GripVertical, Clock, Trash2, Download, Flame, AlertTriangle } from "lucide-react";
+import { ChevronRight, ChevronLeft, Plus, GripVertical, Clock, Trash2, Download, Flame, AlertTriangle, CalendarRange, RotateCcw } from "lucide-react";
 import { ScrollArea } from "@/components/ui/scroll-area";
 
 interface AggregatedTask {
   id: string;
   title: string;
-  source: "work" | "personal" | "project";
+  source: "work" | "personal" | "project" | "recurring";
   overdue: boolean;
   urgent: boolean;
   status: string;
@@ -36,12 +37,14 @@ const PersonalPlanner = () => {
   const { user } = useAuth();
   const { tasks: personalTasks } = useTasks("personal");
   const { tasks: workTasks } = useTasks("work");
+  const { tasks: recurringTasks, isTaskDueToday, isTaskCompletedToday } = useRecurringTasks();
   const { events, addEvent, updateEvent, deleteEvent } = useCalendarEvents();
 
   const [projectTasks, setProjectTasks] = useState<any[]>([]);
   const [viewMode, setViewMode] = useState<ViewMode>("week");
   const [currentDate, setCurrentDate] = useState(new Date());
   const [draggedTask, setDraggedTask] = useState<AggregatedTask | null>(null);
+  const [draggingEvent, setDraggingEvent] = useState<CalendarEvent | null>(null);
   const [showEventDialog, setShowEventDialog] = useState(false);
   const [editingEvent, setEditingEvent] = useState<CalendarEvent | null>(null);
   const [newEventData, setNewEventData] = useState({
@@ -133,12 +136,28 @@ const PersonalPlanner = () => {
       })
     );
 
+    recurringTasks
+      .filter((t) => isTaskDueToday(t) && !isTaskCompletedToday(t.id))
+      .forEach((t) =>
+        tasks.push({
+          id: t.id,
+          title: t.title,
+          source: "recurring",
+          overdue: false,
+          urgent: false,
+          status: "יומי",
+          plannedEnd: "",
+          createdAt: t.createdAt,
+          category: "לוז יומי",
+        })
+      );
+
     return tasks.sort((a, b) => {
       if (a.overdue !== b.overdue) return a.overdue ? -1 : 1;
       if (a.urgent !== b.urgent) return a.urgent ? -1 : 1;
       return new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime();
     });
-  }, [personalTasks, workTasks, projectTasks]);
+  }, [personalTasks, workTasks, projectTasks, recurringTasks, isTaskDueToday, isTaskCompletedToday]);
 
   // Calendar date ranges
   const dateRange = useMemo(() => {
@@ -198,7 +217,7 @@ const PersonalPlanner = () => {
   // Handle dragover on hour slots to track position for stretch-drag
   const handleSlotDragOver = (e: React.DragEvent, day: Date, slotHour: number) => {
     e.preventDefault();
-    if (!draggedTask) return;
+    if (!draggedTask && !draggingEvent) return;
 
     const rect = e.currentTarget.getBoundingClientRect();
     const yInSlot = e.clientY - rect.top;
@@ -224,13 +243,36 @@ const PersonalPlanner = () => {
   };
 
   const handleDrop = (day: Date, hour?: number, e?: React.DragEvent) => {
+    // Handle moving existing event
+    if (draggingEvent) {
+      const duration = differenceInMinutes(new Date(draggingEvent.endTime), new Date(draggingEvent.startTime));
+      let newStart: Date;
+
+      if (dragCreateState) {
+        newStart = setMinutes(setHours(day, dragCreateState.currentHour), dragCreateState.currentMinute);
+      } else {
+        newStart = hour !== undefined
+          ? setMinutes(setHours(day, hour), 0)
+          : setMinutes(setHours(day, 9), 0);
+      }
+
+      const newEnd = addMinutes(newStart, duration);
+      updateEvent(draggingEvent.id, {
+        startTime: newStart.toISOString(),
+        endTime: newEnd.toISOString(),
+      });
+      setDraggingEvent(null);
+      setDragCreateState(null);
+      toast.success("האירוע הוזז בהצלחה");
+      return;
+    }
+
     if (!draggedTask) return;
 
     let start: Date;
     let end: Date;
 
     if (dragCreateState && isSameDay(dragCreateState.day, day)) {
-      // Use stretched range
       const sH = dragCreateState.startHour;
       const sM = dragCreateState.startMinute;
       const cH = dragCreateState.currentHour;
@@ -242,7 +284,6 @@ const PersonalPlanner = () => {
       if (endTotal > startTotal) {
         start = setMinutes(setHours(day, sH), sM);
         end = setMinutes(setHours(day, cH), cM);
-        // Minimum 15 min
         if (differenceInMinutes(end, start) < 15) {
           end = addMinutes(start, 30);
         }
@@ -263,12 +304,14 @@ const PersonalPlanner = () => {
       ? "work_task"
       : draggedTask.source === "personal"
         ? "personal_task"
-        : "project_task";
+        : draggedTask.source === "recurring"
+          ? "recurring_task"
+          : "project_task";
 
     setNewEventData({
       title: draggedTask.title,
       description: "",
-      category: draggedTask.source === "work" ? "עבודה" : draggedTask.source === "project" ? "פרויקט" : "אישי",
+      category: draggedTask.source === "work" ? "עבודה" : draggedTask.source === "project" ? "פרויקט" : draggedTask.source === "recurring" ? "לוז יומי" : "אישי",
       startTime: start.toISOString(),
       endTime: end.toISOString(),
       sourceType,
@@ -283,6 +326,7 @@ const PersonalPlanner = () => {
   const handleDragEnd = () => {
     setDraggedTask(null);
     setDragCreateState(null);
+    setDraggingEvent(null);
   };
 
   // --- Resize handlers ---
@@ -451,11 +495,55 @@ const PersonalPlanner = () => {
     toast.success("הקובץ הורד בהצלחה");
   };
 
+  // Export to ICS (calendar file)
+  const exportToICS = () => {
+    const eventsInRange = filteredEvents.sort(
+      (a, b) => new Date(a.startTime).getTime() - new Date(b.startTime).getTime()
+    );
+
+    let ics = "BEGIN:VCALENDAR\r\nVERSION:2.0\r\nPRODID:-//Personal Planner//NONSGML v1.0//EN\r\nCALSCALE:GREGORIAN\r\nMETHOD:PUBLISH\r\n";
+
+    eventsInRange.forEach((e) => {
+      const start = format(new Date(e.startTime), "yyyyMMdd'T'HHmmss");
+      const end = format(new Date(e.endTime), "yyyyMMdd'T'HHmmss");
+      const now = format(new Date(), "yyyyMMdd'T'HHmmss");
+
+      ics += "BEGIN:VEVENT\r\n";
+      ics += `DTSTART:${start}\r\n`;
+      ics += `DTEND:${end}\r\n`;
+      ics += `DTSTAMP:${now}\r\n`;
+      ics += `UID:${e.id}@personal-planner\r\n`;
+      ics += `SUMMARY:${e.title.replace(/[,;\\]/g, " ")}\r\n`;
+      if (e.description) ics += `DESCRIPTION:${e.description.replace(/\n/g, "\\n").replace(/[,;\\]/g, " ")}\r\n`;
+      ics += `CATEGORIES:${e.category}\r\n`;
+      ics += "END:VEVENT\r\n";
+    });
+
+    ics += "END:VCALENDAR\r\n";
+
+    const blob = new Blob([ics], { type: "text/calendar;charset=utf-8" });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+
+    const title = viewMode === "day"
+      ? format(currentDate, "dd-MM-yyyy")
+      : viewMode === "week"
+        ? `${format(dateRange.start, "dd-MM")}-${format(dateRange.end, "dd-MM-yyyy")}`
+        : format(currentDate, "MM-yyyy");
+
+    a.download = `schedule-${title}.ics`;
+    a.click();
+    URL.revokeObjectURL(url);
+    toast.success("קובץ לוח שנה הורד - ניתן לשלוח במייל ולייבא ליומן העבודה");
+  };
+
   const getSourceLabel = (source: string) => {
     switch (source) {
       case "work": return "עבודה";
       case "personal": return "אישי";
       case "project": return "פרויקט";
+      case "recurring": return "יומי";
       default: return source;
     }
   };
@@ -465,6 +553,7 @@ const PersonalPlanner = () => {
       case "work": return "bg-orange-100 dark:bg-orange-900/30 border-orange-300";
       case "personal": return "bg-purple-100 dark:bg-purple-900/30 border-purple-300";
       case "project": return "bg-cyan-100 dark:bg-cyan-900/30 border-cyan-300";
+      case "recurring": return "bg-green-100 dark:bg-green-900/30 border-green-300";
       default: return "bg-muted border-border";
     }
   };
@@ -507,7 +596,7 @@ const PersonalPlanner = () => {
                 });
 
                 // Drag preview for this slot
-                const showDragPreview = dragCreateState && isSameDay(dragCreateState.day, day) && (() => {
+                const showDragPreview = draggedTask && dragCreateState && isSameDay(dragCreateState.day, day) && (() => {
                   const startTotal = dragCreateState.startHour * 60 + dragCreateState.startMinute;
                   const endTotal = dragCreateState.currentHour * 60 + dragCreateState.currentMinute;
                   const slotStart = h * 60;
@@ -561,7 +650,14 @@ const PersonalPlanner = () => {
                       return (
                         <div
                           key={event.id}
-                          className="absolute inset-x-1 rounded-md px-2 py-1 text-xs cursor-pointer overflow-hidden z-20 shadow-sm hover:shadow-md transition-shadow border select-none"
+                          draggable
+                          onDragStart={(e) => {
+                            e.stopPropagation();
+                            setDraggingEvent(event);
+                            setDraggedTask(null);
+                          }}
+                          onDragEnd={() => setDraggingEvent(null)}
+                          className={`absolute inset-x-1 rounded-md px-2 py-1 text-xs cursor-grab active:cursor-grabbing overflow-hidden z-20 shadow-sm hover:shadow-md transition-shadow border select-none ${draggingEvent?.id === event.id ? "opacity-50" : ""}`}
                           style={{
                             top,
                             height: Math.max(height, 20),
@@ -582,6 +678,7 @@ const PersonalPlanner = () => {
 
                           {/* Resize handle */}
                           <div
+                            draggable={false}
                             className="absolute bottom-0 left-0 right-0 h-3 cursor-s-resize flex items-center justify-center hover:bg-black/10 dark:hover:bg-white/10 rounded-b-md transition-colors group/resize"
                             onMouseDown={(e) => handleResizeStart(e, event)}
                           >
@@ -636,7 +733,14 @@ const PersonalPlanner = () => {
                   {dayEvents.slice(0, 3).map((event) => (
                     <div
                       key={event.id}
-                      className="text-xs truncate rounded px-1 mb-0.5 cursor-pointer hover:opacity-80"
+                      draggable
+                      onDragStart={(e) => {
+                        e.stopPropagation();
+                        setDraggingEvent(event);
+                        setDraggedTask(null);
+                      }}
+                      onDragEnd={() => setDraggingEvent(null)}
+                      className={`text-xs truncate rounded px-1 mb-0.5 cursor-grab active:cursor-grabbing hover:opacity-80 ${draggingEvent?.id === event.id ? "opacity-50" : ""}`}
                       style={{ backgroundColor: event.color + "33", color: event.color }}
                       onClick={() => handleClickEvent(event)}
                     >
@@ -675,9 +779,10 @@ const PersonalPlanner = () => {
               >
                 <div className="flex items-center gap-1 mb-1">
                   <GripVertical className="h-3 w-3 text-muted-foreground flex-shrink-0" />
-                  <span className={`text-[10px] px-1.5 rounded-full font-medium ${task.source === "work" ? "bg-orange-200 text-orange-800" : task.source === "personal" ? "bg-purple-200 text-purple-800" : "bg-cyan-200 text-cyan-800"}`}>
+                  <span className={`text-[10px] px-1.5 rounded-full font-medium ${task.source === "work" ? "bg-orange-200 text-orange-800" : task.source === "personal" ? "bg-purple-200 text-purple-800" : task.source === "recurring" ? "bg-green-200 text-green-800" : "bg-cyan-200 text-cyan-800"}`}>
                     {getSourceLabel(task.source)}
                   </span>
+                  {task.source === "recurring" && <RotateCcw className="h-3 w-3 text-green-600" />}
                   {task.urgent && <Flame className="h-3 w-3 text-destructive" />}
                   {task.overdue && <AlertTriangle className="h-3 w-3 text-amber-500" />}
                 </div>
@@ -742,6 +847,11 @@ const PersonalPlanner = () => {
             <Button variant="outline" size="sm" className="gap-1 h-8" onClick={exportToWord}>
               <Download className="h-3.5 w-3.5" />
               Word
+            </Button>
+
+            <Button variant="outline" size="sm" className="gap-1 h-8" onClick={exportToICS}>
+              <CalendarRange className="h-3.5 w-3.5" />
+              ICS
             </Button>
           </div>
         </div>
