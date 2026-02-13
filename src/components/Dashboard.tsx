@@ -5,6 +5,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { BookOpen, Tv, CheckCircle, Clock, Eye, TrendingUp } from 'lucide-react';
 import { PieChart, Pie, Cell, ResponsiveContainer, BarChart, Bar, XAxis, YAxis, Tooltip, Legend } from 'recharts';
 import TasksDashboards from '@/components/dashboard/TasksDashboards';
+import ProductivityDashboard from '@/components/dashboard/ProductivityDashboard';
 
 interface Stats {
   totalBooks: number;
@@ -142,6 +143,9 @@ const Dashboard = () => {
 
       {/* Tasks Dashboards */}
       <TasksDashboards />
+
+      {/* Productivity Dashboard */}
+      <ProductivityDashboard />
 
       {/* Charts */}
       <div className="grid md:grid-cols-2 gap-6">
