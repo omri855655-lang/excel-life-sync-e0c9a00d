@@ -4,7 +4,7 @@ import { useTasks, Task } from "@/hooks/useTasks";
 import { useCalendarEvents, CalendarEvent, getCategoryColor, CATEGORIES } from "@/hooks/useCalendarEvents";
 import { useRecurringTasks } from "@/hooks/useRecurringTasks";
 import { supabase } from "@/integrations/supabase/client";
-import { format, addDays, startOfWeek, endOfWeek, startOfMonth, endOfMonth, startOfDay, endOfDay, addHours, isSameDay, addMonths, subMonths, addWeeks, subWeeks, isWithinInterval, differenceInMinutes, setHours, setMinutes, addMinutes } from "date-fns";
+import { format, addDays, addYears, subYears, startOfYear, endOfYear, startOfWeek, endOfWeek, startOfMonth, endOfMonth, startOfDay, endOfDay, addHours, isSameDay, isSameMonth, addMonths, subMonths, addWeeks, subWeeks, isWithinInterval, differenceInMinutes, setHours, setMinutes, addMinutes, eachDayOfInterval, getDay } from "date-fns";
 import { he } from "date-fns/locale";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -27,7 +27,7 @@ interface AggregatedTask {
   category: string;
 }
 
-type ViewMode = "day" | "week" | "month";
+type ViewMode = "day" | "week" | "month" | "year";
 
 const HOURS = Array.from({ length: 24 }, (_, i) => i);
 const HOUR_HEIGHT = 60; // px per hour
@@ -170,6 +170,11 @@ const PersonalPlanner = () => {
       const days = Array.from({ length: 7 }, (_, i) => addDays(start, i));
       return { start, end, days };
     }
+    if (viewMode === "year") {
+      const start = startOfYear(currentDate);
+      const end = endOfYear(currentDate);
+      return { start, end, days: eachDayOfInterval({ start, end }) };
+    }
     const start = startOfMonth(currentDate);
     const end = endOfMonth(currentDate);
     const monthStart = startOfWeek(start, { weekStartsOn: 0 });
@@ -196,7 +201,8 @@ const PersonalPlanner = () => {
   const navigate = (dir: number) => {
     if (viewMode === "day") setCurrentDate((d) => addDays(d, dir));
     else if (viewMode === "week") setCurrentDate((d) => addWeeks(d, dir));
-    else setCurrentDate((d) => addMonths(d, dir));
+    else if (viewMode === "month") setCurrentDate((d) => addMonths(d, dir));
+    else setCurrentDate((d) => dir > 0 ? addYears(d, 1) : subYears(d, 1));
   };
 
   // Snap to 15-minute intervals
@@ -759,6 +765,85 @@ const PersonalPlanner = () => {
     );
   };
 
+  // Render year grid
+  const renderYearGrid = () => {
+    const year = currentDate.getFullYear();
+    const months = Array.from({ length: 12 }, (_, i) => new Date(year, i, 1));
+
+    return (
+      <div className="flex-1 overflow-auto p-4">
+        <div className="grid grid-cols-3 md:grid-cols-4 gap-4">
+          {months.map((monthDate) => {
+            const monthStart = startOfMonth(monthDate);
+            const monthEnd = endOfMonth(monthDate);
+            const firstDay = startOfWeek(monthStart, { weekStartsOn: 0 });
+            const calendarDays: Date[] = [];
+            let d = firstDay;
+            while (d <= monthEnd || calendarDays.length % 7 !== 0) {
+              calendarDays.push(d);
+              d = addDays(d, 1);
+            }
+
+            const monthEvents = events.filter((e) => {
+              const eDate = new Date(e.startTime);
+              return eDate.getMonth() === monthDate.getMonth() && eDate.getFullYear() === year;
+            });
+
+            return (
+              <div
+                key={monthDate.toISOString()}
+                className="border border-border rounded-lg p-2 bg-card hover:shadow-md transition-shadow cursor-pointer"
+                onClick={() => {
+                  setCurrentDate(monthDate);
+                  setViewMode("month");
+                }}
+              >
+                <h3 className="text-sm font-bold text-center mb-2">
+                  {format(monthDate, "MMMM", { locale: he })}
+                </h3>
+
+                {/* Mini day headers */}
+                <div className="grid grid-cols-7 gap-px mb-1">
+                  {["א", "ב", "ג", "ד", "ה", "ו", "ש"].map((d) => (
+                    <div key={d} className="text-[9px] text-muted-foreground text-center">{d}</div>
+                  ))}
+                </div>
+
+                {/* Mini calendar days */}
+                <div className="grid grid-cols-7 gap-px">
+                  {calendarDays.map((day, i) => {
+                    const isCurrentMonthDay = isSameMonth(day, monthDate);
+                    const isToday = isSameDay(day, new Date());
+                    const dayEventCount = monthEvents.filter((e) => isSameDay(new Date(e.startTime), day)).length;
+
+                    return (
+                      <div
+                        key={i}
+                        className={`text-[10px] text-center rounded aspect-square flex items-center justify-center relative ${
+                          !isCurrentMonthDay ? "text-muted-foreground/30" : ""
+                        } ${isToday ? "bg-primary text-primary-foreground font-bold" : ""}`}
+                      >
+                        {format(day, "d")}
+                        {dayEventCount > 0 && isCurrentMonthDay && (
+                          <div className="absolute bottom-0 left-1/2 -translate-x-1/2 w-1 h-1 rounded-full bg-primary" />
+                        )}
+                      </div>
+                    );
+                  })}
+                </div>
+
+                {/* Event count */}
+                <div className="text-[10px] text-muted-foreground text-center mt-1.5 border-t border-border pt-1">
+                  {monthEvents.length > 0 ? `${monthEvents.length} אירועים` : "ללא אירועים"}
+                </div>
+              </div>
+            );
+          })}
+        </div>
+      </div>
+    );
+  };
+
   return (
     <div className="flex h-full" dir="rtl">
       {/* Right sidebar - Task list */}
@@ -824,17 +909,18 @@ const PersonalPlanner = () => {
             {viewMode === "day" && format(currentDate, "EEEE, dd MMMM yyyy", { locale: he })}
             {viewMode === "week" && `${format(dateRange.start, "dd/MM")} - ${format(dateRange.end, "dd/MM/yyyy")}`}
             {viewMode === "month" && format(currentDate, "MMMM yyyy", { locale: he })}
+            {viewMode === "year" && format(currentDate, "yyyy")}
           </h2>
 
           <div className="mr-auto flex items-center gap-2">
             <div className="flex border border-border rounded-md overflow-hidden">
-              {(["day", "week", "month"] as ViewMode[]).map((mode) => (
+              {(["day", "week", "month", "year"] as ViewMode[]).map((mode) => (
                 <button
                   key={mode}
                   onClick={() => setViewMode(mode)}
                   className={`px-3 py-1.5 text-xs font-medium transition-colors ${viewMode === mode ? "bg-primary text-primary-foreground" : "hover:bg-muted"}`}
                 >
-                  {mode === "day" ? "יומי" : mode === "week" ? "שבועי" : "חודשי"}
+                  {mode === "day" ? "יומי" : mode === "week" ? "שבועי" : mode === "month" ? "חודשי" : "שנתי"}
                 </button>
               ))}
             </div>
@@ -857,7 +943,7 @@ const PersonalPlanner = () => {
         </div>
 
         {/* Calendar grid */}
-        {viewMode === "month" ? renderMonthGrid() : renderTimeGrid()}
+        {viewMode === "year" ? renderYearGrid() : viewMode === "month" ? renderMonthGrid() : renderTimeGrid()}
       </div>
 
       {/* Event Dialog */}

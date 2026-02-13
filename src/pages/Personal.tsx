@@ -110,8 +110,8 @@ const Personal = () => {
 
       {/* Main Tabs */}
       <Tabs value={activeTab} onValueChange={setActiveTab} className="flex-1 flex flex-col min-h-0">
-        <div className="border-b border-border bg-card px-4 flex-shrink-0">
-          <TabsList className="h-12 bg-transparent">
+        <div className="border-b border-border bg-card px-4 flex-shrink-0 overflow-x-auto">
+          <TabsList className="h-12 bg-transparent w-max min-w-full">
             <TabsTrigger value="dashboard" className="gap-2">
               <LayoutDashboard className="h-4 w-4" />
               דשבורד
