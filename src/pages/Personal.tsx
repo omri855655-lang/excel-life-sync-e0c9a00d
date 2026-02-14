@@ -11,6 +11,7 @@ import Dashboard from "@/components/Dashboard";
 import DailyRoutine from "@/components/DailyRoutine";
 import AiDailyPlanner from "@/components/AiDailyPlanner";
 import PersonalPlanner from "@/components/PersonalPlanner";
+import PushNotificationToggle from "@/components/PushNotificationToggle";
 import { FileSpreadsheet, Moon, Sun, LogOut, BookOpen, Tv, LayoutDashboard, ListTodo, Briefcase, Download, Headphones, CalendarCheck, FolderKanban, GraduationCap, CalendarDays } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -90,6 +91,7 @@ const Personal = () => {
             <span className="hidden sm:inline">התקנת אפליקציה</span>
           </Button>
           <span className="text-sm text-muted-foreground hidden sm:block">{user.email}</span>
+          <PushNotificationToggle />
           <Button
             variant="ghost"
             size="icon"
