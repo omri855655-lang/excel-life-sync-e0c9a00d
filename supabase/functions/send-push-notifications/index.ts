@@ -1,106 +1,78 @@
 import { serve } from "https://deno.land/std@0.190.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.49.2";
+import {
+  buildPushPayload,
+  type PushSubscription as WebPushSubscription,
+  type PushMessage,
+  type VapidKeys,
+} from "npm:@block65/webcrypto-web-push@1";
+
+const RESEND_API_KEY = Deno.env.get("RESEND_API_KEY");
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
   "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
 };
 
-// Web Push utilities
-async function generateVapidAuth(endpoint: string, vapidPublicKey: string, vapidPrivateKey: string) {
-  const urlObj = new URL(endpoint);
-  const audience = `${urlObj.protocol}//${urlObj.host}`;
-
-  const header = { typ: "JWT", alg: "ES256" };
-  const now = Math.floor(Date.now() / 1000);
-  const payload = {
-    aud: audience,
-    exp: now + 12 * 3600,
-    sub: "mailto:push@lovable.app",
+async function sendPush(
+  subscription: { endpoint: string; p256dh: string; auth: string },
+  data: object,
+  vapid: VapidKeys,
+) {
+  const sub: WebPushSubscription = {
+    endpoint: subscription.endpoint,
+    expirationTime: null,
+    keys: { p256dh: subscription.p256dh, auth: subscription.auth },
   };
 
-  const enc = new TextEncoder();
-  const b64url = (buf: ArrayBuffer) => {
-    const bytes = new Uint8Array(buf);
-    let s = "";
-    for (const b of bytes) s += String.fromCharCode(b);
-    return btoa(s).replace(/\+/g, "-").replace(/\//g, "_").replace(/=+$/, "");
+  const message: PushMessage = {
+    data: JSON.stringify(data),
+    options: { ttl: 86400 },
   };
-  const b64urlStr = (s: string) => btoa(s).replace(/\+/g, "-").replace(/\//g, "_").replace(/=+$/, "");
 
-  const headerB64 = b64urlStr(JSON.stringify(header));
-  const payloadB64 = b64urlStr(JSON.stringify(payload));
-  const unsignedToken = `${headerB64}.${payloadB64}`;
+  const payload = await buildPushPayload(message, sub, vapid);
+  const res = await fetch(payload.endpoint, payload);
 
-  // Import VAPID private key
-  const rawKey = Uint8Array.from(atob(vapidPrivateKey.replace(/-/g, "+").replace(/_/g, "/")), c => c.charCodeAt(0));
-  const cryptoKey = await crypto.subtle.importKey(
-    "raw",
-    rawKey,
-    { name: "ECDSA", namedCurve: "P-256" },
-    false,
-    ["sign"]
-  );
-
-  const signature = await crypto.subtle.sign(
-    { name: "ECDSA", hash: "SHA-256" },
-    cryptoKey,
-    enc.encode(unsignedToken)
-  );
-
-  // Convert DER signature to raw r||s format
-  const sigBytes = new Uint8Array(signature);
-  let r: Uint8Array, s: Uint8Array;
-  if (sigBytes.length === 64) {
-    r = sigBytes.slice(0, 32);
-    s = sigBytes.slice(32, 64);
-  } else {
-    // DER format
-    const rLen = sigBytes[3];
-    const rStart = 4;
-    r = sigBytes.slice(rStart, rStart + rLen);
-    const sLen = sigBytes[rStart + rLen + 1];
-    const sStart = rStart + rLen + 2;
-    s = sigBytes.slice(sStart, sStart + sLen);
-    // Pad/trim to 32 bytes
-    if (r.length > 32) r = r.slice(r.length - 32);
-    if (s.length > 32) s = s.slice(s.length - 32);
-    if (r.length < 32) { const p = new Uint8Array(32); p.set(r, 32 - r.length); r = p; }
-    if (s.length < 32) { const p = new Uint8Array(32); p.set(s, 32 - s.length); s = p; }
+  if (!res.ok) {
+    const text = await res.text();
+    throw new Error(`Push failed (${res.status}): ${text}`);
   }
-
-  const rawSig = new Uint8Array(64);
-  rawSig.set(r, 0);
-  rawSig.set(s, 32);
-
-  const jwt = `${unsignedToken}.${b64url(rawSig.buffer)}`;
-  return { jwt, vapidPublicKey };
+  return true;
 }
 
-async function sendPushNotification(
-  subscription: { endpoint: string; p256dh: string; auth: string },
-  payload: object,
-  vapidPublicKey: string,
-  vapidPrivateKey: string
+async function sendEventEmail(
+  email: string,
+  event: { title: string; start_time: string; category: string; description?: string },
 ) {
-  const { jwt } = await generateVapidAuth(subscription.endpoint, vapidPublicKey, vapidPrivateKey);
+  if (!RESEND_API_KEY) return;
 
-  const response = await fetch(subscription.endpoint, {
+  const startTime = new Date(event.start_time);
+  const timeStr = startTime.toLocaleTimeString("he-IL", { hour: "2-digit", minute: "2-digit" });
+
+  const html = `
+    <div dir="rtl" style="font-family: Arial, sans-serif; max-width: 500px; margin: 0 auto;">
+      <div style="background: #eff6ff; border-right: 4px solid #3b82f6; padding: 16px; border-radius: 8px;">
+        <h2 style="color: #2563eb; margin: 0 0 8px;">⏰ תזכורת: ${event.title}</h2>
+        <p style="margin: 4px 0;">🕐 מתחיל ב-<strong>${timeStr}</strong></p>
+        <p style="margin: 4px 0;">📂 ${event.category}</p>
+        ${event.description ? `<p style="margin: 4px 0; color: #666;">${event.description}</p>` : ""}
+      </div>
+      <p style="color: #999; font-size: 11px; margin-top: 12px;">תזכורת אוטומטית ממתכנן הלו״ז שלך</p>
+    </div>`;
+
+  await fetch("https://api.resend.com/emails", {
     method: "POST",
     headers: {
       "Content-Type": "application/json",
-      "TTL": "86400",
-      "Authorization": `vapid t=${jwt}, k=${vapidPublicKey}`,
-      "Content-Encoding": "aes128gcm",
+      Authorization: `Bearer ${RESEND_API_KEY}`,
     },
-    body: JSON.stringify(payload),
+    body: JSON.stringify({
+      from: "Task Reminder <onboarding@resend.dev>",
+      to: [email],
+      subject: `⏰ בעוד 5 דקות: ${event.title}`,
+      html,
+    }),
   });
-
-  if (!response.ok) {
-    const text = await response.text();
-    throw new Error(`Push failed (${response.status}): ${text}`);
-  }
-  return true;
 }
 
 serve(async (req: Request): Promise<Response> => {
@@ -115,6 +87,12 @@ serve(async (req: Request): Promise<Response> => {
     const vapidPrivateKey = Deno.env.get("VAPID_PRIVATE_KEY")!;
     const supabase = createClient(supabaseUrl, supabaseServiceKey);
 
+    const vapid: VapidKeys = {
+      subject: "mailto:push@lovable.app",
+      publicKey: vapidPublicKey,
+      privateKey: vapidPrivateKey,
+    };
+
     const today = new Date();
     const todayStr = today.toISOString().split("T")[0];
     const tomorrowDate = new Date(today);
@@ -122,7 +100,7 @@ serve(async (req: Request): Promise<Response> => {
     const tomorrowStr = tomorrowDate.toISOString().split("T")[0];
     const hour = today.getUTCHours() + 3; // Israel timezone offset
 
-    console.log(`Push notifications check: ${todayStr}, hour=${hour}`);
+    console.log(`Push check: ${todayStr}, hour=${hour}`);
 
     // Get all push subscriptions
     const { data: subscriptions, error: subError } = await supabase
@@ -132,18 +110,56 @@ serve(async (req: Request): Promise<Response> => {
     if (subError || !subscriptions?.length) {
       return new Response(
         JSON.stringify({ message: "No push subscriptions", sent: 0 }),
-        { status: 200, headers: { "Content-Type": "application/json", ...corsHeaders } }
+        { status: 200, headers: { "Content-Type": "application/json", ...corsHeaders } },
       );
     }
 
     let totalSent = 0;
-    const userIds = [...new Set(subscriptions.map((s) => s.user_id))];
+    const userIds = [...new Set(subscriptions.map((s: any) => s.user_id))];
 
     for (const userId of userIds) {
-      const userSubs = subscriptions.filter((s) => s.user_id === userId);
+      const userSubs = subscriptions.filter((s: any) => s.user_id === userId);
       const notifications: { title: string; body: string; tag: string; url?: string }[] = [];
 
-      // Morning summary (7-8 AM Israel time)
+      // Get user email for email notifications
+      let userEmail: string | null = null;
+      try {
+        const { data: userData } = await supabase.auth.admin.getUserById(userId);
+        userEmail = userData?.user?.email || null;
+      } catch (_e) { /* ignore */ }
+
+      // ===== 5-minute event reminders =====
+      const fiveMinLater = new Date(today.getTime() + 5 * 60 * 1000);
+      const tenMinLater = new Date(today.getTime() + 10 * 60 * 1000);
+      const { data: soonEvents } = await supabase
+        .from("calendar_events")
+        .select("*")
+        .eq("user_id", userId)
+        .gte("start_time", fiveMinLater.toISOString())
+        .lte("start_time", tenMinLater.toISOString());
+
+      for (const event of soonEvents || []) {
+        const startTime = new Date(event.start_time);
+        const timeStr = startTime.toLocaleTimeString("he-IL", { hour: "2-digit", minute: "2-digit" });
+        notifications.push({
+          title: `⏰ בעוד 5 דקות: ${event.title}`,
+          body: `מתחיל ב-${timeStr} | ${event.category}`,
+          tag: `event-soon-${event.id}`,
+          url: "/personal",
+        });
+
+        // Also send email reminder
+        if (userEmail) {
+          try {
+            await sendEventEmail(userEmail, event);
+            console.log(`Event email sent to ${userEmail}: ${event.title}`);
+          } catch (e) {
+            console.error("Event email error:", e);
+          }
+        }
+      }
+
+      // ===== Morning summary (7-8 AM Israel time) =====
       if (hour >= 7 && hour < 8) {
         const { data: tasks } = await supabase
           .from("tasks")
@@ -151,11 +167,10 @@ serve(async (req: Request): Promise<Response> => {
           .eq("user_id", userId)
           .neq("status", "בוצע");
 
-        const dueToday = (tasks || []).filter((t) => t.planned_end === todayStr);
-        const overdue = (tasks || []).filter((t) => t.planned_end && t.planned_end < todayStr);
-        const urgent = (tasks || []).filter((t) => t.urgent);
+        const dueToday = (tasks || []).filter((t: any) => t.planned_end === todayStr);
+        const overdue = (tasks || []).filter((t: any) => t.planned_end && t.planned_end < todayStr);
+        const urgent = (tasks || []).filter((t: any) => t.urgent);
 
-        // Recurring tasks
         const dayOfWeek = today.getDay();
         const dayOfMonth = today.getDate();
         const { data: recurring } = await supabase.from("recurring_tasks").select("*").eq("user_id", userId);
@@ -164,8 +179,8 @@ serve(async (req: Request): Promise<Response> => {
           .select("recurring_task_id")
           .eq("user_id", userId)
           .eq("completed_date", todayStr);
-        const completedIds = new Set((completions || []).map((c) => c.recurring_task_id));
-        const recurringDue = (recurring || []).filter((t) => {
+        const completedIds = new Set((completions || []).map((c: any) => c.recurring_task_id));
+        const recurringDue = (recurring || []).filter((t: any) => {
           if (completedIds.has(t.id)) return false;
           if (t.frequency === "daily") return true;
           if (t.frequency === "weekly") return t.day_of_week === dayOfWeek;
@@ -189,28 +204,7 @@ serve(async (req: Request): Promise<Response> => {
         }
       }
 
-      // Event reminders - check events starting in the next hour
-      const nowISO = today.toISOString();
-      const oneHourLater = new Date(today.getTime() + 60 * 60 * 1000).toISOString();
-      const { data: upcomingEvents } = await supabase
-        .from("calendar_events")
-        .select("*")
-        .eq("user_id", userId)
-        .gte("start_time", nowISO)
-        .lte("start_time", oneHourLater);
-
-      for (const event of upcomingEvents || []) {
-        const startTime = new Date(event.start_time);
-        const timeStr = startTime.toLocaleTimeString("he-IL", { hour: "2-digit", minute: "2-digit" });
-        notifications.push({
-          title: `⏰ ${event.title}`,
-          body: `מתחיל ב-${timeStr} | ${event.category}`,
-          tag: `event-${event.id}`,
-          url: "/personal",
-        });
-      }
-
-      // Deadline reminders (check tasks due tomorrow, sent at noon)
+      // ===== Deadline reminders (noon) =====
       if (hour >= 12 && hour < 13) {
         const { data: tomorrowTasks } = await supabase
           .from("tasks")
@@ -222,27 +216,25 @@ serve(async (req: Request): Promise<Response> => {
         if (tomorrowTasks?.length) {
           notifications.push({
             title: `📆 ${tomorrowTasks.length} משימות מגיעות מחר`,
-            body: tomorrowTasks.slice(0, 3).map((t) => t.description).join(", "),
+            body: tomorrowTasks.slice(0, 3).map((t: any) => t.description).join(", "),
             tag: "deadline-reminder",
             url: "/personal",
           });
         }
       }
 
-      // Send notifications
+      // Send push notifications
       for (const notif of notifications) {
         for (const sub of userSubs) {
           try {
-            await sendPushNotification(
+            await sendPush(
               { endpoint: sub.endpoint, p256dh: sub.p256dh, auth: sub.auth },
               { ...notif, icon: "/app-icon.png" },
-              vapidPublicKey,
-              vapidPrivateKey
+              vapid,
             );
             totalSent++;
-          } catch (e) {
-            console.error(`Failed to push to ${sub.endpoint}:`, e);
-            // Clean up invalid subscriptions
+          } catch (e: any) {
+            console.error(`Push failed to ${sub.endpoint}:`, e.message);
             if (e.message?.includes("410") || e.message?.includes("404")) {
               await supabase.from("push_subscriptions").delete().eq("id", sub.id);
             }
@@ -253,13 +245,13 @@ serve(async (req: Request): Promise<Response> => {
 
     return new Response(
       JSON.stringify({ message: `Sent ${totalSent} push notifications`, sent: totalSent }),
-      { status: 200, headers: { "Content-Type": "application/json", ...corsHeaders } }
+      { status: 200, headers: { "Content-Type": "application/json", ...corsHeaders } },
     );
   } catch (error: any) {
     console.error("Push notification error:", error);
     return new Response(
       JSON.stringify({ error: error.message }),
-      { status: 500, headers: { "Content-Type": "application/json", ...corsHeaders } }
+      { status: 500, headers: { "Content-Type": "application/json", ...corsHeaders } },
     );
   }
 });

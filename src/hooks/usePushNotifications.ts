@@ -35,9 +35,9 @@ export function usePushNotifications() {
 
   const checkSubscription = useCallback(async () => {
     try {
-      const registration = await navigator.serviceWorker.getRegistration("/sw-push.js");
-      if (registration) {
-        const subscription = await (registration as any).pushManager?.getSubscription();
+      const registration = await navigator.serviceWorker.getRegistration();
+      if (registration && (registration as any).pushManager) {
+        const subscription = await (registration as any).pushManager.getSubscription();
         setIsSubscribed(!!subscription);
       }
     } catch (e) {
@@ -57,22 +57,36 @@ export function usePushNotifications() {
         return false;
       }
 
-      const registration = await navigator.serviceWorker.register("/sw-push.js");
+      // Register service worker if not already registered
+      let registration = await navigator.serviceWorker.getRegistration();
+      if (!registration) {
+        registration = await navigator.serviceWorker.register("/sw-push.js");
+      }
       await navigator.serviceWorker.ready;
 
-      const subscription = await (registration as any).pushManager.subscribe({
+      const pm = (registration as any).pushManager;
+      if (!pm) {
+        toast.error("הדפדפן לא תומך בהתראות Push");
+        return false;
+      }
+
+      const subscription = await pm.subscribe({
         userVisibleOnly: true,
         applicationServerKey: urlBase64ToUint8Array(VAPID_PUBLIC_KEY),
       });
 
       const subJson = subscription.toJSON();
 
+      if (!subJson.endpoint || !subJson.keys?.p256dh || !subJson.keys?.auth) {
+        throw new Error("Missing subscription keys");
+      }
+
       const { error } = await supabase.from("push_subscriptions").upsert(
         {
           user_id: user.id,
-          endpoint: subJson.endpoint!,
-          p256dh: subJson.keys!.p256dh,
-          auth: subJson.keys!.auth,
+          endpoint: subJson.endpoint,
+          p256dh: subJson.keys.p256dh,
+          auth: subJson.keys.auth,
         },
         { onConflict: "endpoint" }
       );
@@ -80,11 +94,11 @@ export function usePushNotifications() {
       if (error) throw error;
 
       setIsSubscribed(true);
-      toast.success("התראות push הופעלו בהצלחה!");
+      toast.success("התראות push הופעלו! תקבל תזכורות 5 דקות לפני כל אירוע");
       return true;
     } catch (e: any) {
-      console.error("Error subscribing to push:", e);
-      toast.error("שגיאה בהפעלת התראות");
+      console.error("Push subscription error:", e);
+      toast.error(`שגיאה בהפעלת התראות: ${e.message || "נסה שוב"}`);
       return false;
     }
   }, [user, isSupported]);
@@ -93,9 +107,9 @@ export function usePushNotifications() {
     if (!user) return;
 
     try {
-      const registration = await navigator.serviceWorker.getRegistration("/sw-push.js");
-      if (registration) {
-        const subscription = await (registration as any).pushManager?.getSubscription();
+      const registration = await navigator.serviceWorker.getRegistration();
+      if (registration && (registration as any).pushManager) {
+        const subscription = await (registration as any).pushManager.getSubscription();
         if (subscription) {
           await subscription.unsubscribe();
           await supabase
