@@ -16,6 +16,17 @@ function urlBase64ToUint8Array(base64String: string) {
   return outputArray;
 }
 
+async function getOrRegisterSW(): Promise<ServiceWorkerRegistration> {
+  // Check for existing registration first
+  const existing = await navigator.serviceWorker.getRegistration("/");
+  if (existing) return existing;
+
+  // Register our push SW as fallback
+  const reg = await navigator.serviceWorker.register("/sw-push.js", { scope: "/" });
+  await reg.update();
+  return reg;
+}
+
 export function usePushNotifications() {
   const { user } = useAuth();
   const [isSubscribed, setIsSubscribed] = useState(false);
@@ -35,7 +46,7 @@ export function usePushNotifications() {
 
   const checkSubscription = useCallback(async () => {
     try {
-      const registration = await navigator.serviceWorker.ready;
+      const registration = await getOrRegisterSW();
       const subscription = await (registration as any).pushManager?.getSubscription();
       setIsSubscribed(!!subscription);
     } catch (e) {
@@ -55,8 +66,7 @@ export function usePushNotifications() {
         return false;
       }
 
-      // Use the existing PWA service worker
-      const registration = await navigator.serviceWorker.ready;
+      const registration = await getOrRegisterSW();
 
       const pm = (registration as any).pushManager;
       if (!pm) {
@@ -101,7 +111,7 @@ export function usePushNotifications() {
     if (!user) return;
 
     try {
-      const registration = await navigator.serviceWorker.ready;
+      const registration = await getOrRegisterSW();
       const subscription = await (registration as any).pushManager?.getSubscription();
       if (subscription) {
         await subscription.unsubscribe();
