@@ -35,11 +35,9 @@ export function usePushNotifications() {
 
   const checkSubscription = useCallback(async () => {
     try {
-      const registration = await navigator.serviceWorker.getRegistration();
-      if (registration && (registration as any).pushManager) {
-        const subscription = await (registration as any).pushManager.getSubscription();
-        setIsSubscribed(!!subscription);
-      }
+      const registration = await navigator.serviceWorker.ready;
+      const subscription = await (registration as any).pushManager?.getSubscription();
+      setIsSubscribed(!!subscription);
     } catch (e) {
       console.error("Error checking push subscription:", e);
     } finally {
@@ -57,12 +55,8 @@ export function usePushNotifications() {
         return false;
       }
 
-      // Register service worker if not already registered
-      let registration = await navigator.serviceWorker.getRegistration();
-      if (!registration) {
-        registration = await navigator.serviceWorker.register("/sw-push.js");
-      }
-      await navigator.serviceWorker.ready;
+      // Use the existing PWA service worker
+      const registration = await navigator.serviceWorker.ready;
 
       const pm = (registration as any).pushManager;
       if (!pm) {
@@ -107,17 +101,15 @@ export function usePushNotifications() {
     if (!user) return;
 
     try {
-      const registration = await navigator.serviceWorker.getRegistration();
-      if (registration && (registration as any).pushManager) {
-        const subscription = await (registration as any).pushManager.getSubscription();
-        if (subscription) {
-          await subscription.unsubscribe();
-          await supabase
-            .from("push_subscriptions")
-            .delete()
-            .eq("endpoint", subscription.endpoint)
-            .eq("user_id", user.id);
-        }
+      const registration = await navigator.serviceWorker.ready;
+      const subscription = await (registration as any).pushManager?.getSubscription();
+      if (subscription) {
+        await subscription.unsubscribe();
+        await supabase
+          .from("push_subscriptions")
+          .delete()
+          .eq("endpoint", subscription.endpoint)
+          .eq("user_id", user.id);
       }
       setIsSubscribed(false);
       toast.success("התראות push כובו");
