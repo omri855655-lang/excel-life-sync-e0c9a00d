@@ -66,7 +66,27 @@ export function usePushNotifications() {
         return false;
       }
 
-      const registration = await getOrRegisterSW();
+      let registration: ServiceWorkerRegistration;
+      try {
+        registration = await getOrRegisterSW();
+      } catch (swErr: any) {
+        console.error("SW registration error:", swErr);
+        toast.error("שגיאה ברישום Service Worker - נסה לפרסם ולבדוק מהאפליקציה המותקנת");
+        return false;
+      }
+
+      // Wait for SW to be active
+      if (registration.installing || registration.waiting) {
+        await new Promise<void>((resolve) => {
+          const sw = registration.installing || registration.waiting;
+          if (!sw) { resolve(); return; }
+          sw.addEventListener("statechange", () => {
+            if (sw.state === "activated") resolve();
+          });
+          // Timeout after 5s
+          setTimeout(resolve, 5000);
+        });
+      }
 
       const pm = (registration as any).pushManager;
       if (!pm) {
@@ -74,10 +94,21 @@ export function usePushNotifications() {
         return false;
       }
 
-      const subscription = await pm.subscribe({
-        userVisibleOnly: true,
-        applicationServerKey: urlBase64ToUint8Array(VAPID_PUBLIC_KEY),
-      });
+      let subscription;
+      try {
+        subscription = await pm.subscribe({
+          userVisibleOnly: true,
+          applicationServerKey: urlBase64ToUint8Array(VAPID_PUBLIC_KEY),
+        });
+      } catch (pushErr: any) {
+        console.error("PushManager.subscribe error:", pushErr);
+        if (pushErr.message?.includes("push service")) {
+          toast.error("שגיאת push service - נסה מהאפליקציה המותקנת או מ-Chrome בלבד");
+        } else {
+          toast.error(`שגיאה בהרשמה: ${pushErr.message}`);
+        }
+        return false;
+      }
 
       const subJson = subscription.toJSON();
 
