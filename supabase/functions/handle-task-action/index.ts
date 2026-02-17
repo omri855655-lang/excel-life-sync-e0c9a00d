@@ -67,7 +67,49 @@ serve(async (req: Request): Promise<Response> => {
       );
     }
 
-    // Map status values
+    // Handle recurring tasks vs regular tasks
+    const isRecurring = token.source_type === "recurring_task";
+
+    if (isRecurring) {
+      // For recurring tasks, "סיימתי" means insert a completion for today
+      const todayStr = new Date().toISOString().split("T")[0];
+      
+      if (status === "בוצע" || status === "complete" || !status || status === "בוצע") {
+        const { error: completionError } = await supabase
+          .from("recurring_task_completions")
+          .insert({
+            recurring_task_id: token.task_id,
+            user_id: token.user_id,
+            completed_date: todayStr,
+          });
+
+        if (completionError) {
+          // Might be duplicate - that's ok
+          if (!completionError.message?.includes("duplicate")) {
+            console.error("Error completing recurring task:", completionError);
+            return new Response(htmlPage("❌ שגיאה", "לא הצלחנו לעדכן את המשימה"), {
+              status: 500, headers: htmlHeaders,
+            });
+          }
+        }
+      }
+
+      await supabase.from("action_tokens").update({ used: true }).eq("id", tokenId);
+
+      const { data: recurringTask } = await supabase
+        .from("recurring_tasks")
+        .select("title")
+        .eq("id", token.task_id)
+        .single();
+
+      const taskName = recurringTask?.title || "המשימה";
+      return new Response(
+        htmlPage("✅ סומן כבוצע!", `"${taskName}" סומנה כבוצעת להיום. כל הכבוד!`),
+        { status: 200, headers: htmlHeaders },
+      );
+    }
+
+    // Regular task flow
     const statusMap: Record<string, string> = {
       "בוצע": "בוצע",
       "complete": "בוצע",
@@ -78,7 +120,6 @@ serve(async (req: Request): Promise<Response> => {
     };
     const finalStatus = statusMap[status] || status;
 
-    // Update task status
     const { error: updateError } = await supabase
       .from("tasks")
       .update({ status: finalStatus })
@@ -88,15 +129,12 @@ serve(async (req: Request): Promise<Response> => {
     if (updateError) {
       console.error("Error updating task:", updateError);
       return new Response(htmlPage("❌ שגיאה", "לא הצלחנו לעדכן את המשימה"), {
-        status: 500,
-        headers: htmlHeaders,
+        status: 500, headers: htmlHeaders,
       });
     }
 
-    // Mark token as used
     await supabase.from("action_tokens").update({ used: true }).eq("id", tokenId);
 
-    // Get task details for display
     const { data: task } = await supabase
       .from("tasks")
       .select("description")

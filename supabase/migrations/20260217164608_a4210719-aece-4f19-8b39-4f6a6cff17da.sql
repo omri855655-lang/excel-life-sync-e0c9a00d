@@ -1,0 +1,1 @@
+ALTER TABLE public.action_tokens ADD COLUMN source_type text DEFAULT 'task';
