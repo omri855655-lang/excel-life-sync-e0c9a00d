@@ -72,6 +72,15 @@ const PersonalPlanner = () => {
 
   const gridRef = useRef<HTMLDivElement>(null);
 
+  // Touch drag state for mobile
+  const touchDragRef = useRef<{
+    task: AggregatedTask;
+    ghostEl: HTMLDivElement | null;
+    lastSlotEl: HTMLElement | null;
+  } | null>(null);
+
+  
+
   // Fetch project tasks
   useEffect(() => {
     if (!user) return;
@@ -335,7 +344,91 @@ const PersonalPlanner = () => {
     setDraggingEvent(null);
   };
 
-  // --- Resize handlers ---
+  // --- Touch drag handlers for mobile (iOS) ---
+  const handleTouchStart = (e: React.TouchEvent, task: AggregatedTask) => {
+    const touch = e.touches[0];
+    const ghost = document.createElement("div");
+    ghost.className = "fixed z-[9999] pointer-events-none bg-primary/80 text-primary-foreground text-xs rounded-lg px-3 py-2 shadow-lg max-w-[200px] truncate";
+    ghost.textContent = task.title || "(ללא כותרת)";
+    ghost.style.left = `${touch.clientX - 50}px`;
+    ghost.style.top = `${touch.clientY - 30}px`;
+    document.body.appendChild(ghost);
+    touchDragRef.current = { task, ghostEl: ghost, lastSlotEl: null };
+    setDraggedTask(task);
+  };
+
+  const handleTouchMove = useCallback((e: React.TouchEvent) => {
+    if (!touchDragRef.current) return;
+    e.preventDefault();
+    const touch = e.touches[0];
+    const ghost = touchDragRef.current.ghostEl;
+    if (ghost) {
+      ghost.style.left = `${touch.clientX - 50}px`;
+      ghost.style.top = `${touch.clientY - 30}px`;
+    }
+
+    if (ghost) ghost.style.display = "none";
+    const elementBelow = document.elementFromPoint(touch.clientX, touch.clientY);
+    if (ghost) ghost.style.display = "";
+
+    const slotEl = elementBelow?.closest("[data-slot-day]") as HTMLElement | null;
+    if (slotEl) {
+      if (touchDragRef.current.lastSlotEl && touchDragRef.current.lastSlotEl !== slotEl) {
+        touchDragRef.current.lastSlotEl.classList.remove("bg-primary/10");
+      }
+      slotEl.classList.add("bg-primary/10");
+      touchDragRef.current.lastSlotEl = slotEl;
+
+      const dayStr = slotEl.getAttribute("data-slot-day");
+      const slotHour = parseInt(slotEl.getAttribute("data-slot-hour") || "0");
+      if (dayStr) {
+        const day = new Date(dayStr);
+        const rect = slotEl.getBoundingClientRect();
+        const yInSlot = touch.clientY - rect.top;
+        const minute = snapMinutes((yInSlot / HOUR_HEIGHT) * 60);
+        const currentMinute = Math.min(45, minute);
+
+        setDragCreateState((prev) => {
+          if (!prev) {
+            return {
+              day,
+              startHour: slotHour,
+              startMinute: currentMinute,
+              currentHour: slotHour,
+              currentMinute,
+            };
+          }
+          return { ...prev, currentHour: slotHour, currentMinute };
+        });
+      }
+    }
+  }, [snapMinutes]);
+
+  const handleTouchEnd = useCallback((e: React.TouchEvent) => {
+    if (!touchDragRef.current) return;
+    const ref = touchDragRef.current;
+    if (ref.ghostEl) ref.ghostEl.remove();
+    if (ref.lastSlotEl) ref.lastSlotEl.classList.remove("bg-primary/10");
+
+    const touch = e.changedTouches[0];
+    const elementBelow = document.elementFromPoint(touch.clientX, touch.clientY);
+    const slotEl = elementBelow?.closest("[data-slot-day]") as HTMLElement | null;
+
+    if (slotEl) {
+      const dayStr = slotEl.getAttribute("data-slot-day");
+      const slotHour = parseInt(slotEl.getAttribute("data-slot-hour") || "0");
+      if (dayStr) {
+        const day = new Date(dayStr);
+        handleDrop(day, slotHour);
+      }
+    }
+
+    touchDragRef.current = null;
+    setDraggedTask(null);
+    setDragCreateState(null);
+  }, [handleDrop]);
+
+
   const handleResizeStart = (e: React.MouseEvent, event: CalendarEvent) => {
     e.stopPropagation();
     e.preventDefault();
@@ -615,6 +708,8 @@ const PersonalPlanner = () => {
                     key={h}
                     className="border-b border-border/50 relative group hover:bg-muted/30 transition-colors"
                     style={{ height: HOUR_HEIGHT }}
+                    data-slot-day={day.toISOString()}
+                    data-slot-hour={h}
                     onDragOver={(e) => handleSlotDragOver(e, day, h)}
                     onDrop={(e) => handleDrop(day, h, e)}
                     onDragLeave={() => {}}
@@ -860,6 +955,9 @@ const PersonalPlanner = () => {
                 draggable
                 onDragStart={() => handleDragStart(task)}
                 onDragEnd={handleDragEnd}
+                onTouchStart={(e) => handleTouchStart(e, task)}
+                onTouchMove={(e) => handleTouchMove(e)}
+                onTouchEnd={(e) => handleTouchEnd(e)}
                 className={`p-2 rounded-lg border cursor-grab active:cursor-grabbing text-sm transition-colors hover:shadow-sm ${getSourceBg(task.source)} ${task.overdue ? "ring-1 ring-red-400" : ""}`}
               >
                 <div className="flex items-center gap-1 mb-1">
