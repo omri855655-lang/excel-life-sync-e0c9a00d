@@ -14,6 +14,36 @@ export type Database = {
   }
   public: {
     Tables: {
+      action_tokens: {
+        Row: {
+          action: string
+          created_at: string
+          expires_at: string
+          id: string
+          task_id: string
+          used: boolean
+          user_id: string
+        }
+        Insert: {
+          action?: string
+          created_at?: string
+          expires_at?: string
+          id?: string
+          task_id: string
+          used?: boolean
+          user_id: string
+        }
+        Update: {
+          action?: string
+          created_at?: string
+          expires_at?: string
+          id?: string
+          task_id?: string
+          used?: boolean
+          user_id?: string
+        }
+        Relationships: []
+      }
       books: {
         Row: {
           author: string | null
@@ -412,6 +442,36 @@ export type Database = {
           id?: string
           title?: string
           updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
+      sent_notifications: {
+        Row: {
+          channel: string
+          created_at: string
+          event_id: string | null
+          id: string
+          notification_type: string
+          task_id: string | null
+          user_id: string
+        }
+        Insert: {
+          channel?: string
+          created_at?: string
+          event_id?: string | null
+          id?: string
+          notification_type: string
+          task_id?: string | null
+          user_id: string
+        }
+        Update: {
+          channel?: string
+          created_at?: string
+          event_id?: string | null
+          id?: string
+          notification_type?: string
+          task_id?: string | null
           user_id?: string
         }
         Relationships: []
