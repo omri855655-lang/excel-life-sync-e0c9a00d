@@ -29,7 +29,13 @@ async function sendPush(
     options: { ttl: 86400 },
   };
   const payload = await buildPushPayload(message, sub, vapid);
-  const res = await fetch(payload.endpoint, payload);
+  // buildPushPayload returns { endpoint, headers, body, method } but endpoint may be on the request
+  const targetUrl = payload.endpoint || subscription.endpoint;
+  const res = await fetch(targetUrl, {
+    method: payload.method || "POST",
+    headers: payload.headers,
+    body: payload.body,
+  });
   if (!res.ok) {
     const text = await res.text();
     throw new Error(`Push failed (${res.status}): ${text}`);
@@ -125,6 +131,34 @@ function buildEventEmailHtml(
     </div>`;
 }
 
+function buildCompletionEmailHtml(
+  event: { title: string; end_time: string; category: string },
+  completeUrl: string,
+  notDoneUrl: string,
+) {
+  const endTime = new Date(event.end_time);
+  const timeStr = endTime.toLocaleTimeString("he-IL", { hour: "2-digit", minute: "2-digit" });
+
+  return `
+    <div dir="rtl" style="font-family: Arial, sans-serif; max-width: 500px; margin: 0 auto;">
+      <div style="background: #f0fdf4; border-right: 4px solid #22c55e; padding: 16px; border-radius: 8px;">
+        <h2 style="color: #16a34a; margin: 0 0 8px;">🏁 הזמן של "${event.title}" הסתיים</h2>
+        <p style="margin: 4px 0;">🕐 היה אמור להסתיים ב-<strong>${timeStr}</strong></p>
+        <p style="margin: 4px 0;">📂 ${event.category}</p>
+        <p style="margin: 8px 0; font-weight: bold;">האם סיימת את המשימה?</p>
+      </div>
+      <div style="margin-top: 16px; text-align: center;">
+        <a href="${completeUrl}" style="display: inline-block; background: #22c55e; color: white; padding: 14px 32px; border-radius: 8px; text-decoration: none; font-weight: bold; margin: 0 8px;">
+          ✅ כן, סיימתי!
+        </a>
+        <a href="${notDoneUrl}" style="display: inline-block; background: #ef4444; color: white; padding: 14px 32px; border-radius: 8px; text-decoration: none; font-weight: bold; margin: 0 8px;">
+          ❌ לא, עוד לא
+        </a>
+      </div>
+      <p style="color: #999; font-size: 11px; margin-top: 12px;">עדכון אוטומטי ממתכנן הלו״ז שלך</p>
+    </div>`;
+}
+
 serve(async (req: Request): Promise<Response> => {
   if (req.method === "OPTIONS") {
     return new Response(null, { headers: corsHeaders });
@@ -152,16 +186,16 @@ serve(async (req: Request): Promise<Response> => {
 
     console.log(`Push check: ${todayStr}, hour=${hour}, now=${now.toISOString()}`);
 
-    // Reminder windows: 5min, 15min, 60min
+    // Reminder windows: 5min, 15min, 60min (wider to not miss events)
     const windows = [
-      { name: "event_5min", minMs: 4 * 60 * 1000, maxMs: 6 * 60 * 1000, label: "5 דקות" },
-      { name: "event_15min", minMs: 14 * 60 * 1000, maxMs: 16 * 60 * 1000, label: "15 דקות" },
-      { name: "event_1hour", minMs: 59 * 60 * 1000, maxMs: 61 * 60 * 1000, label: "שעה" },
+      { name: "event_5min", minMs: 2 * 60 * 1000, maxMs: 7 * 60 * 1000, label: "5 דקות" },
+      { name: "event_15min", minMs: 12 * 60 * 1000, maxMs: 18 * 60 * 1000, label: "15 דקות" },
+      { name: "event_1hour", minMs: 55 * 60 * 1000, maxMs: 65 * 60 * 1000, label: "שעה" },
     ];
 
     // Get all users with events in the next ~65 minutes
-    const maxFuture = new Date(now.getTime() + 62 * 60 * 1000);
-    const minFuture = new Date(now.getTime() + 3 * 60 * 1000);
+    const maxFuture = new Date(now.getTime() + 66 * 60 * 1000);
+    const minFuture = new Date(now.getTime() + 1 * 60 * 1000);
 
     const { data: upcomingEvents } = await supabase
       .from("calendar_events")
@@ -169,13 +203,25 @@ serve(async (req: Request): Promise<Response> => {
       .gte("start_time", minFuture.toISOString())
       .lte("start_time", maxFuture.toISOString());
 
+    // Get events that ended recently (0-7 min ago) for completion check
+    const recentlyEndedMax = new Date(now.getTime() - 0 * 60 * 1000);
+    const recentlyEndedMin = new Date(now.getTime() - 7 * 60 * 1000);
+    const { data: endedEvents } = await supabase
+      .from("calendar_events")
+      .select("*")
+      .gte("end_time", recentlyEndedMin.toISOString())
+      .lte("end_time", recentlyEndedMax.toISOString());
+
     // Get all push subscriptions
     const { data: subscriptions } = await supabase
       .from("push_subscriptions")
       .select("*");
 
     // Get all unique user IDs from events
-    const eventUserIds = [...new Set((upcomingEvents || []).map((e: any) => e.user_id))];
+    const eventUserIds = [...new Set([
+      ...(upcomingEvents || []).map((e: any) => e.user_id),
+      ...(endedEvents || []).map((e: any) => e.user_id),
+    ])];
     
     // Also include users with push subs for morning/deadline notifications
     const subUserIds = [...new Set((subscriptions || []).map((s: any) => s.user_id))];
@@ -329,6 +375,70 @@ serve(async (req: Request): Promise<Response> => {
               if (e.message?.includes("410") || e.message?.includes("404")) {
                 await supabase.from("push_subscriptions").delete().eq("id", sub.id);
               }
+            }
+          }
+        }
+      }
+
+      // ===== Post-event completion check (event just ended) =====
+      const userEndedEvents = (endedEvents || []).filter((e: any) => e.user_id === userId);
+      for (const event of userEndedEvents) {
+        // Only for events linked to a task
+        if (!event.source_id || !event.source_type) continue;
+        const isTask = event.source_type === "personal_task" || event.source_type === "work_task";
+        if (!isTask) continue;
+
+        const alreadySent = await wasAlreadySent(supabase, userId, event.id, "event_completion");
+        if (alreadySent) continue;
+
+        // Check if task is already completed
+        const { data: taskData } = await supabase
+          .from("tasks")
+          .select("id, description, status, task_type")
+          .eq("id", event.source_id)
+          .single();
+        
+        if (!taskData || taskData.status === "בוצע") continue;
+
+        // Create action token for "complete"
+        const { data: token } = await supabase.from("action_tokens").insert({
+          user_id: userId,
+          task_id: event.source_id,
+          action: "complete",
+        }).select("id").single();
+
+        if (token && userEmail) {
+          const completeUrl = `${supabaseUrl}/functions/v1/handle-task-action?token=${token.id}`;
+          const notDoneUrl = `${supabaseUrl}/functions/v1/handle-task-action?token=${token.id}&skip=true`;
+          const html = buildCompletionEmailHtml(event, completeUrl, notDoneUrl);
+          const subject = `🏁 סיימת את "${event.title}"? עדכן אותנו`;
+          const sent = await sendEmail(userEmail, subject, html);
+          if (sent) {
+            emailsSent++;
+            await markSent(supabase, userId, event.id, "event_completion", "email");
+            console.log(`Completion email sent: ${event.title} to ${userEmail}`);
+          }
+        }
+
+        // Also send push
+        for (const sub of userSubs) {
+          try {
+            await sendPush(
+              { endpoint: sub.endpoint, p256dh: sub.p256dh, auth: sub.auth },
+              {
+                title: `🏁 סיימת: ${event.title}?`,
+                body: `הזמן של המשימה הסתיים. לחץ לעדכון`,
+                tag: `completion-${event.id}`,
+                url: "/personal",
+                icon: "/app-icon.png",
+              },
+              vapid,
+            );
+            totalSent++;
+          } catch (e: any) {
+            console.error(`Push failed:`, e.message);
+            if (e.message?.includes("410") || e.message?.includes("404")) {
+              await supabase.from("push_subscriptions").delete().eq("id", sub.id);
             }
           }
         }

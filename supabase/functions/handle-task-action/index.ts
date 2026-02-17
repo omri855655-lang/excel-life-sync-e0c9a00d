@@ -14,6 +14,7 @@ serve(async (req: Request): Promise<Response> => {
   try {
     const url = new URL(req.url);
     const tokenId = url.searchParams.get("token");
+    const skip = url.searchParams.get("skip") === "true";
 
     if (!tokenId) {
       return new Response(htmlPage("❌ קישור לא תקין", "חסר טוקן"), {
@@ -52,6 +53,15 @@ serve(async (req: Request): Promise<Response> => {
         status: 410,
         headers: { "Content-Type": "text/html; charset=utf-8" },
       });
+    }
+
+    // If user says "not done", just mark token as used and show message
+    if (skip) {
+      await supabase.from("action_tokens").update({ used: true }).eq("id", tokenId);
+      return new Response(
+        htmlPage("👍 הבנו!", "המשימה תישאר פתוחה. המשך בהצלחה!"),
+        { status: 200, headers: { "Content-Type": "text/html; charset=utf-8" } },
+      );
     }
 
     // Mark task as completed
