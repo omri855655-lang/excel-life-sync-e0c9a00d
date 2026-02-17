@@ -20,6 +20,7 @@ export type Database = {
           created_at: string
           expires_at: string
           id: string
+          source_type: string | null
           task_id: string
           used: boolean
           user_id: string
@@ -29,6 +30,7 @@ export type Database = {
           created_at?: string
           expires_at?: string
           id?: string
+          source_type?: string | null
           task_id: string
           used?: boolean
           user_id: string
@@ -38,6 +40,7 @@ export type Database = {
           created_at?: string
           expires_at?: string
           id?: string
+          source_type?: string | null
           task_id?: string
           used?: boolean
           user_id?: string

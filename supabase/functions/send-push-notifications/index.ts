@@ -263,12 +263,14 @@ serve(async (req: Request): Promise<Response> => {
             // Create action token for "mark as done" if event has source task
             let actionUrl: string | undefined;
             if (event.source_id && event.source_type) {
-              const tableName = event.source_type === "personal_task" || event.source_type === "work_task" ? "tasks" : null;
+              const isRecurringEvent = event.source_type === "recurring_task";
+              const tableName = isRecurringEvent || event.source_type === "personal_task" || event.source_type === "work_task" ? true : false;
               if (tableName) {
                 const { data: token } = await supabase.from("action_tokens").insert({
                   user_id: userId,
                   task_id: event.source_id,
                   action: "complete",
+                  source_type: isRecurringEvent ? "recurring_task" : "task",
                 }).select("id").single();
                 if (token) {
                   actionUrl = `${supabaseUrl}/functions/v1/handle-task-action?token=${token.id}`;
@@ -390,26 +392,38 @@ serve(async (req: Request): Promise<Response> => {
       for (const event of userEndedEvents) {
         // Only for events linked to a task
         if (!event.source_id || !event.source_type) continue;
-        const isTask = event.source_type === "personal_task" || event.source_type === "work_task";
-        if (!isTask) continue;
+      const isTask = event.source_type === "personal_task" || event.source_type === "work_task";
+      const isRecurring = event.source_type === "recurring_task";
+      if (!isTask && !isRecurring) continue;
 
         const alreadySent = await wasAlreadySent(supabase, userId, event.id, "event_completion");
         if (alreadySent) continue;
 
-        // Check if task is already completed
-        const { data: taskData } = await supabase
-          .from("tasks")
-          .select("id, description, status, task_type")
-          .eq("id", event.source_id)
-          .single();
-        
-        if (!taskData || taskData.status === "בוצע") continue;
+        // Check if task/recurring is already completed
+        if (isTask) {
+          const { data: taskData } = await supabase
+            .from("tasks")
+            .select("id, status")
+            .eq("id", event.source_id)
+            .single();
+          if (!taskData || taskData.status === "בוצע") continue;
+        } else if (isRecurring) {
+          const todayStr = now.toISOString().split("T")[0];
+          const { data: alreadyDone } = await supabase
+            .from("recurring_task_completions")
+            .select("id")
+            .eq("recurring_task_id", event.source_id)
+            .eq("completed_date", todayStr)
+            .limit(1);
+          if (alreadyDone && alreadyDone.length > 0) continue;
+        }
 
-        // Create action token for "complete"
+        // Create action token
         const { data: token } = await supabase.from("action_tokens").insert({
           user_id: userId,
           task_id: event.source_id,
           action: "complete",
+          source_type: isRecurring ? "recurring_task" : "task",
         }).select("id").single();
 
         if (token && userEmail) {
