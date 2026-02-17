@@ -102,8 +102,13 @@ export function usePushNotifications() {
         });
       } catch (pushErr: any) {
         console.error("PushManager.subscribe error:", pushErr);
-        if (pushErr.message?.includes("push service")) {
-          toast.error("שגיאת push service - נסה מהאפליקציה המותקנת או מ-Chrome בלבד");
+        const isBrave = !!(navigator as any).brave;
+        if (pushErr.message?.includes("push service") || pushErr.message?.includes("AbortError")) {
+          if (isBrave) {
+            toast.error("ב-Brave: ודא ש-Shields כבוי לאתר זה (לחץ על אייקון האריה בשורת הכתובת) ונסה שוב");
+          } else {
+            toast.error("שגיאת push service - נסה להתקין את האפליקציה (PWA) או להשתמש ב-Chrome/Brave/Edge");
+          }
         } else {
           toast.error(`שגיאה בהרשמה: ${pushErr.message}`);
         }
