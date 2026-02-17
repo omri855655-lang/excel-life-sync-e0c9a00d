@@ -133,11 +133,13 @@ function buildEventEmailHtml(
 
 function buildCompletionEmailHtml(
   event: { title: string; end_time: string; category: string },
-  completeUrl: string,
-  notDoneUrl: string,
+  baseUrl: string,
 ) {
   const endTime = new Date(event.end_time);
   const timeStr = endTime.toLocaleTimeString("he-IL", { hour: "2-digit", minute: "2-digit" });
+  const completeUrl = `${baseUrl}&status=בוצע`;
+  const inProgressUrl = `${baseUrl}&status=בטיפול`;
+  const notStartedUrl = `${baseUrl}&status=לא התחיל`;
 
   return `
     <div dir="rtl" style="font-family: Arial, sans-serif; max-width: 500px; margin: 0 auto;">
@@ -145,14 +147,17 @@ function buildCompletionEmailHtml(
         <h2 style="color: #16a34a; margin: 0 0 8px;">🏁 הזמן של "${event.title}" הסתיים</h2>
         <p style="margin: 4px 0;">🕐 היה אמור להסתיים ב-<strong>${timeStr}</strong></p>
         <p style="margin: 4px 0;">📂 ${event.category}</p>
-        <p style="margin: 8px 0; font-weight: bold;">האם סיימת את המשימה?</p>
+        <p style="margin: 8px 0; font-weight: bold;">מה הסטטוס של המשימה?</p>
       </div>
       <div style="margin-top: 16px; text-align: center;">
-        <a href="${completeUrl}" style="display: inline-block; background: #22c55e; color: white; padding: 14px 32px; border-radius: 8px; text-decoration: none; font-weight: bold; margin: 0 8px;">
-          ✅ כן, סיימתי!
+        <a href="${completeUrl}" style="display: inline-block; background: #22c55e; color: white; padding: 12px 24px; border-radius: 8px; text-decoration: none; font-weight: bold; margin: 6px;">
+          ✅ סיימתי
         </a>
-        <a href="${notDoneUrl}" style="display: inline-block; background: #ef4444; color: white; padding: 14px 32px; border-radius: 8px; text-decoration: none; font-weight: bold; margin: 0 8px;">
-          ❌ לא, עוד לא
+        <a href="${inProgressUrl}" style="display: inline-block; background: #f59e0b; color: white; padding: 12px 24px; border-radius: 8px; text-decoration: none; font-weight: bold; margin: 6px;">
+          🔄 בטיפול
+        </a>
+        <a href="${notStartedUrl}" style="display: inline-block; background: #ef4444; color: white; padding: 12px 24px; border-radius: 8px; text-decoration: none; font-weight: bold; margin: 6px;">
+          ⏸️ לא התחלתי
         </a>
       </div>
       <p style="color: #999; font-size: 11px; margin-top: 12px;">עדכון אוטומטי ממתכנן הלו״ז שלך</p>
@@ -408,9 +413,8 @@ serve(async (req: Request): Promise<Response> => {
         }).select("id").single();
 
         if (token && userEmail) {
-          const completeUrl = `${supabaseUrl}/functions/v1/handle-task-action?token=${token.id}`;
-          const notDoneUrl = `${supabaseUrl}/functions/v1/handle-task-action?token=${token.id}&skip=true`;
-          const html = buildCompletionEmailHtml(event, completeUrl, notDoneUrl);
+          const baseUrl = `${supabaseUrl}/functions/v1/handle-task-action?token=${token.id}`;
+          const html = buildCompletionEmailHtml(event, baseUrl);
           const subject = `🏁 סיימת את "${event.title}"? עדכן אותנו`;
           const sent = await sendEmail(userEmail, subject, html);
           if (sent) {

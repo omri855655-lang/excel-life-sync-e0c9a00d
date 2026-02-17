@@ -11,15 +11,18 @@ serve(async (req: Request): Promise<Response> => {
     return new Response(null, { headers: corsHeaders });
   }
 
+  const htmlHeaders = { ...corsHeaders, "Content-Type": "text/html; charset=utf-8" };
+
   try {
     const url = new URL(req.url);
     const tokenId = url.searchParams.get("token");
+    const status = url.searchParams.get("status") || "בוצע";
     const skip = url.searchParams.get("skip") === "true";
 
     if (!tokenId) {
       return new Response(htmlPage("❌ קישור לא תקין", "חסר טוקן"), {
         status: 400,
-        headers: { "Content-Type": "text/html; charset=utf-8" },
+        headers: htmlHeaders,
       });
     }
 
@@ -37,37 +40,48 @@ serve(async (req: Request): Promise<Response> => {
     if (tokenError || !token) {
       return new Response(htmlPage("❌ קישור לא תקין", "הקישור לא נמצא או שפג תוקפו"), {
         status: 404,
-        headers: { "Content-Type": "text/html; charset=utf-8" },
+        headers: htmlHeaders,
       });
     }
 
     if (token.used) {
-      return new Response(htmlPage("✅ כבר בוצע", "המשימה כבר סומנה כבוצעה"), {
+      return new Response(htmlPage("✅ כבר בוצע", "המשימה כבר עודכנה"), {
         status: 200,
-        headers: { "Content-Type": "text/html; charset=utf-8" },
+        headers: htmlHeaders,
       });
     }
 
     if (new Date(token.expires_at) < new Date()) {
       return new Response(htmlPage("⏰ פג תוקף", "תוקף הקישור פג. עדכן את המשימה ישירות באפליקציה"), {
         status: 410,
-        headers: { "Content-Type": "text/html; charset=utf-8" },
+        headers: htmlHeaders,
       });
     }
 
-    // If user says "not done", just mark token as used and show message
+    // If user says "not done" (skip), just mark token as used
     if (skip) {
       await supabase.from("action_tokens").update({ used: true }).eq("id", tokenId);
       return new Response(
         htmlPage("👍 הבנו!", "המשימה תישאר פתוחה. המשך בהצלחה!"),
-        { status: 200, headers: { "Content-Type": "text/html; charset=utf-8" } },
+        { status: 200, headers: htmlHeaders },
       );
     }
 
-    // Mark task as completed
+    // Map status values
+    const statusMap: Record<string, string> = {
+      "בוצע": "בוצע",
+      "complete": "בוצע",
+      "לא התחיל": "לא התחיל",
+      "not_started": "לא התחיל",
+      "בטיפול": "בטיפול",
+      "in_progress": "בטיפול",
+    };
+    const finalStatus = statusMap[status] || status;
+
+    // Update task status
     const { error: updateError } = await supabase
       .from("tasks")
-      .update({ status: "בוצע" })
+      .update({ status: finalStatus })
       .eq("id", token.task_id)
       .eq("user_id", token.user_id);
 
@@ -75,7 +89,7 @@ serve(async (req: Request): Promise<Response> => {
       console.error("Error updating task:", updateError);
       return new Response(htmlPage("❌ שגיאה", "לא הצלחנו לעדכן את המשימה"), {
         status: 500,
-        headers: { "Content-Type": "text/html; charset=utf-8" },
+        headers: htmlHeaders,
       });
     }
 
@@ -91,15 +105,22 @@ serve(async (req: Request): Promise<Response> => {
 
     const taskName = task?.description || "המשימה";
 
+    const statusEmoji: Record<string, string> = {
+      "בוצע": "✅",
+      "לא התחיל": "⏸️",
+      "בטיפול": "🔄",
+    };
+    const emoji = statusEmoji[finalStatus] || "✅";
+
     return new Response(
-      htmlPage("✅ המשימה הושלמה!", `"${taskName}" סומנה כבוצעה בהצלחה. הדשבורד עודכן.`),
-      { status: 200, headers: { "Content-Type": "text/html; charset=utf-8" } },
+      htmlPage(`${emoji} המשימה עודכנה!`, `"${taskName}" עודכנה לסטטוס: ${finalStatus}. הדשבורד עודכן.`),
+      { status: 200, headers: htmlHeaders },
     );
   } catch (error: any) {
     console.error("Action error:", error);
     return new Response(htmlPage("❌ שגיאה", error.message), {
       status: 500,
-      headers: { "Content-Type": "text/html; charset=utf-8" },
+      headers: htmlHeaders,
     });
   }
 });
