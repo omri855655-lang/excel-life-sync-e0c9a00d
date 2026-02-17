@@ -1,6 +1,6 @@
 import { useState, useCallback, useMemo, useEffect } from "react";
 import { Button } from "@/components/ui/button";
-import { Plus, Trash2, Download, Check, Clock, AlertCircle, Loader2, Sparkles, ArrowUpDown, Flame, MoveRight, Archive, ArchiveRestore } from "lucide-react";
+import { Plus, Trash2, Download, Check, Clock, AlertCircle, Loader2, Sparkles, ArrowUpDown, Flame, MoveRight, Archive, ArchiveRestore, Brain } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useTasks, Task } from "@/hooks/useTasks";
 import { useAuth } from "@/hooks/useAuth";
@@ -23,6 +23,7 @@ import {
 } from "@/components/ui/dialog";
 import YearSelector from "@/components/YearSelector";
 import TaskTabs from "@/components/TaskTabs";
+import MentalDifficultyHelper from "@/components/MentalDifficultyHelper";
 
 interface TaskSpreadsheetDbProps {
   title: string;
@@ -72,6 +73,8 @@ const TaskSpreadsheetDb = ({ title, taskType, readOnly = false, showYearSelector
   const [taskToMove, setTaskToMove] = useState<Task | null>(null);
   const [targetSheet, setTargetSheet] = useState<string>(currentYear);
   const [activeTaskTab, setActiveTaskTab] = useState<string>("active");
+  const [mentalDialogOpen, setMentalDialogOpen] = useState(false);
+  const [mentalTask, setMentalTask] = useState<Task | null>(null);
 
   // Fetch available sheets from the task_sheets table (persisted)
   const fetchAvailableSheets = useCallback(async () => {
@@ -875,6 +878,19 @@ const TaskSpreadsheetDb = ({ title, taskType, readOnly = false, showYearSelector
                           <Sparkles className="h-3.5 w-3.5" />
                           <span className="text-xs">AI</span>
                         </Button>
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            setMentalTask(task);
+                            setMentalDialogOpen(true);
+                          }}
+                          className="h-7 gap-1 text-purple-500 hover:text-purple-600"
+                          title="עזרה מנטלית"
+                        >
+                          <Brain className="h-3.5 w-3.5" />
+                        </Button>
                         {!readOnly && (
                           <Button
                             variant="ghost"
@@ -949,6 +965,17 @@ const TaskSpreadsheetDb = ({ title, taskType, readOnly = false, showYearSelector
           </div>
         </DialogContent>
       </Dialog>
+      {/* Move Task Dialog */}
+      {mentalTask && (
+        <MentalDifficultyHelper
+          task={mentalTask}
+          open={mentalDialogOpen}
+          onOpenChange={(open) => {
+            setMentalDialogOpen(open);
+            if (!open) setMentalTask(null);
+          }}
+        />
+      )}
 
       {/* Move Task Dialog */}
       <Dialog open={moveDialogOpen} onOpenChange={setMoveDialogOpen}>
