@@ -104,18 +104,19 @@ ${taskDescription}
       { role: "system", content: systemPrompt },
     ];
 
-    // Add conversation history if exists
-    if (conversationHistory && Array.isArray(conversationHistory)) {
+    // Add conversation history if exists (includes the latest user message)
+    if (conversationHistory && Array.isArray(conversationHistory) && conversationHistory.length > 0) {
       for (const msg of conversationHistory) {
         messages.push({
           role: msg.role === 'user' ? 'user' : 'assistant',
           content: msg.content
         });
       }
+      // Don't add userPrompt again - it's already the last message in conversationHistory
+    } else {
+      // No history - add the user prompt directly
+      messages.push({ role: "user", content: userPrompt });
     }
-
-    // Add current user message
-    messages.push({ role: "user", content: userPrompt });
 
     const response = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
       method: "POST",
