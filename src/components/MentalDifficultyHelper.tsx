@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback, useRef } from "react";
 import { Brain, Loader2, Send, History } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import {
@@ -44,8 +44,13 @@ const MentalDifficultyHelper = ({ task, open, onOpenChange }: MentalDifficultyHe
   const [loading, setLoading] = useState(false);
   const [started, setStarted] = useState(false);
   const [sessionId, setSessionId] = useState<string | null>(null);
+  const bottomRef = useRef<HTMLDivElement>(null);
 
   const currentDifficulty = difficultyLabels[difficulty];
+
+  useEffect(() => {
+    bottomRef.current?.scrollIntoView({ behavior: 'smooth' });
+  }, [messages, loading]);
 
   // Load existing session for this task when dialog opens
   useEffect(() => {
@@ -278,6 +283,7 @@ ${userInput ? `הסיבה שזה קשה לי: ${userInput}` : "אני לא בט�
                     <span className="text-sm">חושב...</span>
                   </div>
                 )}
+                <div ref={bottomRef} />
               </div>
             </ScrollArea>
 
