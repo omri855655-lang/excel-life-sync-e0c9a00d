@@ -1,5 +1,5 @@
-import { useState } from "react";
-import { Brain, Loader2, Send } from "lucide-react";
+import { useState, useEffect, useCallback } from "react";
+import { Brain, Loader2, Send, History } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import {
   Dialog,
@@ -12,6 +12,7 @@ import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { supabase } from "@/integrations/supabase/client";
+import { useAuth } from "@/hooks/useAuth";
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
 import type { Task } from "@/hooks/useTasks";
@@ -36,13 +37,72 @@ const difficultyLabels: Record<number, { label: string; emoji: string; color: st
 };
 
 const MentalDifficultyHelper = ({ task, open, onOpenChange }: MentalDifficultyHelperProps) => {
+  const { user } = useAuth();
   const [difficulty, setDifficulty] = useState(3);
   const [userInput, setUserInput] = useState("");
   const [messages, setMessages] = useState<Message[]>([]);
   const [loading, setLoading] = useState(false);
   const [started, setStarted] = useState(false);
+  const [sessionId, setSessionId] = useState<string | null>(null);
 
   const currentDifficulty = difficultyLabels[difficulty];
+
+  // Load existing session for this task when dialog opens
+  useEffect(() => {
+    if (open && user && task.id) {
+      loadExistingSession();
+    }
+  }, [open, user, task.id]);
+
+  const loadExistingSession = async () => {
+    if (!user) return;
+    const { data } = await supabase
+      .from("mental_coaching_sessions")
+      .select("*")
+      .eq("user_id", user.id)
+      .eq("task_id", task.id)
+      .order("updated_at", { ascending: false })
+      .limit(1)
+      .maybeSingle();
+
+    if (data) {
+      const savedMessages = (data.messages as unknown as Message[]) || [];
+      if (savedMessages.length > 0) {
+        setMessages(savedMessages);
+        setDifficulty(data.difficulty_level);
+        setSessionId(data.id);
+        setStarted(true);
+      }
+    }
+  };
+
+  const saveSession = useCallback(async (msgs: Message[], diffLevel: number) => {
+    if (!user) return;
+    
+    if (sessionId) {
+      await supabase
+        .from("mental_coaching_sessions")
+        .update({
+          messages: msgs as unknown as any,
+          difficulty_level: diffLevel,
+          updated_at: new Date().toISOString(),
+        })
+        .eq("id", sessionId);
+    } else {
+      const { data } = await supabase
+        .from("mental_coaching_sessions")
+        .insert({
+          user_id: user.id,
+          task_id: task.id,
+          task_description: task.description,
+          difficulty_level: diffLevel,
+          messages: msgs as unknown as any,
+        })
+        .select("id")
+        .single();
+      if (data) setSessionId(data.id);
+    }
+  }, [user, sessionId, task.id, task.description]);
 
   const handleStart = async () => {
     setStarted(true);
@@ -65,7 +125,9 @@ ${userInput ? `הסיבה שזה קשה לי: ${userInput}` : "אני לא בט�
       if (error) throw error;
 
       const assistantMsg: Message = { role: "assistant", content: data.suggestion || "אני כאן בשבילך. ספר לי עוד." };
-      setMessages([userMsg, assistantMsg]);
+      const allMsgs = [userMsg, assistantMsg];
+      setMessages(allMsgs);
+      saveSession(allMsgs, difficulty);
     } catch (error: any) {
       console.error("AI error:", error);
       toast.error("שגיאה בקבלת עזרה");
@@ -95,7 +157,9 @@ ${userInput ? `הסיבה שזה קשה לי: ${userInput}` : "אני לא בט�
       if (error) throw error;
 
       const assistantMsg: Message = { role: "assistant", content: data.suggestion || "אני כאן בשבילך." };
-      setMessages([...updatedMessages, assistantMsg]);
+      const allMsgs = [...updatedMessages, assistantMsg];
+      setMessages(allMsgs);
+      saveSession(allMsgs, difficulty);
     } catch (error: any) {
       console.error("AI error:", error);
       toast.error("שגיאה בקבלת עזרה");
@@ -106,14 +170,22 @@ ${userInput ? `הסיבה שזה קשה לי: ${userInput}` : "אני לא בט�
 
   const handleClose = (isOpen: boolean) => {
     if (!isOpen) {
-      // Reset state
       setDifficulty(3);
       setUserInput("");
       setMessages([]);
       setStarted(false);
       setLoading(false);
+      setSessionId(null);
     }
     onOpenChange(isOpen);
+  };
+
+  const handleNewSession = () => {
+    setSessionId(null);
+    setMessages([]);
+    setStarted(false);
+    setUserInput("");
+    setDifficulty(3);
   };
 
   return (
@@ -123,10 +195,14 @@ ${userInput ? `הסיבה שזה קשה לי: ${userInput}` : "אני לא בט�
           <DialogTitle className="flex items-center gap-2">
             <Brain className="h-5 w-5 text-purple-500" />
             עזרה מנטלית למשימה
+            {started && (
+              <Button variant="ghost" size="sm" onClick={handleNewSession} className="mr-auto text-xs">
+                שיחה חדשה
+              </Button>
+            )}
           </DialogTitle>
         </DialogHeader>
 
-        {/* Task info */}
         <div className="bg-muted p-3 rounded-lg flex-shrink-0">
           <p className="text-sm font-medium">משימה:</p>
           <p className="text-sm text-muted-foreground">{task.description || "(ללא תיאור)"}</p>
@@ -134,7 +210,6 @@ ${userInput ? `הסיבה שזה קשה לי: ${userInput}` : "אני לא בט�
 
         {!started ? (
           <div className="space-y-6">
-            {/* Difficulty slider */}
             <div className="space-y-3">
               <Label className="text-sm font-medium">כמה קשה לך מנטלית לגשת למשימה הזו?</Label>
               <div className="px-2">
@@ -158,7 +233,6 @@ ${userInput ? `הסיבה שזה קשה לי: ${userInput}` : "אני לא בט�
               </div>
             </div>
 
-            {/* Why is it hard */}
             <div className="space-y-2">
               <Label className="text-sm font-medium">למה זה קשה לך? (אופציונלי)</Label>
               <Textarea
@@ -177,7 +251,6 @@ ${userInput ? `הסיבה שזה קשה לי: ${userInput}` : "אני לא בט�
           </div>
         ) : (
           <div className="flex flex-col flex-1 min-h-0 gap-3">
-            {/* Chat messages */}
             <ScrollArea className="flex-1 min-h-[200px] max-h-[400px]">
               <div className="space-y-3 p-1">
                 {messages.map((msg, i) => (
@@ -208,7 +281,6 @@ ${userInput ? `הסיבה שזה קשה לי: ${userInput}` : "אני לא בט�
               </div>
             </ScrollArea>
 
-            {/* Follow-up input */}
             <div className="flex gap-2 flex-shrink-0">
               <Textarea
                 value={userInput}

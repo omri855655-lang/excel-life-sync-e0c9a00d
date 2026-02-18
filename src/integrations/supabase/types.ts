@@ -214,6 +214,39 @@ export type Database = {
         }
         Relationships: []
       }
+      mental_coaching_sessions: {
+        Row: {
+          created_at: string
+          difficulty_level: number
+          id: string
+          messages: Json
+          task_description: string
+          task_id: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          difficulty_level?: number
+          id?: string
+          messages?: Json
+          task_description: string
+          task_id: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          difficulty_level?: number
+          id?: string
+          messages?: Json
+          task_description?: string
+          task_id?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       planner_conversations: {
         Row: {
           conversation_date: string
