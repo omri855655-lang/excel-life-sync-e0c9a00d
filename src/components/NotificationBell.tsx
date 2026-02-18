@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { Bell } from "lucide-react";
+import { Bell, Check, Clock, AlertCircle, Loader2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import {
   Popover,
@@ -10,6 +10,15 @@ import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { cn } from "@/lib/utils";
+import { toast } from "sonner";
+
+interface TaskInfo {
+  id: string;
+  description: string;
+  status?: string;
+  task_type?: string;
+  source_type?: string;
+}
 
 interface Notification {
   id: string;
@@ -18,6 +27,7 @@ interface Notification {
   created_at: string;
   event_id: string | null;
   task_id: string | null;
+  task_info?: TaskInfo;
 }
 
 const typeLabels: Record<string, string> = {
@@ -34,13 +44,12 @@ const NotificationBell = () => {
   const [notifications, setNotifications] = useState<Notification[]>([]);
   const [open, setOpen] = useState(false);
   const [lastSeenCount, setLastSeenCount] = useState(0);
+  const [updatingTaskId, setUpdatingTaskId] = useState<string | null>(null);
 
   useEffect(() => {
     if (!user) return;
 
     const fetchNotifications = async () => {
-      // Use edge function or RPC since sent_notifications has service-role-only RLS
-      // We'll query via the tasks edge function approach - actually let's use supabase function
       const { data, error } = await supabase.functions.invoke("get-notifications", {
         body: {},
       });
@@ -51,7 +60,6 @@ const NotificationBell = () => {
     };
 
     fetchNotifications();
-    // Refresh every 2 minutes
     const interval = setInterval(fetchNotifications, 120000);
     return () => clearInterval(interval);
   }, [user]);
@@ -62,6 +70,32 @@ const NotificationBell = () => {
     setOpen(isOpen);
     if (isOpen) {
       setLastSeenCount(notifications.length);
+    }
+  };
+
+  const handleUpdateStatus = async (taskId: string, status: string, sourceType?: string) => {
+    setUpdatingTaskId(taskId);
+    try {
+      const { data, error } = await supabase.functions.invoke("get-notifications", {
+        body: { action: "update-status", task_id: taskId, status, source_type: sourceType },
+      });
+
+      if (error) throw error;
+
+      // Update local state to reflect the change
+      setNotifications(prev => prev.map(n => {
+        if (n.task_id === taskId && n.task_info) {
+          return { ...n, task_info: { ...n.task_info, status } };
+        }
+        return n;
+      }));
+
+      toast.success(`המשימה עודכנה ל: ${status}`);
+    } catch (error) {
+      console.error("Error updating task status:", error);
+      toast.error("שגיאה בעדכון המשימה");
+    } finally {
+      setUpdatingTaskId(null);
     }
   };
 
@@ -101,9 +135,60 @@ const NotificationBell = () => {
                       {n.channel === "email" ? "📧 מייל" : "🔔 Push"}
                     </span>
                   </div>
+                  
+                  {/* Task name for completion notifications */}
+                  {n.task_info && (
+                    <p className="text-xs font-medium mt-1 text-foreground">
+                      {n.task_info.description}
+                    </p>
+                  )}
+
                   <p className="text-xs text-muted-foreground mt-1">
                     {new Date(n.created_at).toLocaleDateString("he-IL")} {new Date(n.created_at).toLocaleTimeString("he-IL", { hour: "2-digit", minute: "2-digit" })}
                   </p>
+
+                  {/* Action buttons for completion notifications */}
+                  {n.notification_type === "event_completion" && n.task_info && n.task_info.status !== "בוצע" && (
+                    <div className="flex gap-1.5 mt-2">
+                      {updatingTaskId === n.task_id ? (
+                        <Loader2 className="h-4 w-4 animate-spin text-muted-foreground" />
+                      ) : (
+                        <>
+                          <Button
+                            size="sm"
+                            variant="outline"
+                            className="h-7 text-xs gap-1 bg-green-50 hover:bg-green-100 text-green-700 border-green-200 dark:bg-green-900/20 dark:hover:bg-green-900/40 dark:text-green-400 dark:border-green-800"
+                            onClick={() => handleUpdateStatus(n.task_id!, "בוצע", n.task_info?.source_type)}
+                          >
+                            <Check className="h-3 w-3" /> סיימתי
+                          </Button>
+                          <Button
+                            size="sm"
+                            variant="outline"
+                            className="h-7 text-xs gap-1 bg-amber-50 hover:bg-amber-100 text-amber-700 border-amber-200 dark:bg-amber-900/20 dark:hover:bg-amber-900/40 dark:text-amber-400 dark:border-amber-800"
+                            onClick={() => handleUpdateStatus(n.task_id!, "בטיפול", n.task_info?.source_type)}
+                          >
+                            <Clock className="h-3 w-3" /> בטיפול
+                          </Button>
+                          <Button
+                            size="sm"
+                            variant="outline"
+                            className="h-7 text-xs gap-1"
+                            onClick={() => handleUpdateStatus(n.task_id!, "טרם החל", n.task_info?.source_type)}
+                          >
+                            <AlertCircle className="h-3 w-3" /> לא התחלתי
+                          </Button>
+                        </>
+                      )}
+                    </div>
+                  )}
+                  
+                  {/* Show current status if already completed */}
+                  {n.notification_type === "event_completion" && n.task_info && n.task_info.status === "בוצע" && (
+                    <div className="mt-2 text-xs text-green-600 dark:text-green-400 flex items-center gap-1">
+                      <Check className="h-3 w-3" /> סומן כבוצע
+                    </div>
+                  )}
                 </div>
               ))}
             </div>

@@ -470,6 +470,17 @@ const TaskSpreadsheetDb = ({ title, taskType, readOnly = false, showYearSelector
     );
   };
 
+  // Get unique values for category and responsible fields for autocomplete
+  const existingCategories = useMemo(() => {
+    const cats = tasks.map(t => t.category).filter(Boolean);
+    return [...new Set(cats)];
+  }, [tasks]);
+
+  const existingResponsibles = useMemo(() => {
+    const resps = tasks.map(t => t.responsible).filter(Boolean);
+    return [...new Set(resps)];
+  }, [tasks]);
+
   const EditableCellInput = ({
     value,
     field,
@@ -484,6 +495,14 @@ const TaskSpreadsheetDb = ({ title, taskType, readOnly = false, showYearSelector
     onCancel: () => void;
   }) => {
     const [editValue, setEditValue] = useState(value);
+    const [showSuggestions, setShowSuggestions] = useState(false);
+
+    const suggestions = useMemo(() => {
+      if (field !== "category" && field !== "responsible") return [];
+      const list = field === "category" ? existingCategories : existingResponsibles;
+      if (!editValue.trim()) return list;
+      return list.filter(item => item.toLowerCase().includes(editValue.toLowerCase()));
+    }, [editValue, field]);
 
     // For date fields, use input type date
     if (field === "plannedEnd") {
@@ -507,6 +526,63 @@ const TaskSpreadsheetDb = ({ title, taskType, readOnly = false, showYearSelector
           autoFocus
           dir="auto"
         />
+      );
+    }
+
+    // For category/responsible fields, show autocomplete
+    if (field === "category" || field === "responsible") {
+      return (
+        <div className="relative">
+          <input
+            type="text"
+            value={editValue}
+            onChange={(e) => {
+              setEditValue(e.target.value);
+              setShowSuggestions(true);
+            }}
+            onFocus={() => setShowSuggestions(true)}
+            onBlur={() => {
+              setTimeout(() => {
+                setShowSuggestions(false);
+                onSave(editValue);
+              }, 200);
+            }}
+            onKeyDown={(e) => {
+              if (e.key === "Enter") {
+                e.preventDefault();
+                setShowSuggestions(false);
+                onSave(editValue);
+              } else if (e.key === "Escape") {
+                setShowSuggestions(false);
+                onCancel();
+              }
+            }}
+            className={cn(
+              "w-full bg-transparent outline-none ring-2 ring-primary rounded px-1 h-8",
+              className
+            )}
+            autoFocus
+            dir="auto"
+          />
+          {showSuggestions && suggestions.length > 0 && (
+            <div className="absolute top-full right-0 left-0 mt-1 bg-popover border border-border rounded-md shadow-lg z-50 max-h-36 overflow-auto">
+              {suggestions.map((item, index) => (
+                <div
+                  key={index}
+                  className="px-3 py-2 text-sm hover:bg-accent cursor-pointer"
+                  onMouseDown={(e) => {
+                    e.preventDefault();
+                    setEditValue(item);
+                    setShowSuggestions(false);
+                    onSave(item);
+                  }}
+                >
+                  {item}
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
       );
     }
 
