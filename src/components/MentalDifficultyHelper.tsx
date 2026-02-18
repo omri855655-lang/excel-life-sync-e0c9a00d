@@ -256,7 +256,7 @@ ${userInput ? `הסיבה שזה קשה לי: ${userInput}` : "אני לא בט�
           </div>
         ) : (
           <div className="flex flex-col flex-1 min-h-0 gap-3">
-            <ScrollArea className="flex-1 min-h-[200px] max-h-[400px]">
+            <ScrollArea className="flex-1 h-[350px]">
               <div className="space-y-3 p-1">
                 {messages.map((msg, i) => (
                   <div
