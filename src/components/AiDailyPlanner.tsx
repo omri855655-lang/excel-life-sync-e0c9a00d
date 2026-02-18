@@ -46,13 +46,11 @@ const AiDailyPlanner = () => {
   const [messages, setMessages] = useState<ChatMessage[]>([]);
   const [userInput, setUserInput] = useState('');
   const [selectedDate, setSelectedDate] = useState<string>(today);
-  const scrollRef = useRef<HTMLDivElement>(null);
+  const bottomRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
-    if (scrollRef.current) {
-      scrollRef.current.scrollTop = scrollRef.current.scrollHeight;
-    }
-  }, [messages]);
+    bottomRef.current?.scrollIntoView({ behavior: 'smooth' });
+  }, [messages, loading]);
 
   // Load conversation when dialog opens or date changes
   useEffect(() => {
@@ -377,7 +375,7 @@ ${taskSummary}
         )}
 
         {/* Chat Messages */}
-        <ScrollArea className="flex-1 max-h-[50vh] pr-2" ref={scrollRef}>
+        <ScrollArea className="flex-1 max-h-[50vh] pr-2">
           <div className="space-y-4">
             {messages.map((msg, idx) => (
               <div
@@ -399,6 +397,7 @@ ${taskSummary}
                 <span className="text-sm text-muted-foreground">מעבד...</span>
               </div>
             )}
+            <div ref={bottomRef} />
           </div>
         </ScrollArea>
 
