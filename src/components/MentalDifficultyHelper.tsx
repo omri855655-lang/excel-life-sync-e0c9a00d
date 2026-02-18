@@ -256,8 +256,8 @@ ${userInput ? `הסיבה שזה קשה לי: ${userInput}` : "אני לא בט�
           </div>
         ) : (
           <div className="flex flex-col flex-1 min-h-0 gap-3">
-            <ScrollArea className="flex-1 h-[350px]">
-              <div className="space-y-3 p-1">
+            <div className="flex-1 overflow-y-auto h-[350px] border rounded-lg">
+              <div className="space-y-3 p-3">
                 {messages.map((msg, i) => (
                   <div
                     key={i}
@@ -285,7 +285,7 @@ ${userInput ? `הסיבה שזה קשה לי: ${userInput}` : "אני לא בט�
                 )}
                 <div ref={bottomRef} />
               </div>
-            </ScrollArea>
+            </div>
 
             <div className="flex gap-2 flex-shrink-0">
               <Textarea
