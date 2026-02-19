@@ -47,6 +47,8 @@ const PersonalPlanner = () => {
   const [draggingEvent, setDraggingEvent] = useState<CalendarEvent | null>(null);
   const [showEventDialog, setShowEventDialog] = useState(false);
   const [editingEvent, setEditingEvent] = useState<CalendarEvent | null>(null);
+  const [showLinkToDashboard, setShowLinkToDashboard] = useState(false);
+  const [pendingLinkEvent, setPendingLinkEvent] = useState<CalendarEvent | null>(null);
   const [newEventData, setNewEventData] = useState({
     title: "",
     description: "",
@@ -483,7 +485,7 @@ const PersonalPlanner = () => {
     };
   }, [resizingEvent, events, updateEvent]);
 
-  const handleSaveEvent = async () => {
+   const handleSaveEvent = async () => {
     if (!newEventData.title.trim()) {
       toast.error("יש להזין כותרת");
       return;
@@ -499,7 +501,8 @@ const PersonalPlanner = () => {
         color: getCategoryColor(newEventData.category),
       });
     } else {
-      await addEvent({
+      const isCustom = !newEventData.sourceId && (newEventData.sourceType === "custom" || !newEventData.sourceType);
+      const savedEvent = await addEvent({
         title: newEventData.title,
         description: newEventData.description,
         category: newEventData.category,
@@ -509,10 +512,60 @@ const PersonalPlanner = () => {
         sourceType: newEventData.sourceType,
         sourceId: newEventData.sourceId,
       });
+
+      // If it's a custom event (not linked), ask user if they want to link to dashboard
+      if (isCustom && savedEvent) {
+        setPendingLinkEvent(savedEvent);
+        setShowLinkToDashboard(true);
+      }
     }
 
     setShowEventDialog(false);
     setEditingEvent(null);
+  };
+
+  const handleLinkToDashboard = async (taskType: "personal" | "work") => {
+    if (!user || !pendingLinkEvent) return;
+
+    try {
+      const plannedEnd = pendingLinkEvent.endTime ? pendingLinkEvent.endTime.split("T")[0] : null;
+      const { data: newTask, error } = await supabase
+        .from("tasks")
+        .insert([{
+          user_id: user.id,
+          description: pendingLinkEvent.title,
+          category: pendingLinkEvent.category || null,
+          status: "טרם החל",
+          planned_end: plannedEnd,
+          task_type: taskType,
+          sheet_name: String(new Date().getFullYear()),
+        }])
+        .select()
+        .single();
+
+      if (error) throw error;
+
+      // Update the calendar event to link to this task
+      const sourceType = taskType === "personal" ? "personal_task" : "work_task";
+      await updateEvent(pendingLinkEvent.id, {
+        sourceType,
+        sourceId: newTask.id,
+      });
+
+      // Also update source_type and source_id directly (updateEvent may not handle these)
+      await supabase
+        .from("calendar_events")
+        .update({ source_type: sourceType, source_id: newTask.id })
+        .eq("id", pendingLinkEvent.id);
+
+      toast.success(`המשימה נוספה לדשבורד ${taskType === "personal" ? "אישי" : "עבודה"}`);
+    } catch (e: any) {
+      console.error("Error linking event to dashboard:", e);
+      toast.error("שגיאה בהוספת משימה לדשבורד");
+    } finally {
+      setShowLinkToDashboard(false);
+      setPendingLinkEvent(null);
+    }
   };
 
   const handleClickEvent = (event: CalendarEvent) => {
@@ -1119,6 +1172,34 @@ const PersonalPlanner = () => {
             )}
             <Button onClick={handleSaveEvent}>{editingEvent ? "עדכן" : "הוסף"}</Button>
           </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Link to Dashboard Dialog */}
+      <Dialog open={showLinkToDashboard} onOpenChange={(open) => {
+        if (!open) {
+          setShowLinkToDashboard(false);
+          setPendingLinkEvent(null);
+        }
+      }}>
+        <DialogContent dir="rtl" className="max-w-sm">
+          <DialogHeader>
+            <DialogTitle>הוספה לדשבורד משימות</DialogTitle>
+          </DialogHeader>
+          <p className="text-sm text-muted-foreground">
+            רוצה לצרף את <strong>"{pendingLinkEvent?.title}"</strong> לדשבורד משימות? כך תקבל מעקב מלא והתראות סיום.
+          </p>
+          <div className="flex flex-col gap-2 mt-2">
+            <Button onClick={() => handleLinkToDashboard("personal")} className="gap-2">
+              📋 משימות אישיות
+            </Button>
+            <Button onClick={() => handleLinkToDashboard("work")} variant="outline" className="gap-2">
+              💼 משימות עבודה
+            </Button>
+            <Button variant="ghost" onClick={() => { setShowLinkToDashboard(false); setPendingLinkEvent(null); }}>
+              לא, תודה
+            </Button>
+          </div>
         </DialogContent>
       </Dialog>
     </div>
