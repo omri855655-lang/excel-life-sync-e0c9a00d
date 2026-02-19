@@ -41,7 +41,6 @@ serve(async (req) => {
       const sourceType = body.source_type || "task";
       
       if (sourceType === "recurring_task") {
-        // For recurring tasks, mark today as completed
         if (body.status === "בוצע") {
           const todayStr = new Date().toISOString().split("T")[0];
           await supabase.from("recurring_task_completions").insert({
@@ -51,7 +50,6 @@ serve(async (req) => {
           });
         }
       } else {
-        // Regular task - update status
         const { error: updateError } = await supabase
           .from("tasks")
           .update({ status: body.status })
@@ -66,40 +64,83 @@ serve(async (req) => {
       });
     }
 
-    // Fetch last 50 notifications for this user
+    // Fetch last 50 notifications for this user (deduplicate by event_id + type, prefer push)
     const { data: notifications, error } = await supabase
       .from("sent_notifications")
       .select("*")
       .eq("user_id", user.id)
       .order("created_at", { ascending: false })
-      .limit(50);
+      .limit(100);
 
     if (error) throw error;
 
-    // For completion notifications, fetch the related task/event info
-    const enrichedNotifications = [];
+    // Deduplicate: for same event_id + notification_type, keep only one (prefer push)
+    const seen = new Map<string, any>();
     for (const n of (notifications || [])) {
+      const key = `${n.event_id}_${n.notification_type}`;
+      if (!seen.has(key)) {
+        seen.set(key, n);
+      } else if (n.channel === "push") {
+        seen.set(key, n); // prefer push entry
+      }
+    }
+    const dedupedNotifications = Array.from(seen.values()).slice(0, 50);
+
+    // Enrich notifications with event and task info
+    const enrichedNotifications = [];
+    for (const n of dedupedNotifications) {
       const enriched: any = { ...n };
       
-      if (n.notification_type === "event_completion" && n.task_id) {
-        // Try to get task info
-        const { data: task } = await supabase
-          .from("tasks")
-          .select("id, description, status, task_type")
-          .eq("id", n.task_id)
+      // Get event info for all notifications that have event_id
+      if (n.event_id) {
+        const { data: eventData } = await supabase
+          .from("calendar_events")
+          .select("id, title, source_id, source_type, start_time, end_time, category")
+          .eq("id", n.event_id)
           .single();
         
-        if (task) {
-          enriched.task_info = task;
-        } else {
-          // Maybe it's a recurring task
+        if (eventData) {
+          enriched.event_info = eventData;
+        }
+      }
+
+      // For completion notifications, also get task info if linked
+      if (n.notification_type === "event_completion") {
+        // Try task_id from notification first, then from event source_id
+        const taskId = n.task_id || enriched.event_info?.source_id;
+        const sourceType = enriched.event_info?.source_type;
+        
+        if (taskId && (sourceType === "personal_task" || sourceType === "work_task")) {
+          const { data: task } = await supabase
+            .from("tasks")
+            .select("id, description, status, task_type")
+            .eq("id", taskId)
+            .single();
+          if (task) {
+            enriched.task_info = { ...task, source_type: "task" };
+          }
+        } else if (taskId && sourceType === "recurring_task") {
           const { data: recurringTask } = await supabase
             .from("recurring_tasks")
             .select("id, title")
-            .eq("id", n.task_id)
+            .eq("id", taskId)
             .single();
           if (recurringTask) {
-            enriched.task_info = { id: recurringTask.id, description: recurringTask.title, source_type: "recurring_task" };
+            // Check if completed today
+            const todayStr = new Date().toISOString().split("T")[0];
+            const { data: completion } = await supabase
+              .from("recurring_task_completions")
+              .select("id")
+              .eq("recurring_task_id", taskId)
+              .eq("completed_date", todayStr)
+              .limit(1);
+            const isCompleted = (completion?.length || 0) > 0;
+            enriched.task_info = { 
+              id: recurringTask.id, 
+              description: recurringTask.title, 
+              source_type: "recurring_task",
+              status: isCompleted ? "בוצע" : "טרם החל",
+            };
           }
         }
       }
