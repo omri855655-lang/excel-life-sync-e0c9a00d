@@ -525,16 +525,25 @@ const PersonalPlanner = () => {
   };
 
   const handleLinkToDashboard = async (taskType: "personal" | "work") => {
-    if (!user || !pendingLinkEvent) return;
+    // Capture values immediately to avoid race conditions with dialog closing
+    const eventToLink = pendingLinkEvent;
+    if (!user || !eventToLink) {
+      console.error("handleLinkToDashboard: no user or no pending event");
+      return;
+    }
+
+    // Close dialog immediately for better UX
+    setShowLinkToDashboard(false);
+    setPendingLinkEvent(null);
 
     try {
-      const plannedEnd = pendingLinkEvent.endTime ? pendingLinkEvent.endTime.split("T")[0] : null;
+      const plannedEnd = eventToLink.endTime ? eventToLink.endTime.split("T")[0] : null;
       const { data: newTask, error } = await supabase
         .from("tasks")
         .insert([{
           user_id: user.id,
-          description: pendingLinkEvent.title,
-          category: pendingLinkEvent.category || null,
+          description: eventToLink.title || "משימה חדשה",
+          category: eventToLink.category || null,
           status: "טרם החל",
           planned_end: plannedEnd,
           task_type: taskType,
@@ -547,24 +556,16 @@ const PersonalPlanner = () => {
 
       // Update the calendar event to link to this task
       const sourceType = taskType === "personal" ? "personal_task" : "work_task";
-      await updateEvent(pendingLinkEvent.id, {
-        sourceType,
-        sourceId: newTask.id,
-      });
-
-      // Also update source_type and source_id directly (updateEvent may not handle these)
       await supabase
         .from("calendar_events")
         .update({ source_type: sourceType, source_id: newTask.id })
-        .eq("id", pendingLinkEvent.id);
+        .eq("id", eventToLink.id)
+        .eq("user_id", user.id);
 
-      toast.success(`המשימה נוספה לדשבורד ${taskType === "personal" ? "אישי" : "עבודה"}`);
+      toast.success(`✅ המשימה "${eventToLink.title}" נוספה לדשבורד ${taskType === "personal" ? "אישי" : "עבודה"}`);
     } catch (e: any) {
       console.error("Error linking event to dashboard:", e);
       toast.error("שגיאה בהוספת משימה לדשבורד");
-    } finally {
-      setShowLinkToDashboard(false);
-      setPendingLinkEvent(null);
     }
   };
 
