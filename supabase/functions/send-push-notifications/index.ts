@@ -95,12 +95,14 @@ async function markSent(
   eventId: string,
   notificationType: string,
   channel: string,
+  taskId?: string | null,
 ) {
   await supabase.from("sent_notifications").insert({
     user_id: userId,
     event_id: eventId,
     notification_type: notificationType,
     channel,
+    task_id: taskId || null,
   });
 }
 
@@ -390,62 +392,82 @@ serve(async (req: Request): Promise<Response> => {
       // ===== Post-event completion check (event just ended) =====
       const userEndedEvents = (endedEvents || []).filter((e: any) => e.user_id === userId);
       for (const event of userEndedEvents) {
-        // Only for events linked to a task
-        if (!event.source_id || !event.source_type) continue;
-      const isTask = event.source_type === "personal_task" || event.source_type === "work_task";
-      const isRecurring = event.source_type === "recurring_task";
-      if (!isTask && !isRecurring) continue;
+        const isTask = event.source_type === "personal_task" || event.source_type === "work_task";
+        const isRecurring = event.source_type === "recurring_task";
+        const isCustom = !event.source_id || event.source_type === "custom";
 
         const alreadySent = await wasAlreadySent(supabase, userId, event.id, "event_completion");
         if (alreadySent) continue;
 
-        // Check if task/recurring is already completed
-        if (isTask) {
+        // Check if linked task/recurring is already completed (skip if so)
+        if (isTask && event.source_id) {
           const { data: taskData } = await supabase
             .from("tasks")
             .select("id, status")
             .eq("id", event.source_id)
             .single();
           if (!taskData || taskData.status === "בוצע") continue;
-        } else if (isRecurring) {
-          const todayStr = now.toISOString().split("T")[0];
+        } else if (isRecurring && event.source_id) {
+          const todayCheck = now.toISOString().split("T")[0];
           const { data: alreadyDone } = await supabase
             .from("recurring_task_completions")
             .select("id")
             .eq("recurring_task_id", event.source_id)
-            .eq("completed_date", todayStr)
+            .eq("completed_date", todayCheck)
             .limit(1);
           if (alreadyDone && alreadyDone.length > 0) continue;
         }
 
-        // Create action token
-        const { data: token } = await supabase.from("action_tokens").insert({
-          user_id: userId,
-          task_id: event.source_id,
-          action: "complete",
-          source_type: isRecurring ? "recurring_task" : "task",
-        }).select("id").single();
+        // Create action token if linked to a task
+        let actionBaseUrl: string | undefined;
+        if (event.source_id && (isTask || isRecurring)) {
+          const { data: token } = await supabase.from("action_tokens").insert({
+            user_id: userId,
+            task_id: event.source_id,
+            action: "complete",
+            source_type: isRecurring ? "recurring_task" : "task",
+          }).select("id").single();
+          if (token) {
+            actionBaseUrl = `${supabaseUrl}/functions/v1/handle-task-action?token=${token.id}`;
+          }
+        }
 
-        if (token && userEmail) {
-          const baseUrl = `${supabaseUrl}/functions/v1/handle-task-action?token=${token.id}`;
-          const html = buildCompletionEmailHtml(event, baseUrl);
+        // Send completion email for ALL events
+        if (userEmail) {
+          let html: string;
+          if (actionBaseUrl) {
+            html = buildCompletionEmailHtml(event, actionBaseUrl);
+          } else {
+            // Simple completion email for custom events (no action buttons)
+            const endTime = new Date(event.end_time);
+            const timeStr = endTime.toLocaleTimeString("he-IL", { hour: "2-digit", minute: "2-digit" });
+            html = `
+              <div dir="rtl" style="font-family: Arial, sans-serif; max-width: 500px; margin: 0 auto;">
+                <div style="background: #f0fdf4; border-right: 4px solid #22c55e; padding: 16px; border-radius: 8px;">
+                  <h2 style="color: #16a34a; margin: 0 0 8px;">🏁 הזמן של "${event.title}" הסתיים</h2>
+                  <p style="margin: 4px 0;">🕐 היה אמור להסתיים ב-<strong>${timeStr}</strong></p>
+                  <p style="margin: 4px 0;">📂 ${event.category}</p>
+                </div>
+                <p style="color: #999; font-size: 11px; margin-top: 12px;">עדכון אוטומטי ממתכנן הלו״ז שלך</p>
+              </div>`;
+          }
           const subject = `🏁 סיימת את "${event.title}"? עדכן אותנו`;
           const sent = await sendEmail(userEmail, subject, html);
           if (sent) {
             emailsSent++;
-            await markSent(supabase, userId, event.id, "event_completion", "email");
+            await markSent(supabase, userId, event.id, "event_completion", "email", event.source_id);
             console.log(`Completion email sent: ${event.title} to ${userEmail}`);
           }
         }
 
-        // Also send push
+        // Also send push for ALL events
         for (const sub of userSubs) {
           try {
             await sendPush(
               { endpoint: sub.endpoint, p256dh: sub.p256dh, auth: sub.auth },
               {
                 title: `🏁 סיימת: ${event.title}?`,
-                body: `הזמן של המשימה הסתיים. לחץ לעדכון`,
+                body: `הזמן של האירוע הסתיים`,
                 tag: `completion-${event.id}`,
                 url: "/personal",
                 icon: "/app-icon.png",
@@ -453,6 +475,7 @@ serve(async (req: Request): Promise<Response> => {
               vapid,
             );
             totalSent++;
+            await markSent(supabase, userId, event.id, "event_completion", "push", event.source_id);
           } catch (e: any) {
             console.error(`Push failed:`, e.message);
             if (e.message?.includes("410") || e.message?.includes("404")) {
@@ -463,9 +486,9 @@ serve(async (req: Request): Promise<Response> => {
       }
     }
 
-    // Cleanup old sent_notifications (older than 2 days)
-    const twoDaysAgo = new Date(now.getTime() - 2 * 24 * 60 * 60 * 1000);
-    await supabase.from("sent_notifications").delete().lt("created_at", twoDaysAgo.toISOString());
+    // Cleanup old sent_notifications (older than 7 days)
+    const sevenDaysAgo = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000);
+    await supabase.from("sent_notifications").delete().lt("created_at", sevenDaysAgo.toISOString());
 
     return new Response(
       JSON.stringify({ message: `Push: ${totalSent}, Email: ${emailsSent}`, pushSent: totalSent, emailsSent }),
