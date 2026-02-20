@@ -106,14 +106,24 @@ async function markSent(
   });
 }
 
+// Format time in Israel timezone (UTC+3 for IST / UTC+2 for winter - using +3 as default)
+function toIsraelTimeStr(dateStr: string): string {
+  const d = new Date(dateStr);
+  // Offset to Israel time: UTC+3 (summer) - approximate, good enough
+  const israelMs = d.getTime() + 3 * 60 * 60 * 1000;
+  const israel = new Date(israelMs);
+  const hh = String(israel.getUTCHours()).padStart(2, "0");
+  const mm = String(israel.getUTCMinutes()).padStart(2, "0");
+  return `${hh}:${mm}`;
+}
+
 function buildEventEmailHtml(
   event: { title: string; start_time: string; category: string; description?: string },
   minutesBefore: number,
   actionUrl?: string,
 ) {
-  const startTime = new Date(event.start_time);
-  const timeStr = startTime.toLocaleTimeString("he-IL", { hour: "2-digit", minute: "2-digit" });
-  const label = minutesBefore === 60 ? "שעה" : `${minutesBefore} דקות`;
+  const timeStr = toIsraelTimeStr(event.start_time);
+  const label = minutesBefore === 60 ? "שעה" : minutesBefore === 1 ? "דקה" : `${minutesBefore} דקות`;
 
   return `
     <div dir="rtl" style="font-family: Arial, sans-serif; max-width: 500px; margin: 0 auto;">
@@ -137,8 +147,7 @@ function buildCompletionEmailHtml(
   event: { title: string; end_time: string; category: string },
   baseUrl: string,
 ) {
-  const endTime = new Date(event.end_time);
-  const timeStr = endTime.toLocaleTimeString("he-IL", { hour: "2-digit", minute: "2-digit" });
+  const timeStr = toIsraelTimeStr(event.end_time);
   const completeUrl = `${baseUrl}&status=בוצע`;
   const inProgressUrl = `${baseUrl}&status=בטיפול`;
   const notStartedUrl = `${baseUrl}&status=לא התחיל`;
@@ -193,16 +202,16 @@ serve(async (req: Request): Promise<Response> => {
 
     console.log(`Push check: ${todayStr}, hour=${hour}, now=${now.toISOString()}`);
 
-    // Reminder windows: 5min, 15min, 60min (wider to not miss events)
+    // Reminder windows: 1min, 10min, 60min
     const windows = [
-      { name: "event_5min", minMs: 2 * 60 * 1000, maxMs: 7 * 60 * 1000, label: "5 דקות" },
-      { name: "event_15min", minMs: 12 * 60 * 1000, maxMs: 18 * 60 * 1000, label: "15 דקות" },
+      { name: "event_1min", minMs: 0, maxMs: 2 * 60 * 1000, label: "דקה" },
+      { name: "event_10min", minMs: 7 * 60 * 1000, maxMs: 13 * 60 * 1000, label: "10 דקות" },
       { name: "event_1hour", minMs: 55 * 60 * 1000, maxMs: 65 * 60 * 1000, label: "שעה" },
     ];
 
     // Get all users with events in the next ~65 minutes
     const maxFuture = new Date(now.getTime() + 66 * 60 * 1000);
-    const minFuture = new Date(now.getTime() + 1 * 60 * 1000);
+    const minFuture = new Date(now.getTime() - 1 * 60 * 1000); // include events starting now for 1min window
 
     const { data: upcomingEvents } = await supabase
       .from("calendar_events")
@@ -210,9 +219,9 @@ serve(async (req: Request): Promise<Response> => {
       .gte("start_time", minFuture.toISOString())
       .lte("start_time", maxFuture.toISOString());
 
-    // Get events that ended recently (0-7 min ago) for completion check
-    const recentlyEndedMax = new Date(now.getTime() - 0 * 60 * 1000);
-    const recentlyEndedMin = new Date(now.getTime() - 7 * 60 * 1000);
+    // Get events that ended recently (0-10 min ago) for completion check
+    const recentlyEndedMax = new Date(now.getTime());
+    const recentlyEndedMin = new Date(now.getTime() - 10 * 60 * 1000);
     const { data: endedEvents } = await supabase
       .from("calendar_events")
       .select("*")
@@ -259,8 +268,8 @@ serve(async (req: Request): Promise<Response> => {
             const alreadySent = await wasAlreadySent(supabase, userId, event.id, win.name);
             if (alreadySent) continue;
 
-            const minutesBefore = win.name === "event_1hour" ? 60 : win.name === "event_15min" ? 15 : 5;
-            const startTimeStr = new Date(event.start_time).toLocaleTimeString("he-IL", { hour: "2-digit", minute: "2-digit" });
+            const minutesBefore = win.name === "event_1hour" ? 60 : win.name === "event_10min" ? 10 : 1;
+            const startTimeStr = toIsraelTimeStr(event.start_time);
 
             // Create action token for "mark as done" if event has source task
             let actionUrl: string | undefined;
@@ -439,8 +448,7 @@ serve(async (req: Request): Promise<Response> => {
             html = buildCompletionEmailHtml(event, actionBaseUrl);
           } else {
             // Simple completion email for custom events (no action buttons)
-            const endTime = new Date(event.end_time);
-            const timeStr = endTime.toLocaleTimeString("he-IL", { hour: "2-digit", minute: "2-digit" });
+            const timeStr = toIsraelTimeStr(event.end_time);
             html = `
               <div dir="rtl" style="font-family: Arial, sans-serif; max-width: 500px; margin: 0 auto;">
                 <div style="background: #f0fdf4; border-right: 4px solid #22c55e; padding: 16px; border-radius: 8px;">
