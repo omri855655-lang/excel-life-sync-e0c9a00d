@@ -1,0 +1,1 @@
+ALTER TABLE public.profiles ALTER COLUMN pin_enabled SET DEFAULT false;
