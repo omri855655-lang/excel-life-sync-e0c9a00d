@@ -445,12 +445,12 @@ const DeeplyDashboard = () => {
             <p className="text-xs text-[#e8e8ed]/50">סרטוני Study With Me ליצירת אווירת לימודים וחיבור. לחץ לנגן 🎧</p>
             {(() => {
               const studyVideos = [
-                { id: "o4JTMFzVwKI", title: "Study With Me — 2 שעות עם טיימר פומודורו", desc: "סשן לימודים רגוע עם הפסקות מובנות" },
-                { id: "hFmlfcj_dR0", title: "Study With Me — 3 שעות (ללא מוזיקה)", desc: "שקט מוחלט — רק אווירת לימודים" },
-                { id: "5bMkAGBqfgs", title: "Study With Me — 4 שעות (Lo-Fi)", desc: "מוזיקת Lo-Fi רכה ברקע — אווירה רגועה" },
-                { id: "DQk10RGfOog", title: "Study With Me — 50/10 Pomodoro (בית קפה)", desc: "צלילי בית קפה עם טיימר 50/10" },
-                { id: "vukwMKJMTTg", title: "Study With Me — ערב חורפי 🌧️", desc: "אווירת חורף עם גשם ונרות" },
-                { id: "1kSo5jHnEiY", title: "Study With Me — ספרייה שקטה 📖", desc: "אווירת ספרייה — ריכוז מקסימלי" },
+                { id: "z-j6jsLtgjs", title: "Study With Me — 4 שעות עם שקיעה 🌊", desc: "אווירת חוף רגועה עם Lo-Fi" },
+                { id: "T-ruhOIvTXE", title: "Study With Me — 2 שעות פסנתר (Pomodoro 50/10)", desc: "פסנתר רגוע עם טיימר מובנה" },
+                { id: "q6Ox94EgXn0", title: "Study With Me — כתיבה שקטה (Pomodoro 25/5) ✍️", desc: "צלילי לימוד אמיתיים עם הפסקות" },
+                { id: "bBEo3sdzf8w", title: "Study With Me — 5 שעות לתחילת 2025 📚", desc: "פסנתר רגוע — Pomodoro 50/10" },
+                { id: "-NPrh21ym74", title: "Study With Me — 4 שעות יום חורפי 🌧️", desc: "אח ומוזיקה רגועה בהפסקות" },
+                { id: "zyE92Ufl9G4", title: "Study With Me — 7 שעות מרתון 🎄", desc: "סשן ארוך עם Pomodoro 50/10" },
               ];
               return (
                 <div className="grid sm:grid-cols-2 gap-2">
@@ -496,12 +496,12 @@ const DeeplyDashboard = () => {
             <p className="text-xs text-[#e8e8ed]/50">סרטוני Read With Me לאווירת קריאה רגועה ושקטה. לחץ לנגן 🎧</p>
             {(() => {
               const readVideos = [
-                { id: "ms53s3k3MtI", title: "Read With Me — 2 שעות בשקט 📚", desc: "קריאה שקטה עם אווירה רגועה" },
-                { id: "GlHqiCfOxEQ", title: "Read With Me — אח עם גשם 🌧️", desc: "קוראים ליד האח עם צלילי גשם" },
-                { id: "zz6v7G7Bphk", title: "Read With Me — ערב חורפי 🕯️", desc: "אווירת חורף רגועה עם נרות" },
-                { id: "wMOGYqHYXZo", title: "Read With Me — בית קפה ☕", desc: "קריאה באווירת בית קפה שקטה" },
-                { id: "JZBCxW0BYVE", title: "Read With Me — 1 שעה עם טיימר", desc: "סשן קריאה קצר עם טיימר מובנה" },
-                { id: "AYM3MXAO880", title: "Read With Me — ספרייה 📖", desc: "אווירת ספרייה שקטה לקריאה ממוקדת" },
+                { id: "81Nwr9HKS7w", title: "Read With Me — קריאה שקטה 📚", desc: "אווירה רגועה עם מוזיקת רקע עדינה" },
+                { id: "6pZUaAah_z8", title: "Read With Me — 30 דקות קריאה (ללא דיבור) ☕", desc: "סשן קריאה קצר ונעים" },
+                { id: "7B8D4578uWg", title: "Read With Me — 20 דקות עם מוזיקה 🧸", desc: "קריאה רגועה בזמן אמת" },
+                { id: "Eg3kVcfs5SE", title: "אווירת חורף — אח, שלג ותה ☕🔥", desc: "צלילי אח ושלג לקריאה ולימודים" },
+                { id: "CdVH0Ff0zWI", title: "פינת קריאה ביום גשום 🌧️", desc: "גשם רך ואח — ללא פרסומות" },
+                { id: "rIHYNwXWP80", title: "בקתה עם גשם ואח — 8 שעות 🏕️", desc: "רעמים ואח לקריאה ארוכה" },
               ];
               return (
                 <div className="grid sm:grid-cols-2 gap-2">
