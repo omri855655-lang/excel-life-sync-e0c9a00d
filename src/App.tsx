@@ -6,7 +6,6 @@ import { BrowserRouter, Routes, Route } from "react-router-dom";
 import { AuthProvider, useAuth } from "@/hooks/useAuth";
 import PinGate, { usePinGate, PinSetup } from "@/components/PinGate";
 import Landing from "./pages/Landing";
-import WorkTasks from "./pages/WorkTasks";
 import Personal from "./pages/Personal";
 import Auth from "./pages/Auth";
 import InstallApp from "./pages/InstallApp";
@@ -46,14 +45,6 @@ const AppContent = () => {
     <BrowserRouter>
       <Routes>
         <Route path="/" element={<Landing />} />
-        <Route
-          path="/work"
-          element={
-            <ProtectedRoute>
-              <WorkTasks />
-            </ProtectedRoute>
-          }
-        />
         <Route
           path="/personal"
           element={
