@@ -340,33 +340,86 @@ export type Database = {
         }
         Relationships: []
       }
+      project_members: {
+        Row: {
+          created_at: string
+          id: string
+          invited_by: string
+          invited_email: string
+          job_title: string | null
+          project_id: string
+          role: string
+          user_id: string | null
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          invited_by: string
+          invited_email: string
+          job_title?: string | null
+          project_id: string
+          role?: string
+          user_id?: string | null
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          invited_by?: string
+          invited_email?: string
+          job_title?: string | null
+          project_id?: string
+          role?: string
+          user_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "project_members_project_id_fkey"
+            columns: ["project_id"]
+            isOneToOne: false
+            referencedRelation: "projects"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       project_tasks: {
         Row: {
+          assigned_email: string | null
+          assigned_to: string | null
           completed: boolean | null
           created_at: string
           id: string
+          notes: string | null
           project_id: string
           sort_order: number | null
+          status: string | null
           title: string
           updated_at: string
           user_id: string
         }
         Insert: {
+          assigned_email?: string | null
+          assigned_to?: string | null
           completed?: boolean | null
           created_at?: string
           id?: string
+          notes?: string | null
           project_id: string
           sort_order?: number | null
+          status?: string | null
           title: string
           updated_at?: string
           user_id: string
         }
         Update: {
+          assigned_email?: string | null
+          assigned_to?: string | null
           completed?: boolean | null
           created_at?: string
           id?: string
+          notes?: string | null
           project_id?: string
           sort_order?: number | null
+          status?: string | null
           title?: string
           updated_at?: string
           user_id?: string
@@ -581,6 +634,44 @@ export type Database = {
         }
         Relationships: []
       }
+      task_sheet_collaborators: {
+        Row: {
+          created_at: string
+          id: string
+          invited_by: string
+          invited_email: string
+          permission: string
+          sheet_id: string
+          user_id: string | null
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          invited_by: string
+          invited_email: string
+          permission?: string
+          sheet_id: string
+          user_id?: string | null
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          invited_by?: string
+          invited_email?: string
+          permission?: string
+          sheet_id?: string
+          user_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "task_sheet_collaborators_sheet_id_fkey"
+            columns: ["sheet_id"]
+            isOneToOne: false
+            referencedRelation: "task_sheets"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       task_sheets: {
         Row: {
           created_at: string
@@ -670,7 +761,22 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
-      [_ in never]: never
+      can_edit_sheet: {
+        Args: { _sheet_id: string; _user_id: string }
+        Returns: boolean
+      }
+      get_project_role: {
+        Args: { _project_id: string; _user_id: string }
+        Returns: string
+      }
+      is_project_member: {
+        Args: { _project_id: string; _user_id: string }
+        Returns: boolean
+      }
+      is_sheet_collaborator: {
+        Args: { _sheet_id: string; _user_id: string }
+        Returns: boolean
+      }
     }
     Enums: {
       [_ in never]: never

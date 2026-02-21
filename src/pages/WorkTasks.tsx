@@ -1,7 +1,7 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import TaskSpreadsheetDb from "@/components/TaskSpreadsheetDb";
 import AiDailyPlanner from "@/components/AiDailyPlanner";
-import { Download, FileSpreadsheet, Moon, Sun, Lock, LogIn, Home, Share2, Copy, Check } from "lucide-react";
+import { Download, FileSpreadsheet, Moon, Sun, Lock, LogIn, Home, Share2, Check } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useNavigate } from "react-router-dom";
 import { useAuth } from "@/hooks/useAuth";
@@ -11,7 +11,12 @@ const WorkTasks = () => {
   const [copied, setCopied] = useState(false);
   const navigate = useNavigate();
   const { user, loading } = useAuth();
-  const isLoggedIn = !!user;
+
+  useEffect(() => {
+    if (!loading && !user) {
+      navigate("/auth");
+    }
+  }, [user, loading, navigate]);
 
   const handleShare = async () => {
     const url = window.location.origin + "/work";
@@ -28,6 +33,14 @@ const WorkTasks = () => {
     setIsDark(!isDark);
     document.documentElement.classList.toggle("dark");
   };
+
+  if (loading || !user) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-background">
+        <div className="animate-pulse text-muted-foreground">טוען...</div>
+      </div>
+    );
+  }
 
   return (
     <div className="flex flex-col h-screen bg-background" dir="rtl">
@@ -97,13 +110,12 @@ const WorkTasks = () => {
         <TaskSpreadsheetDb 
           title="לוז משימות עבודה" 
           taskType="work" 
-          readOnly={!isLoggedIn} 
-          showYearSelector={isLoggedIn}
+          showYearSelector={true}
         />
       </div>
 
-      {/* AI Daily Planner floating button - only for logged in users */}
-      {isLoggedIn && <AiDailyPlanner />}
+      {/* AI Daily Planner floating button */}
+      <AiDailyPlanner />
     </div>
   );
 };

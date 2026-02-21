@@ -46,7 +46,14 @@ const AppContent = () => {
     <BrowserRouter>
       <Routes>
         <Route path="/" element={<Landing />} />
-        <Route path="/work" element={<WorkTasks />} />
+        <Route
+          path="/work"
+          element={
+            <ProtectedRoute>
+              <WorkTasks />
+            </ProtectedRoute>
+          }
+        />
         <Route
           path="/personal"
           element={
