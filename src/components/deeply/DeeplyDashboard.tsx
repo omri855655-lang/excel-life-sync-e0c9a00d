@@ -394,11 +394,11 @@ const DeeplyDashboard = () => {
                     <button
                       key={v.id}
                       onClick={() => {
-                        const el = document.getElementById(`yt-frame-${v.id}`);
-                        if (el) {
-                          el.scrollIntoView({ behavior: "smooth", block: "center" });
-                        }
                         setActiveYouTube(activeYouTube === v.id ? null : v.id);
+                        setTimeout(() => {
+                          const el = document.getElementById(`yt-player-container`);
+                          if (el) el.scrollIntoView({ behavior: "smooth", block: "center" });
+                        }, 100);
                       }}
                       className={`flex items-center gap-3 p-3 rounded-xl transition-all text-right ${
                         activeYouTube === v.id
@@ -419,7 +419,7 @@ const DeeplyDashboard = () => {
               );
             })()}
             {activeYouTube && (
-              <div id={`yt-frame-${activeYouTube}`} className="rounded-xl overflow-hidden border border-rose-500/20">
+              <div id="yt-player-container" className="rounded-xl overflow-hidden border border-rose-500/20">
                 <iframe
                   width="100%"
                   height="315"
@@ -431,6 +431,108 @@ const DeeplyDashboard = () => {
                 />
               </div>
             )}
+          </CardContent>
+        </Card>
+
+        {/* Study With Me */}
+        <Card className="bg-white/5 border-white/5">
+          <CardHeader className="pb-2">
+            <CardTitle className="text-sm flex items-center gap-2 text-[#e8e8ed]">
+              📚 Study With Me — לומדים ביחד
+            </CardTitle>
+          </CardHeader>
+          <CardContent className="space-y-3">
+            <p className="text-xs text-[#e8e8ed]/50">סרטוני Study With Me ליצירת אווירת לימודים וחיבור. לחץ לנגן 🎧</p>
+            {(() => {
+              const studyVideos = [
+                { id: "o4JTMFzVwKI", title: "Study With Me — 2 שעות עם טיימר פומודורו", desc: "סשן לימודים רגוע עם הפסקות מובנות" },
+                { id: "hFmlfcj_dR0", title: "Study With Me — 3 שעות (ללא מוזיקה)", desc: "שקט מוחלט — רק אווירת לימודים" },
+                { id: "5bMkAGBqfgs", title: "Study With Me — 4 שעות (Lo-Fi)", desc: "מוזיקת Lo-Fi רכה ברקע — אווירה רגועה" },
+                { id: "DQk10RGfOog", title: "Study With Me — 50/10 Pomodoro (בית קפה)", desc: "צלילי בית קפה עם טיימר 50/10" },
+                { id: "vukwMKJMTTg", title: "Study With Me — ערב חורפי 🌧️", desc: "אווירת חורף עם גשם ונרות" },
+                { id: "1kSo5jHnEiY", title: "Study With Me — ספרייה שקטה 📖", desc: "אווירת ספרייה — ריכוז מקסימלי" },
+              ];
+              return (
+                <div className="grid sm:grid-cols-2 gap-2">
+                  {studyVideos.map(v => (
+                    <button
+                      key={v.id}
+                      onClick={() => {
+                        setActiveYouTube(activeYouTube === v.id ? null : v.id);
+                        setTimeout(() => {
+                          const el = document.getElementById(`yt-player-container`);
+                          if (el) el.scrollIntoView({ behavior: "smooth", block: "center" });
+                        }, 100);
+                      }}
+                      className={`flex items-center gap-3 p-3 rounded-xl transition-all text-right ${
+                        activeYouTube === v.id
+                          ? "bg-amber-500/20 border border-amber-500/30"
+                          : "bg-white/5 border border-transparent hover:bg-white/10"
+                      }`}
+                    >
+                      <div className="w-9 h-9 rounded-lg bg-gradient-to-br from-amber-500 to-amber-700 flex items-center justify-center flex-shrink-0">
+                        {activeYouTube === v.id ? <Pause className="h-4 w-4 text-white" /> : <Play className="h-4 w-4 text-white" />}
+                      </div>
+                      <div className="min-w-0">
+                        <p className="text-sm font-medium text-[#e8e8ed] truncate">{v.title}</p>
+                        <p className="text-xs text-[#e8e8ed]/40 truncate">{v.desc}</p>
+                      </div>
+                    </button>
+                  ))}
+                </div>
+              );
+            })()}
+          </CardContent>
+        </Card>
+
+        {/* Read With Me */}
+        <Card className="bg-white/5 border-white/5">
+          <CardHeader className="pb-2">
+            <CardTitle className="text-sm flex items-center gap-2 text-[#e8e8ed]">
+              📖 Read With Me — קוראים ביחד
+            </CardTitle>
+          </CardHeader>
+          <CardContent className="space-y-3">
+            <p className="text-xs text-[#e8e8ed]/50">סרטוני Read With Me לאווירת קריאה רגועה ושקטה. לחץ לנגן 🎧</p>
+            {(() => {
+              const readVideos = [
+                { id: "ms53s3k3MtI", title: "Read With Me — 2 שעות בשקט 📚", desc: "קריאה שקטה עם אווירה רגועה" },
+                { id: "GlHqiCfOxEQ", title: "Read With Me — אח עם גשם 🌧️", desc: "קוראים ליד האח עם צלילי גשם" },
+                { id: "zz6v7G7Bphk", title: "Read With Me — ערב חורפי 🕯️", desc: "אווירת חורף רגועה עם נרות" },
+                { id: "wMOGYqHYXZo", title: "Read With Me — בית קפה ☕", desc: "קריאה באווירת בית קפה שקטה" },
+                { id: "JZBCxW0BYVE", title: "Read With Me — 1 שעה עם טיימר", desc: "סשן קריאה קצר עם טיימר מובנה" },
+                { id: "AYM3MXAO880", title: "Read With Me — ספרייה 📖", desc: "אווירת ספרייה שקטה לקריאה ממוקדת" },
+              ];
+              return (
+                <div className="grid sm:grid-cols-2 gap-2">
+                  {readVideos.map(v => (
+                    <button
+                      key={v.id}
+                      onClick={() => {
+                        setActiveYouTube(activeYouTube === v.id ? null : v.id);
+                        setTimeout(() => {
+                          const el = document.getElementById(`yt-player-container`);
+                          if (el) el.scrollIntoView({ behavior: "smooth", block: "center" });
+                        }, 100);
+                      }}
+                      className={`flex items-center gap-3 p-3 rounded-xl transition-all text-right ${
+                        activeYouTube === v.id
+                          ? "bg-emerald-500/20 border border-emerald-500/30"
+                          : "bg-white/5 border border-transparent hover:bg-white/10"
+                      }`}
+                    >
+                      <div className="w-9 h-9 rounded-lg bg-gradient-to-br from-emerald-500 to-emerald-700 flex items-center justify-center flex-shrink-0">
+                        {activeYouTube === v.id ? <Pause className="h-4 w-4 text-white" /> : <Play className="h-4 w-4 text-white" />}
+                      </div>
+                      <div className="min-w-0">
+                        <p className="text-sm font-medium text-[#e8e8ed] truncate">{v.title}</p>
+                        <p className="text-xs text-[#e8e8ed]/40 truncate">{v.desc}</p>
+                      </div>
+                    </button>
+                  ))}
+                </div>
+              );
+            })()}
           </CardContent>
         </Card>
 
