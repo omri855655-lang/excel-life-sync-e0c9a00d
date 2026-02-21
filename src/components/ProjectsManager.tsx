@@ -11,6 +11,7 @@ import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/component
 import { Plus, Trash2, Search, FolderKanban, ChevronDown, ChevronLeft, Link2, ExternalLink, CheckCircle2, Circle } from 'lucide-react';
 import { toast } from 'sonner';
 import { cn } from '@/lib/utils';
+import ProjectMembersPanel from '@/components/ProjectMembersPanel';
 
 interface Project {
   id: string;
@@ -506,6 +507,9 @@ const ProjectsManager = () => {
                             ))}
                           </div>
                         )}
+
+                        {/* Project Members */}
+                        <ProjectMembersPanel projectId={project.id} isOwner={true} />
                       </div>
                     </CollapsibleContent>
                   </Collapsible>

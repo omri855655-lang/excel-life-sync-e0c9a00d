@@ -1,6 +1,6 @@
 import { useState, useCallback, useMemo, useEffect } from "react";
 import { Button } from "@/components/ui/button";
-import { Plus, Trash2, Download, Check, Clock, AlertCircle, Loader2, Sparkles, ArrowUpDown, Flame, MoveRight, Archive, ArchiveRestore, Brain } from "lucide-react";
+import { Plus, Trash2, Download, Check, Clock, AlertCircle, Loader2, Sparkles, ArrowUpDown, Flame, MoveRight, Archive, ArchiveRestore, Brain, Users } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useTasks, Task } from "@/hooks/useTasks";
 import { useAuth } from "@/hooks/useAuth";
@@ -24,6 +24,7 @@ import {
 import YearSelector from "@/components/YearSelector";
 import TaskTabs from "@/components/TaskTabs";
 import MentalDifficultyHelper from "@/components/MentalDifficultyHelper";
+import SheetSharingDialog from "@/components/SheetSharingDialog";
 
 interface TaskSpreadsheetDbProps {
   title: string;
@@ -75,6 +76,7 @@ const TaskSpreadsheetDb = ({ title, taskType, readOnly = false, showYearSelector
   const [activeTaskTab, setActiveTaskTab] = useState<string>("active");
   const [mentalDialogOpen, setMentalDialogOpen] = useState(false);
   const [mentalTask, setMentalTask] = useState<Task | null>(null);
+  const [sharingDialogOpen, setSharingDialogOpen] = useState(false);
 
   // Fetch available sheets from the task_sheets table (persisted)
   const fetchAvailableSheets = useCallback(async () => {
@@ -690,13 +692,28 @@ const TaskSpreadsheetDb = ({ title, taskType, readOnly = false, showYearSelector
     <div className="flex flex-col h-full bg-background" dir="rtl">
       {/* Sheet Selector */}
       {showYearSelector && (
-        <YearSelector 
-          selectedYear={selectedSheet} 
-          onYearChange={setSelectedSheet}
-          years={availableSheets}
-          onAddYear={handleAddSheet}
-          onDeleteYear={handleDeleteSheet}
-        />
+        <div className="flex items-center gap-2">
+          <div className="flex-1">
+            <YearSelector 
+              selectedYear={selectedSheet} 
+              onYearChange={setSelectedSheet}
+              years={availableSheets}
+              onAddYear={handleAddSheet}
+              onDeleteYear={handleDeleteSheet}
+            />
+          </div>
+          {selectedSheet && !readOnly && (
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => setSharingDialogOpen(true)}
+              className="gap-1 ml-2 mr-2 shrink-0"
+            >
+              <Users className="h-4 w-4" />
+              <span className="hidden sm:inline">שתף</span>
+            </Button>
+          )}
+        </div>
       )}
 
       {/* Stats Bar */}
@@ -1096,6 +1113,16 @@ const TaskSpreadsheetDb = ({ title, taskType, readOnly = false, showYearSelector
           </DialogFooter>
         </DialogContent>
       </Dialog>
+
+      {/* Sheet Sharing Dialog */}
+      {selectedSheet && (
+        <SheetSharingDialog
+          open={sharingDialogOpen}
+          onOpenChange={setSharingDialogOpen}
+          sheetName={selectedSheet}
+          taskType={taskType}
+        />
+      )}
     </div>
   );
 };
