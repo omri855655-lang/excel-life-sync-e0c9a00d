@@ -13,7 +13,7 @@ import AiDailyPlanner from "@/components/AiDailyPlanner";
 import PersonalPlanner from "@/components/PersonalPlanner";
 import PushNotificationToggle from "@/components/PushNotificationToggle";
 import NotificationBell from "@/components/NotificationBell";
-import { FileSpreadsheet, Moon, Sun, LogOut, BookOpen, Tv, LayoutDashboard, ListTodo, Briefcase, Download, Headphones, CalendarCheck, FolderKanban, GraduationCap, CalendarDays } from "lucide-react";
+import { FileSpreadsheet, Moon, Sun, LogOut, BookOpen, Tv, LayoutDashboard, ListTodo, Briefcase, Download, Headphones, CalendarCheck, FolderKanban, GraduationCap, CalendarDays, Focus } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { toast } from "sonner";
@@ -151,6 +151,10 @@ const Personal = () => {
             <TabsTrigger value="planner" className="gap-2">
               <CalendarDays className="h-4 w-4" />
               מתכנן לוז
+            </TabsTrigger>
+            <TabsTrigger value="deeply" className="gap-2" onClick={() => navigate("/deeply")}>
+              <Focus className="h-4 w-4" />
+              Deeply
             </TabsTrigger>
           </TabsList>
         </div>
