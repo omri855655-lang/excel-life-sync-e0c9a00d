@@ -65,15 +65,6 @@ const Landing = () => {
             שתף את משימות העבודה עם הצוות או נהל את האזור האישי שלך.
           </p>
           <div className="flex flex-wrap justify-center gap-3 pt-4">
-            <Button
-              size="lg"
-              onClick={() => navigate("/work")}
-              className="gap-2 text-base"
-            >
-              <Briefcase className="h-5 w-5" />
-              משימות עבודה
-              <ArrowLeft className="h-4 w-4" />
-            </Button>
             {!loading && !user && (
               <Button
                 size="lg"
@@ -93,11 +84,6 @@ const Landing = () => {
       <section className="max-w-6xl mx-auto px-4 pb-16">
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
           {[
-            {
-              icon: Briefcase,
-              title: "משימות עבודה",
-              desc: "נהל ושתף משימות עם הצוות — שתף גליונות עם אנשים ספציפיים",
-            },
             {
               icon: BookOpen,
               title: "ספרים ומדיה",
