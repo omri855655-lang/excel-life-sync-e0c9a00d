@@ -2,6 +2,7 @@ import { useState, useEffect, useCallback } from "react";
 import { useNavigate } from "react-router-dom";
 import { useAuth } from "@/hooks/useAuth";
 import { supabase } from "@/integrations/supabase/client";
+import { useCustomBoards } from "@/hooks/useCustomBoards";
 import TaskSpreadsheetDb from "@/components/TaskSpreadsheetDb";
 import BooksManager from "@/components/BooksManager";
 import ShowsManager from "@/components/ShowsManager";
@@ -16,7 +17,8 @@ import DeeplyDashboard from "@/components/deeply/DeeplyDashboard";
 import PushNotificationToggle from "@/components/PushNotificationToggle";
 import NotificationBell from "@/components/NotificationBell";
 import SettingsPanel from "@/components/SettingsPanel";
-import { FileSpreadsheet, Moon, Sun, LogOut, BookOpen, Tv, LayoutDashboard, ListTodo, Briefcase, Download, Headphones, CalendarCheck, FolderKanban, GraduationCap, CalendarDays, Focus, Settings } from "lucide-react";
+import CustomBoardManager from "@/components/CustomBoardManager";
+import { FileSpreadsheet, Moon, Sun, LogOut, BookOpen, Tv, LayoutDashboard, ListTodo, Briefcase, Download, Headphones, CalendarCheck, FolderKanban, GraduationCap, CalendarDays, Focus, Settings, LayoutGrid } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { toast } from "sonner";
@@ -34,6 +36,7 @@ const Personal = () => {
   const [isDark, setIsDark] = useState(false);
   const [activeTab, setActiveTab] = useState("dashboard");
   const [sharedSheets, setSharedSheets] = useState<SharedSheet[]>([]);
+  const { boards: customBoards } = useCustomBoards();
 
   // Fetch shared work sheets (where someone shared with me)
   const fetchSharedSheets = useCallback(async () => {
@@ -211,6 +214,12 @@ const Personal = () => {
               <Settings className="h-4 w-4" />
               הגדרות
             </TabsTrigger>
+            {customBoards.map((board) => (
+              <TabsTrigger key={`board-${board.id}`} value={`board-${board.id}`} className="gap-2">
+                <LayoutGrid className="h-4 w-4" />
+                {board.name}
+              </TabsTrigger>
+            ))}
           </TabsList>
         </div>
 
@@ -280,6 +289,16 @@ const Personal = () => {
         <TabsContent value="settings" className="flex-1 min-h-0 overflow-auto m-0 p-0">
           <SettingsPanel />
         </TabsContent>
+
+        {customBoards.map((board) => (
+          <TabsContent key={`board-${board.id}`} value={`board-${board.id}`} className="flex-1 min-h-0 overflow-auto m-0 p-0">
+            <CustomBoardManager
+              boardId={board.id}
+              boardName={board.name}
+              statuses={board.statuses}
+            />
+          </TabsContent>
+        ))}
       </Tabs>
 
       {/* AI Daily Planner floating button */}

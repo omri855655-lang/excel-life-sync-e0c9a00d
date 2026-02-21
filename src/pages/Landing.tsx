@@ -1,3 +1,4 @@
+import { useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { useAuth } from "@/hooks/useAuth";
 import { Button } from "@/components/ui/button";
@@ -17,6 +18,21 @@ import {
 const Landing = () => {
   const navigate = useNavigate();
   const { user, loading } = useAuth();
+
+  // Auto-redirect logged-in users to personal area
+  useEffect(() => {
+    if (!loading && user) {
+      navigate("/personal", { replace: true });
+    }
+  }, [user, loading, navigate]);
+
+  if (loading || user) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-background">
+        <div className="animate-pulse text-muted-foreground">טוען...</div>
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-primary/5 via-background to-accent/10" dir="rtl">

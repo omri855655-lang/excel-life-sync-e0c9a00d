@@ -1,8 +1,9 @@
 import { useState, useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/hooks/useAuth';
+import { useCustomBoards } from '@/hooks/useCustomBoards';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { BookOpen, Tv, CheckCircle, Clock, Eye, TrendingUp } from 'lucide-react';
+import { BookOpen, Tv, CheckCircle, Clock, Eye, TrendingUp, LayoutGrid } from 'lucide-react';
 import { PieChart, Pie, Cell, ResponsiveContainer, BarChart, Bar, XAxis, YAxis, Tooltip, Legend } from 'recharts';
 import TasksDashboards from '@/components/dashboard/TasksDashboards';
 import ProductivityDashboard from '@/components/dashboard/ProductivityDashboard';
@@ -22,6 +23,8 @@ const COLORS = ['#3b82f6', '#f59e0b', '#22c55e'];
 
 const Dashboard = () => {
   const { user } = useAuth();
+  const { boards: customBoards } = useCustomBoards();
+  const [customBoardStats, setCustomBoardStats] = useState<Record<string, { total: number; byStatus: Record<string, number> }>>({});
   const [stats, setStats] = useState<Stats>({
     totalBooks: 0,
     booksToRead: 0,
@@ -33,6 +36,28 @@ const Dashboard = () => {
     showsWatched: 0,
   });
   const [loading, setLoading] = useState(true);
+
+  // Fetch custom board stats
+  useEffect(() => {
+    if (!user) return;
+    const dashboardBoards = customBoards.filter(b => b.show_in_dashboard);
+    if (dashboardBoards.length === 0) { setCustomBoardStats({}); return; }
+    
+    Promise.all(dashboardBoards.map(async (board) => {
+      const { data } = await supabase
+        .from("custom_board_items")
+        .select("status")
+        .eq("board_id", board.id)
+        .eq("user_id", user.id);
+      const items = data || [];
+      const byStatus: Record<string, number> = {};
+      for (const s of board.statuses) byStatus[s] = 0;
+      items.forEach(i => { byStatus[i.status] = (byStatus[i.status] || 0) + 1; });
+      return [board.id, { total: items.length, byStatus }] as const;
+    })).then(entries => {
+      setCustomBoardStats(Object.fromEntries(entries));
+    });
+  }, [user, customBoards]);
 
   useEffect(() => {
     if (user) {
@@ -313,6 +338,36 @@ const Dashboard = () => {
           </CardContent>
         </Card>
       </div>
+
+      {/* Custom Board Stats */}
+      {customBoards.filter(b => b.show_in_dashboard).map((board) => {
+        const stats = customBoardStats[board.id];
+        if (!stats) return null;
+        return (
+          <Card key={board.id}>
+            <CardHeader className="pb-2">
+              <CardTitle className="text-base flex items-center gap-2">
+                <LayoutGrid className="h-4 w-4 text-primary" />
+                {board.name}
+              </CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+                <div>
+                  <div className="text-sm text-muted-foreground">סה"כ</div>
+                  <div className="text-2xl font-bold">{stats.total}</div>
+                </div>
+                {Object.entries(stats.byStatus).map(([status, count]) => (
+                  <div key={status}>
+                    <div className="text-sm text-muted-foreground">{status}</div>
+                    <div className="text-lg font-semibold">{count}</div>
+                  </div>
+                ))}
+              </div>
+            </CardContent>
+          </Card>
+        );
+      })}
     </div>
   );
 };
