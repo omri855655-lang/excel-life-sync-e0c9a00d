@@ -1,6 +1,7 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { useNavigate } from "react-router-dom";
 import { useAuth } from "@/hooks/useAuth";
+import { supabase } from "@/integrations/supabase/client";
 import TaskSpreadsheetDb from "@/components/TaskSpreadsheetDb";
 import BooksManager from "@/components/BooksManager";
 import ShowsManager from "@/components/ShowsManager";
@@ -20,11 +21,68 @@ import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { toast } from "sonner";
 
+interface SharedSheet {
+  sheet_id: string;
+  sheet_name: string;
+  owner_email: string;
+  permission: string;
+}
+
 const Personal = () => {
   const { user, loading, signOut } = useAuth();
   const navigate = useNavigate();
   const [isDark, setIsDark] = useState(false);
   const [activeTab, setActiveTab] = useState("dashboard");
+  const [sharedSheets, setSharedSheets] = useState<SharedSheet[]>([]);
+
+  // Fetch shared work sheets (where someone shared with me)
+  const fetchSharedSheets = useCallback(async () => {
+    if (!user) return;
+    try {
+      const { data, error } = await supabase
+        .from("task_sheet_collaborators")
+        .select("sheet_id, permission, invited_email")
+        .or(`user_id.eq.${user.id},invited_email.eq.${user.email}`);
+
+      if (error) throw error;
+      if (!data || data.length === 0) return;
+
+      // Get the sheet details and owner emails
+      const sheetIds = data.map(d => d.sheet_id);
+      const { data: sheets, error: sheetsError } = await supabase
+        .from("task_sheets")
+        .select("id, sheet_name, user_id")
+        .in("id", sheetIds);
+
+      if (sheetsError) throw sheetsError;
+
+      // Get owner emails from profiles or just use user_id for now
+      const ownerIds = [...new Set(sheets?.map(s => s.user_id).filter(id => id !== user.id) || [])];
+      
+      // We'll show sheets that are NOT owned by the current user
+      const sharedResults: SharedSheet[] = [];
+      for (const sheet of sheets || []) {
+        if (sheet.user_id === user.id) continue; // Skip own sheets
+        const collab = data.find(d => d.sheet_id === sheet.id);
+        // Get owner email
+        const { data: ownerProfile } = await supabase
+          .from("profiles")
+          .select("display_name")
+          .eq("user_id", sheet.user_id)
+          .single();
+        
+        sharedResults.push({
+          sheet_id: sheet.id,
+          sheet_name: sheet.sheet_name,
+          owner_email: ownerProfile?.display_name || sheet.user_id.slice(0, 8),
+          permission: collab?.permission || "view",
+        });
+      }
+      setSharedSheets(sharedResults);
+    } catch (error) {
+      console.error("Error fetching shared sheets:", error);
+    }
+  }, [user]);
 
   useEffect(() => {
     if (loading) return;
@@ -32,7 +90,8 @@ const Personal = () => {
       navigate("/auth");
       return;
     }
-  }, [user, loading, navigate]);
+    fetchSharedSheets();
+  }, [user, loading, navigate, fetchSharedSheets]);
 
   const toggleTheme = () => {
     setIsDark(!isDark);
@@ -64,15 +123,6 @@ const Personal = () => {
         <FileSpreadsheet className="h-6 w-6 text-primary" />
         <h1 className="text-xl font-bold text-foreground">אזור אישי</h1>
         <div className="mr-auto flex items-center gap-2">
-          <Button
-            variant="outline"
-            size="sm"
-            onClick={() => navigate("/work")}
-            className="gap-2"
-          >
-            <Briefcase className="h-4 w-4" />
-            משימות עבודה
-          </Button>
           <Button
             variant="outline"
             size="sm"
@@ -115,6 +165,16 @@ const Personal = () => {
               <ListTodo className="h-4 w-4" />
               משימות אישיות
             </TabsTrigger>
+            <TabsTrigger value="work" className="gap-2">
+              <Briefcase className="h-4 w-4" />
+              משימות עבודה
+            </TabsTrigger>
+            {sharedSheets.map((shared) => (
+              <TabsTrigger key={`shared-${shared.sheet_id}`} value={`shared-${shared.sheet_id}`} className="gap-2">
+                <Briefcase className="h-4 w-4" />
+                <span className="max-w-[120px] truncate">עבודה ({shared.owner_email})</span>
+              </TabsTrigger>
+            ))}
             <TabsTrigger value="books" className="gap-2">
               <BookOpen className="h-4 w-4" />
               ספרים
@@ -165,6 +225,25 @@ const Personal = () => {
             showYearSelector={true}
           />
         </TabsContent>
+
+        <TabsContent value="work" className="flex-1 min-h-0 overflow-hidden m-0 p-0">
+          <TaskSpreadsheetDb
+            title="משימות עבודה"
+            taskType="work"
+            showYearSelector={true}
+          />
+        </TabsContent>
+
+        {sharedSheets.map((shared) => (
+          <TabsContent key={`shared-${shared.sheet_id}`} value={`shared-${shared.sheet_id}`} className="flex-1 min-h-0 overflow-hidden m-0 p-0">
+            <TaskSpreadsheetDb
+              title={`משימות עבודה (${shared.owner_email})`}
+              taskType="work"
+              readOnly={shared.permission === "view"}
+              showYearSelector={true}
+            />
+          </TabsContent>
+        ))}
 
         <TabsContent value="books" className="flex-1 min-h-0 overflow-hidden m-0 p-0">
           <BooksManager />
