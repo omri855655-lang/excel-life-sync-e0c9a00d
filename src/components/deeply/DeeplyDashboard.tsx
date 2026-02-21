@@ -3,7 +3,7 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Checkbox } from "@/components/ui/checkbox";
-import { Play, Pause, RotateCcw, Timer, Map, Plus, Trash2, BookOpen, ChevronDown, ChevronUp, Flame, CalendarClock } from "lucide-react";
+import { Play, Pause, RotateCcw, Timer, Map, Plus, Trash2, BookOpen, ChevronDown, ChevronUp, Flame, CalendarClock, Music } from "lucide-react";
 import { AUDIO_PRESETS, CATEGORIES, GUIDES, MOTIVATION_TIPS, type AudioPreset } from "./audioPresets";
 import { useAudioEngine } from "./useAudioEngine";
 import { supabase } from "@/integrations/supabase/client";
@@ -97,6 +97,7 @@ const DeeplyDashboard = () => {
   // Guides & Motivation
   const [expandedGuide, setExpandedGuide] = useState<string | null>(null);
   const [expandedMotivation, setExpandedMotivation] = useState<string | null>(null);
+  const [activeYouTube, setActiveYouTube] = useState<string | null>(null);
 
   // Sessions
   const [sessions, setSessions] = useState<SessionLog[]>(() => {
@@ -359,6 +360,75 @@ const DeeplyDashboard = () => {
               <div className="text-xs text-[#e8e8ed]/50 bg-white/5 rounded-lg p-2 flex items-start gap-2">
                 <span>ℹ️</span>
                 <span>{AUDIO_PRESETS.find(p => p.id === activePresetId)?.desc}</span>
+              </div>
+            )}
+          </CardContent>
+        </Card>
+
+        {/* YouTube Classical Music */}
+        <Card className="bg-white/5 border-white/5">
+          <CardHeader className="pb-2">
+            <CardTitle className="text-sm flex items-center gap-2 text-[#e8e8ed]">
+              <Music className="h-4 w-4 text-rose-400" />
+              🎹 מוזיקה קלאסית אמיתית — בטהובן, מוצארט, באך ועוד
+            </CardTitle>
+          </CardHeader>
+          <CardContent className="space-y-3">
+            <p className="text-xs text-[#e8e8ed]/50">מנגינות קלאסיות אמיתיות לרוגע, ריכוז ולימודים. לחץ לנגן 🎧</p>
+            {(() => {
+              const ytVideos = [
+                { id: "qT9neos0YDk", title: "בטהובן — מוזיקה קלאסית להרגעה", desc: "3 שעות של בטהובן המלא — מושלם לעבודה ולימודים" },
+                { id: "jgpJVI3tDbY", title: "בטהובן — סונטת אור הירח (Moonlight Sonata)", desc: "היצירה המפורסמת ביותר של בטהובן — רגיעה עמוקה" },
+                { id: "4Tr0otuiQuU", title: "בטהובן — לאליזה (Für Elise)", desc: "מנגינה נוסטלגית ומרגיעה" },
+                { id: "W-fFHeTX70Q", title: "מוצארט — סונטה K.448 (אפקט מוצארט)", desc: "מוכח מדעית לשיפור ריכוז וחשיבה מרחבית" },
+                { id: "Rb0UmrCXxVA", title: "מוצארט — מוזיקה ללימודים", desc: "3 שעות של מוצארט לריכוז ולימודים" },
+                { id: "tT9gT5bqi6Y", title: "באך — Air on the G String", desc: "אחת המנגינות היפות אי פעם — שלווה טהורה" },
+                { id: "yo4W0VhwECo", title: "שופן — נוקטורנים (Nocturnes)", desc: "שופן המלא — מושלם ללילה ולקריאה" },
+                { id: "lbblMw6k1cU", title: "דביוסי — Clair de Lune", desc: "חלומי ורגיש — מושלם למדיטציה" },
+                { id: "2bosouX_d8Y", title: "ויוואלדי — ארבע העונות", desc: "אנרגיה חיובית ויופי — קלאסיקה איטלקית" },
+                { id: "9E6b3swbnWg", title: "3 שעות מוזיקה קלאסית לריכוז", desc: "מיקס של הגדולים — בטהובן, מוצארט, באך, שופן" },
+              ];
+              return (
+                <div className="grid sm:grid-cols-2 gap-2">
+                  {ytVideos.map(v => (
+                    <button
+                      key={v.id}
+                      onClick={() => {
+                        const el = document.getElementById(`yt-frame-${v.id}`);
+                        if (el) {
+                          el.scrollIntoView({ behavior: "smooth", block: "center" });
+                        }
+                        setActiveYouTube(activeYouTube === v.id ? null : v.id);
+                      }}
+                      className={`flex items-center gap-3 p-3 rounded-xl transition-all text-right ${
+                        activeYouTube === v.id
+                          ? "bg-rose-500/20 border border-rose-500/30"
+                          : "bg-white/5 border border-transparent hover:bg-white/10"
+                      }`}
+                    >
+                      <div className="w-9 h-9 rounded-lg bg-gradient-to-br from-rose-500 to-rose-700 flex items-center justify-center flex-shrink-0">
+                        {activeYouTube === v.id ? <Pause className="h-4 w-4 text-white" /> : <Play className="h-4 w-4 text-white" />}
+                      </div>
+                      <div className="min-w-0">
+                        <p className="text-sm font-medium text-[#e8e8ed] truncate">{v.title}</p>
+                        <p className="text-xs text-[#e8e8ed]/40 truncate">{v.desc}</p>
+                      </div>
+                    </button>
+                  ))}
+                </div>
+              );
+            })()}
+            {activeYouTube && (
+              <div id={`yt-frame-${activeYouTube}`} className="rounded-xl overflow-hidden border border-rose-500/20">
+                <iframe
+                  width="100%"
+                  height="315"
+                  src={`https://www.youtube.com/embed/${activeYouTube}?autoplay=1`}
+                  title="Classical Music"
+                  allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+                  allowFullScreen
+                  className="w-full"
+                />
               </div>
             )}
           </CardContent>
