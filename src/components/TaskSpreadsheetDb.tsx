@@ -702,11 +702,31 @@ const TaskSpreadsheetDb = ({ title, taskType, readOnly = false, showYearSelector
               onDeleteYear={handleDeleteSheet}
             />
           </div>
-          {selectedSheet && !readOnly && (
+          {taskType === "work" && !readOnly && (
             <Button
               variant="outline"
               size="sm"
-              onClick={() => setSharingDialogOpen(true)}
+              onClick={async () => {
+                // Ensure the sheet exists in task_sheets before sharing
+                const sheetToShare = selectedSheet ?? currentYear;
+                if (user) {
+                  const { data: existing } = await supabase
+                    .from("task_sheets")
+                    .select("id")
+                    .eq("sheet_name", sheetToShare)
+                    .eq("task_type", taskType)
+                    .eq("user_id", user.id)
+                    .maybeSingle();
+                  if (!existing) {
+                    await supabase.from("task_sheets").insert({
+                      user_id: user.id,
+                      task_type: taskType,
+                      sheet_name: sheetToShare,
+                    });
+                  }
+                }
+                setSharingDialogOpen(true);
+              }}
               className="gap-1 ml-2 mr-2 shrink-0"
             >
               <Users className="h-4 w-4" />
@@ -1115,14 +1135,12 @@ const TaskSpreadsheetDb = ({ title, taskType, readOnly = false, showYearSelector
       </Dialog>
 
       {/* Sheet Sharing Dialog */}
-      {selectedSheet && (
-        <SheetSharingDialog
-          open={sharingDialogOpen}
-          onOpenChange={setSharingDialogOpen}
-          sheetName={selectedSheet}
-          taskType={taskType}
-        />
-      )}
+      <SheetSharingDialog
+        open={sharingDialogOpen}
+        onOpenChange={setSharingDialogOpen}
+        sheetName={selectedSheet ?? currentYear}
+        taskType={taskType}
+      />
     </div>
   );
 };
