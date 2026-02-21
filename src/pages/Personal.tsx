@@ -14,7 +14,8 @@ import PersonalPlanner from "@/components/PersonalPlanner";
 import DeeplyDashboard from "@/components/deeply/DeeplyDashboard";
 import PushNotificationToggle from "@/components/PushNotificationToggle";
 import NotificationBell from "@/components/NotificationBell";
-import { FileSpreadsheet, Moon, Sun, LogOut, BookOpen, Tv, LayoutDashboard, ListTodo, Briefcase, Download, Headphones, CalendarCheck, FolderKanban, GraduationCap, CalendarDays, Focus } from "lucide-react";
+import SettingsPanel from "@/components/SettingsPanel";
+import { FileSpreadsheet, Moon, Sun, LogOut, BookOpen, Tv, LayoutDashboard, ListTodo, Briefcase, Download, Headphones, CalendarCheck, FolderKanban, GraduationCap, CalendarDays, Focus, Settings } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { toast } from "sonner";
@@ -25,24 +26,13 @@ const Personal = () => {
   const [isDark, setIsDark] = useState(false);
   const [activeTab, setActiveTab] = useState("dashboard");
 
-  const ALLOWED_EMAIL = "omri855655@gmail.com";
-
   useEffect(() => {
     if (loading) return;
-
     if (!user) {
       navigate("/auth");
       return;
     }
-
-    if (user.email !== ALLOWED_EMAIL) {
-      (async () => {
-        await signOut();
-        toast.error("אין הרשאה לאזור האישי");
-        navigate("/auth");
-      })();
-    }
-  }, [user, loading, navigate, signOut]);
+  }, [user, loading, navigate]);
 
   const toggleTheme = () => {
     setIsDark(!isDark);
@@ -157,6 +147,10 @@ const Personal = () => {
               <Focus className="h-4 w-4" />
               Deeply
             </TabsTrigger>
+            <TabsTrigger value="settings" className="gap-2">
+              <Settings className="h-4 w-4" />
+              הגדרות
+            </TabsTrigger>
           </TabsList>
         </div>
 
@@ -202,6 +196,10 @@ const Personal = () => {
 
         <TabsContent value="deeply" className="flex-1 min-h-0 overflow-hidden m-0 p-0">
           <DeeplyDashboard />
+        </TabsContent>
+
+        <TabsContent value="settings" className="flex-1 min-h-0 overflow-auto m-0 p-0">
+          <SettingsPanel />
         </TabsContent>
       </Tabs>
 

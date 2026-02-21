@@ -1,7 +1,7 @@
 import { useState } from "react";
 import TaskSpreadsheetDb from "@/components/TaskSpreadsheetDb";
 import AiDailyPlanner from "@/components/AiDailyPlanner";
-import { Download, FileSpreadsheet, Moon, Sun, Lock, LogIn, User } from "lucide-react";
+import { Download, FileSpreadsheet, Moon, Sun, Lock, LogIn } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useNavigate } from "react-router-dom";
 import { useAuth } from "@/hooks/useAuth";
@@ -10,9 +10,7 @@ const WorkTasks = () => {
   const [isDark, setIsDark] = useState(false);
   const navigate = useNavigate();
   const { user, loading } = useAuth();
-
-  const ALLOWED_EMAIL = "omri855655@gmail.com";
-  const isAllowedUser = user?.email === ALLOWED_EMAIL;
+  const isLoggedIn = !!user;
 
   const toggleTheme = () => {
     setIsDark(!isDark);
@@ -36,7 +34,6 @@ const WorkTasks = () => {
             <span className="hidden sm:inline">התקנת אפליקציה</span>
           </Button>
           
-          {/* Show login or personal area button based on auth state */}
           {loading ? null : user ? (
             <Button
               variant="outline"
@@ -44,17 +41,8 @@ const WorkTasks = () => {
               onClick={() => navigate("/personal")}
               className="gap-2"
             >
-              {isAllowedUser ? (
-                <>
-                  <Lock className="h-4 w-4" />
-                  אזור אישי
-                </>
-              ) : (
-                <>
-                  <User className="h-4 w-4" />
-                  החשבון שלי
-                </>
-              )}
+              <Lock className="h-4 w-4" />
+              אזור אישי
             </Button>
           ) : (
             <Button
@@ -79,13 +67,13 @@ const WorkTasks = () => {
         <TaskSpreadsheetDb 
           title="לוז משימות עבודה" 
           taskType="work" 
-          readOnly={!isAllowedUser} 
-          showYearSelector={isAllowedUser}
+          readOnly={!isLoggedIn} 
+          showYearSelector={isLoggedIn}
         />
       </div>
 
-      {/* AI Daily Planner floating button - only for allowed user */}
-      {isAllowedUser && <AiDailyPlanner />}
+      {/* AI Daily Planner floating button - only for logged in users */}
+      {isLoggedIn && <AiDailyPlanner />}
     </div>
   );
 };
