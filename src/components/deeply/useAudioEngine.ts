@@ -108,8 +108,18 @@ export function useAudioEngine() {
     }
   }, [activePresetId, isPlaying, playPreset, stopAudio]);
 
+  // Resume audio context when returning from background
   useEffect(() => {
-    return () => { stopAudio(); };
+    const handleVisibilityChange = () => {
+      if (!document.hidden && audioContextRef.current && audioContextRef.current.state === 'suspended') {
+        audioContextRef.current.resume();
+      }
+    };
+    document.addEventListener('visibilitychange', handleVisibilityChange);
+    return () => {
+      document.removeEventListener('visibilitychange', handleVisibilityChange);
+      stopAudio();
+    };
   }, [stopAudio]);
 
   return { activePresetId, isPlaying, toggle, stopAudio };
