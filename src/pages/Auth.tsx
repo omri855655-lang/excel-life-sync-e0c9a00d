@@ -64,9 +64,12 @@ const Auth = () => {
 
     if (mode === "signup") {
       const { supabase } = await import("@/integrations/supabase/client");
-      const { error } = await supabase.auth.signUp({
+      const { data, error } = await supabase.auth.signUp({
         email: parsed.data.email,
         password: parsed.data.password,
+        options: {
+          emailRedirectTo: window.location.origin + "/personal",
+        },
       });
       setIsLoading(false);
 
@@ -76,6 +79,12 @@ const Auth = () => {
         } else {
           toast.error("שגיאה בהרשמה: " + error.message);
         }
+        return;
+      }
+
+      // If email confirmation is required, user won't have a session yet
+      if (data?.user && !data.session) {
+        toast.success("נרשמת בהצלחה! בדוק את המייל שלך לאישור החשבון");
         return;
       }
 
