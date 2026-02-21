@@ -3,9 +3,11 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Checkbox } from "@/components/ui/checkbox";
-import { Play, Pause, RotateCcw, Timer, Map, BarChart3, Plus, Trash2, BookOpen, ChevronDown, ChevronUp } from "lucide-react";
-import { AUDIO_PRESETS, CATEGORIES, GUIDES, type AudioPreset } from "./audioPresets";
+import { Play, Pause, RotateCcw, Timer, Map, Plus, Trash2, BookOpen, ChevronDown, ChevronUp, Flame, CalendarClock } from "lucide-react";
+import { AUDIO_PRESETS, CATEGORIES, GUIDES, MOTIVATION_TIPS, type AudioPreset } from "./audioPresets";
 import { useAudioEngine } from "./useAudioEngine";
+import { supabase } from "@/integrations/supabase/client";
+import { useAuth } from "@/hooks/useAuth";
 
 // Timer presets
 const TIMER_PRESETS = [
@@ -35,6 +37,14 @@ interface SessionLog {
   timestamp: Date;
 }
 
+interface CalendarTask {
+  id: string;
+  title: string;
+  start_time: string;
+  end_time: string;
+  category: string;
+}
+
 const COLOR_MAP: Record<string, string> = {
   violet: "from-violet-500 to-violet-700",
   cyan: "from-cyan-500 to-cyan-700",
@@ -53,6 +63,7 @@ const ACTIVE_COLOR_MAP: Record<string, string> = {
 
 const DeeplyDashboard = () => {
   const { activePresetId, isPlaying, toggle } = useAudioEngine();
+  const { user } = useAuth();
 
   // Sound category
   const [activeCategory, setActiveCategory] = useState<string>("focus");
@@ -83,14 +94,40 @@ const DeeplyDashboard = () => {
   });
   const [activeRoadmapStep, setActiveRoadmapStep] = useState<number | null>(null);
 
-  // Guides
+  // Guides & Motivation
   const [expandedGuide, setExpandedGuide] = useState<string | null>(null);
+  const [expandedMotivation, setExpandedMotivation] = useState<string | null>(null);
 
   // Sessions
   const [sessions, setSessions] = useState<SessionLog[]>(() => {
     const saved = localStorage.getItem("deeply-sessions");
     return saved ? JSON.parse(saved) : [];
   });
+
+  // Calendar tasks for today
+  const [calendarTasks, setCalendarTasks] = useState<CalendarTask[]>([]);
+  const [selectedCalendarTask, setSelectedCalendarTask] = useState<CalendarTask | null>(null);
+
+  // Fetch today's calendar events
+  useEffect(() => {
+    if (!user) return;
+    const fetchTodayEvents = async () => {
+      const today = new Date();
+      const startOfDay = new Date(today.getFullYear(), today.getMonth(), today.getDate()).toISOString();
+      const endOfDay = new Date(today.getFullYear(), today.getMonth(), today.getDate(), 23, 59, 59).toISOString();
+      
+      const { data } = await supabase
+        .from("calendar_events")
+        .select("id, title, start_time, end_time, category")
+        .eq("user_id", user.id)
+        .gte("start_time", startOfDay)
+        .lte("start_time", endOfDay)
+        .order("start_time");
+      
+      if (data) setCalendarTasks(data);
+    };
+    fetchTodayEvents();
+  }, [user]);
 
   // Persist
   useEffect(() => { localStorage.setItem("deeply-deep-tasks", JSON.stringify(deepTasks)); }, [deepTasks]);
@@ -129,6 +166,11 @@ const DeeplyDashboard = () => {
     return `${String(m).padStart(2, "0")}:${String(sec).padStart(2, "0")}`;
   };
 
+  const formatHour = (dateStr: string) => {
+    const d = new Date(dateStr);
+    return `${String(d.getHours()).padStart(2, "0")}:${String(d.getMinutes()).padStart(2, "0")}`;
+  };
+
   const currentTasks = workMode === "deep" ? deepTasks : shallowTasks;
   const setCurrentTasks = workMode === "deep" ? setDeepTasks : setShallowTasks;
 
@@ -136,6 +178,19 @@ const DeeplyDashboard = () => {
     if (!newTask.trim()) return;
     setCurrentTasks(prev => [...prev, { id: Date.now().toString(), text: newTask.trim(), done: false }]);
     setNewTask("");
+  };
+
+  const startPomodoroForTask = (task: CalendarTask) => {
+    setSelectedCalendarTask(task);
+    setTimerPreset(TIMER_PRESETS[0]); // Pomodoro
+    setTimeLeft(TIMER_PRESETS[0].work * 60);
+    setIsTimerRunning(false);
+    setIsBreak(false);
+    // Suggest a classical preset for focus
+    if (!isPlaying) {
+      const studyPreset = AUDIO_PRESETS.find(p => p.id === "satie-gymnopedie") || AUDIO_PRESETS.find(p => p.category === "study");
+      if (studyPreset) toggle(studyPreset);
+    }
   };
 
   const today = new Date().toDateString();
@@ -146,9 +201,44 @@ const DeeplyDashboard = () => {
   const filteredPresets = AUDIO_PRESETS.filter(p => p.category === activeCategory);
   const activeCat = CATEGORIES.find(c => c.id === activeCategory);
 
+  // Find upcoming task (next one that hasn't passed)
+  const now = new Date();
+  const upcomingTask = calendarTasks.find(t => new Date(t.start_time) >= now) || calendarTasks[calendarTasks.length - 1];
+
   return (
     <div className="h-full bg-[#0a0a0f] text-[#e8e8ed] overflow-auto" dir="rtl">
       <div className="max-w-7xl mx-auto p-4 space-y-4">
+
+        {/* Upcoming calendar task banner */}
+        {upcomingTask && (
+          <Card className="bg-gradient-to-r from-violet-500/10 to-cyan-500/10 border-violet-500/20">
+            <CardContent className="p-4 flex items-center gap-4">
+              <CalendarClock className="h-8 w-8 text-violet-400 flex-shrink-0" />
+              <div className="flex-1 min-w-0">
+                <p className="text-sm text-[#e8e8ed]/60">המשימה הבאה מהלו״ז שלך:</p>
+                <p className="text-lg font-bold text-[#e8e8ed] truncate">{upcomingTask.title}</p>
+                <p className="text-xs text-violet-300">{formatHour(upcomingTask.start_time)} — {formatHour(upcomingTask.end_time)}</p>
+              </div>
+              <Button
+                onClick={() => startPomodoroForTask(upcomingTask)}
+                className="bg-violet-500/20 text-violet-300 hover:bg-violet-500/30 border border-violet-500/30 flex-shrink-0"
+                variant="ghost"
+              >
+                <Play className="h-4 w-4 ml-1" />
+                התחל פומודורו
+              </Button>
+            </CardContent>
+          </Card>
+        )}
+
+        {/* Selected task notification */}
+        {selectedCalendarTask && (
+          <div className="bg-emerald-500/10 border border-emerald-500/20 rounded-xl p-3 flex items-center gap-3">
+            <span className="text-emerald-400 text-sm">🎯 עובד על:</span>
+            <span className="text-sm font-medium text-[#e8e8ed]">{selectedCalendarTask.title}</span>
+            <button onClick={() => setSelectedCalendarTask(null)} className="mr-auto text-xs text-[#e8e8ed]/30 hover:text-[#e8e8ed]/60">✕</button>
+          </div>
+        )}
 
         {/* Top row: Stats */}
         <div className="grid grid-cols-3 gap-3">
@@ -171,6 +261,43 @@ const DeeplyDashboard = () => {
             </CardContent>
           </Card>
         </div>
+
+        {/* Today's calendar tasks */}
+        {calendarTasks.length > 0 && (
+          <Card className="bg-white/5 border-white/5">
+            <CardHeader className="pb-2">
+              <CardTitle className="text-sm flex items-center gap-2 text-[#e8e8ed]">
+                <CalendarClock className="h-4 w-4 text-violet-400" />
+                משימות היום מהלו״ז
+              </CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div className="space-y-1">
+                {calendarTasks.map(task => {
+                  const isPast = new Date(task.end_time) < now;
+                  const isActive = selectedCalendarTask?.id === task.id;
+                  return (
+                    <button
+                      key={task.id}
+                      onClick={() => startPomodoroForTask(task)}
+                      className={`w-full flex items-center gap-3 p-3 rounded-xl transition-all text-right ${
+                        isActive ? "bg-violet-500/15 border border-violet-500/30" 
+                        : isPast ? "bg-white/3 opacity-50" 
+                        : "bg-white/5 hover:bg-white/10"
+                      }`}
+                    >
+                      <span className="text-xs font-mono text-[#e8e8ed]/50 w-12">{formatHour(task.start_time)}</span>
+                      <span className={`text-sm flex-1 ${isPast ? "line-through text-[#e8e8ed]/30" : "text-[#e8e8ed]/80"}`}>{task.title}</span>
+                      {!isPast && (
+                        <span className="text-xs text-violet-400 opacity-0 group-hover:opacity-100">🍅 פומודורו</span>
+                      )}
+                    </button>
+                  );
+                })}
+              </div>
+            </CardContent>
+          </Card>
+        )}
 
         {/* Sound Player with categories */}
         <Card className="bg-white/5 border-white/5">
@@ -237,7 +364,7 @@ const DeeplyDashboard = () => {
           </CardContent>
         </Card>
 
-        {/* Main grid: Timer + Tasks + Roadmap/Guides */}
+        {/* Main grid: Timer + Tasks + Roadmap */}
         <div className="grid lg:grid-cols-3 gap-4">
           {/* Timer */}
           <Card className="bg-white/5 border-white/5">
@@ -384,6 +511,39 @@ const DeeplyDashboard = () => {
             </CardContent>
           </Card>
         </div>
+
+        {/* Motivation section */}
+        <Card className="bg-white/5 border-white/5">
+          <CardHeader className="pb-2">
+            <CardTitle className="text-sm flex items-center gap-2 text-[#e8e8ed]">
+              <Flame className="h-4 w-4 text-orange-400" />
+              מוטיבציה ומניעים
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-2">
+              {MOTIVATION_TIPS.map(tip => (
+                <div key={tip.id}>
+                  <button
+                    onClick={() => setExpandedMotivation(expandedMotivation === tip.id ? null : tip.id)}
+                    className={`w-full flex items-center gap-3 p-3 rounded-xl transition-all text-right ${
+                      expandedMotivation === tip.id ? "bg-orange-500/10 border border-orange-500/20" : "bg-white/5 hover:bg-white/10"
+                    }`}
+                  >
+                    <span className="text-lg">{tip.icon}</span>
+                    <span className="text-sm font-medium text-[#e8e8ed] flex-1">{tip.title}</span>
+                    {expandedMotivation === tip.id ? <ChevronUp className="h-3 w-3 text-[#e8e8ed]/30" /> : <ChevronDown className="h-3 w-3 text-[#e8e8ed]/30" />}
+                  </button>
+                  {expandedMotivation === tip.id && (
+                    <div className="p-3 pr-10 text-sm text-[#e8e8ed]/60 leading-relaxed">
+                      {tip.content}
+                    </div>
+                  )}
+                </div>
+              ))}
+            </div>
+          </CardContent>
+        </Card>
 
         {/* Guides section */}
         <Card className="bg-white/5 border-white/5">
