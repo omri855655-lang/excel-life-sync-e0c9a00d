@@ -41,9 +41,10 @@ export function usePinGate() {
           setVerified(true);
         }
       } else {
-        // No profile yet, needs PIN setup
-        setPinEnabled(true);
+        // No profile yet — PIN disabled by default
+        setPinEnabled(false);
         setHasPin(false);
+        setVerified(true);
       }
       setLoading(false);
     };
