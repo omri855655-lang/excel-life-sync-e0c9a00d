@@ -214,6 +214,83 @@ export type Database = {
         }
         Relationships: []
       }
+      custom_board_items: {
+        Row: {
+          board_id: string
+          created_at: string
+          id: string
+          notes: string | null
+          status: string | null
+          title: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          board_id: string
+          created_at?: string
+          id?: string
+          notes?: string | null
+          status?: string | null
+          title: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          board_id?: string
+          created_at?: string
+          id?: string
+          notes?: string | null
+          status?: string | null
+          title?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "custom_board_items_board_id_fkey"
+            columns: ["board_id"]
+            isOneToOne: false
+            referencedRelation: "custom_boards"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      custom_boards: {
+        Row: {
+          created_at: string
+          icon: string
+          id: string
+          name: string
+          show_in_dashboard: boolean
+          sort_order: number
+          statuses: Json
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          icon?: string
+          id?: string
+          name: string
+          show_in_dashboard?: boolean
+          sort_order?: number
+          statuses?: Json
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          icon?: string
+          id?: string
+          name?: string
+          show_in_dashboard?: boolean
+          sort_order?: number
+          statuses?: Json
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       mental_coaching_sessions: {
         Row: {
           created_at: string

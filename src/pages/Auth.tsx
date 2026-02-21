@@ -79,7 +79,8 @@ const Auth = () => {
         return;
       }
 
-      toast.success("נרשמת בהצלחה! בדוק את המייל לאישור");
+      toast.success("נרשמת בהצלחה!");
+      navigate("/personal");
     } else {
       const { error } = await signIn(parsed.data.email, parsed.data.password);
       setIsLoading(false);
