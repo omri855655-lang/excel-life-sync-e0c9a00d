@@ -17,69 +17,84 @@ import { BookOpen, Tv, Lock } from "lucide-react";
 
 const Auth = () => {
   const navigate = useNavigate();
-  const { signIn, signOut, user, loading } = useAuth();
+  const { signIn, user, loading } = useAuth();
 
-  const ALLOWED_EMAIL = "omri855655@gmail.com";
-
+  const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [isLoading, setIsLoading] = useState(false);
+  const [mode, setMode] = useState<"login" | "signup">("login");
 
   const schema = useMemo(
     () =>
       z.object({
+        email: z.string().trim().email("אימייל לא תקין"),
         password: z
           .string()
           .trim()
-          .min(1, "נא להזין סיסמה")
+          .min(6, "סיסמה חייבת להכיל לפחות 6 תווים")
           .max(128, "סיסמה ארוכה מדי"),
       }),
     []
   );
 
   useEffect(() => {
-    document.title = "התחברות | מערכת ניהול אישית";
-  }, []);
+    document.title = mode === "login" ? "התחברות | מערכת ניהול אישית" : "הרשמה | מערכת ניהול אישית";
+  }, [mode]);
 
   useEffect(() => {
     if (loading) return;
-
-    // אם כבר מחובר – רק המשתמש המורשה יכול להמשיך.
     if (user) {
-      if (user.email === ALLOWED_EMAIL) {
-        navigate("/personal");
-      } else {
-        (async () => {
-          await signOut();
-          toast.error("אין הרשאה לחשבון הזה");
-        })();
-      }
+      navigate("/personal");
     }
-  }, [user, loading, navigate, signOut]);
+  }, [user, loading, navigate]);
 
-  const handleSignIn = async (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
 
-    const parsed = schema.safeParse({ password });
+    const parsed = schema.safeParse({ email, password });
     if (!parsed.success) {
       toast.error(parsed.error.issues[0]?.message ?? "שגיאה בטופס");
       return;
     }
 
     setIsLoading(true);
-    const { error } = await signIn(ALLOWED_EMAIL, parsed.data.password);
-    setIsLoading(false);
 
-    if (error) {
-      if (error.message.includes("Invalid login credentials")) {
-        toast.error("סיסמה שגויה");
-      } else {
-        toast.error("שגיאה בהתחברות: " + error.message);
+    if (mode === "signup") {
+      const { supabase } = await import("@/integrations/supabase/client");
+      const { error } = await supabase.auth.signUp({
+        email: parsed.data.email,
+        password: parsed.data.password,
+      });
+      setIsLoading(false);
+
+      if (error) {
+        if (error.message.includes("already registered")) {
+          toast.error("המייל הזה כבר רשום, נסה להתחבר");
+        } else {
+          toast.error("שגיאה בהרשמה: " + error.message);
+        }
+        return;
       }
-      return;
-    }
 
-    toast.success("התחברת בהצלחה!");
-    navigate("/personal");
+      toast.success("נרשמת בהצלחה! בדוק את המייל לאישור");
+    } else {
+      const { error } = await signIn(parsed.data.email, parsed.data.password);
+      setIsLoading(false);
+
+      if (error) {
+        if (error.message.includes("Invalid login credentials")) {
+          toast.error("אימייל או סיסמה שגויים");
+        } else if (error.message.includes("Email not confirmed")) {
+          toast.error("יש לאשר את המייל לפני התחברות");
+        } else {
+          toast.error("שגיאה בהתחברות: " + error.message);
+        }
+        return;
+      }
+
+      toast.success("התחברת בהצלחה!");
+      navigate("/personal");
+    }
   };
 
   if (loading) {
@@ -102,16 +117,28 @@ const Auth = () => {
             <Tv className="h-8 w-8" />
             <Lock className="h-8 w-8" />
           </div>
-          <CardTitle className="text-2xl font-bold">מערכת ניהול אישית</CardTitle>
+          <CardTitle className="text-2xl font-bold">
+            {mode === "login" ? "התחברות" : "הרשמה"}
+          </CardTitle>
           <CardDescription>
-            הכניסה מוגבלת למשתמש מורשה בלבד. דף משימות העבודה פתוח לצפייה לכולם.
+            {mode === "login"
+              ? "הזן את פרטי ההתחברות שלך"
+              : "צור חשבון חדש כדי להתחיל"}
           </CardDescription>
         </CardHeader>
         <CardContent>
-          <form onSubmit={handleSignIn} className="space-y-4">
+          <form onSubmit={handleSubmit} className="space-y-4">
             <div className="space-y-2">
               <Label htmlFor="email">אימייל</Label>
-              <Input id="email" type="email" value={ALLOWED_EMAIL} disabled dir="ltr" />
+              <Input
+                id="email"
+                type="email"
+                placeholder="your@email.com"
+                value={email}
+                onChange={(e) => setEmail(e.target.value)}
+                required
+                dir="ltr"
+              />
             </div>
 
             <div className="space-y-2">
@@ -125,12 +152,33 @@ const Auth = () => {
                 required
                 dir="ltr"
               />
+              {mode === "signup" && (
+                <p className="text-xs text-muted-foreground">לפחות 6 תווים</p>
+              )}
             </div>
 
             <Button type="submit" className="w-full" disabled={isLoading}>
-              {isLoading ? "מתחבר..." : "התחבר"}
+              {isLoading
+                ? mode === "login"
+                  ? "מתחבר..."
+                  : "נרשם..."
+                : mode === "login"
+                ? "התחבר"
+                : "הירשם"}
             </Button>
           </form>
+
+          <div className="mt-4 text-center">
+            <Button
+              variant="link"
+              onClick={() => setMode(mode === "login" ? "signup" : "login")}
+              className="text-sm"
+            >
+              {mode === "login"
+                ? "אין לך חשבון? הירשם"
+                : "כבר יש לך חשבון? התחבר"}
+            </Button>
+          </div>
         </CardContent>
       </Card>
     </div>
