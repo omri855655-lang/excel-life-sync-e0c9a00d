@@ -1,16 +1,28 @@
 import { useState } from "react";
 import TaskSpreadsheetDb from "@/components/TaskSpreadsheetDb";
 import AiDailyPlanner from "@/components/AiDailyPlanner";
-import { Download, FileSpreadsheet, Moon, Sun, Lock, LogIn } from "lucide-react";
+import { Download, FileSpreadsheet, Moon, Sun, Lock, LogIn, Home, Share2, Copy, Check } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useNavigate } from "react-router-dom";
 import { useAuth } from "@/hooks/useAuth";
 
 const WorkTasks = () => {
   const [isDark, setIsDark] = useState(false);
+  const [copied, setCopied] = useState(false);
   const navigate = useNavigate();
   const { user, loading } = useAuth();
   const isLoggedIn = !!user;
+
+  const handleShare = async () => {
+    const url = window.location.origin + "/work";
+    try {
+      await navigator.clipboard.writeText(url);
+      setCopied(true);
+      setTimeout(() => setCopied(false), 2000);
+    } catch {
+      // fallback
+    }
+  };
 
   const toggleTheme = () => {
     setIsDark(!isDark);
@@ -24,6 +36,24 @@ const WorkTasks = () => {
         <FileSpreadsheet className="h-6 w-6 text-primary" />
         <h1 className="text-xl font-bold text-foreground">לוז משימות עבודה</h1>
         <div className="mr-auto flex items-center gap-2">
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={() => navigate("/")}
+            className="gap-2"
+          >
+            <Home className="h-4 w-4" />
+            <span className="hidden sm:inline">ראשי</span>
+          </Button>
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={handleShare}
+            className="gap-2"
+          >
+            {copied ? <Check className="h-4 w-4" /> : <Share2 className="h-4 w-4" />}
+            <span className="hidden sm:inline">{copied ? "הועתק!" : "שתף"}</span>
+          </Button>
           <Button
             variant="outline"
             size="sm"
