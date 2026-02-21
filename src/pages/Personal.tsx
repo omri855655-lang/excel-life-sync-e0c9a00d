@@ -11,6 +11,7 @@ import Dashboard from "@/components/Dashboard";
 import DailyRoutine from "@/components/DailyRoutine";
 import AiDailyPlanner from "@/components/AiDailyPlanner";
 import PersonalPlanner from "@/components/PersonalPlanner";
+import DeeplyDashboard from "@/components/deeply/DeeplyDashboard";
 import PushNotificationToggle from "@/components/PushNotificationToggle";
 import NotificationBell from "@/components/NotificationBell";
 import { FileSpreadsheet, Moon, Sun, LogOut, BookOpen, Tv, LayoutDashboard, ListTodo, Briefcase, Download, Headphones, CalendarCheck, FolderKanban, GraduationCap, CalendarDays, Focus } from "lucide-react";
@@ -152,7 +153,7 @@ const Personal = () => {
               <CalendarDays className="h-4 w-4" />
               מתכנן לוז
             </TabsTrigger>
-            <TabsTrigger value="deeply" className="gap-2" onClick={() => navigate("/deeply")}>
+            <TabsTrigger value="deeply" className="gap-2">
               <Focus className="h-4 w-4" />
               Deeply
             </TabsTrigger>
@@ -197,6 +198,10 @@ const Personal = () => {
 
         <TabsContent value="courses" className="flex-1 min-h-0 overflow-hidden m-0 p-0">
           <CoursesManager />
+        </TabsContent>
+
+        <TabsContent value="deeply" className="flex-1 min-h-0 overflow-hidden m-0 p-0">
+          <DeeplyDashboard />
         </TabsContent>
       </Tabs>
 
