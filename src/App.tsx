@@ -5,6 +5,7 @@ import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Routes, Route } from "react-router-dom";
 import { AuthProvider, useAuth } from "@/hooks/useAuth";
 import PinGate, { usePinGate, PinSetup } from "@/components/PinGate";
+import Landing from "./pages/Landing";
 import WorkTasks from "./pages/WorkTasks";
 import Personal from "./pages/Personal";
 import Auth from "./pages/Auth";
@@ -25,17 +26,14 @@ const ProtectedRoute = ({ children }: { children: React.ReactNode }) => {
     );
   }
 
-  // Not logged in — show the page (it will redirect to /auth itself)
   if (!user) {
     return <>{children}</>;
   }
 
-  // PIN enabled but no PIN set yet — show setup
   if (pinEnabled && !hasPin) {
     return <PinSetup onSuccess={verify} />;
   }
 
-  // PIN enabled and has PIN — verify
   if (pinEnabled && !verified) {
     return <PinGate onSuccess={verify} />;
   }
@@ -47,7 +45,8 @@ const AppContent = () => {
   return (
     <BrowserRouter>
       <Routes>
-        <Route path="/" element={<WorkTasks />} />
+        <Route path="/" element={<Landing />} />
+        <Route path="/work" element={<WorkTasks />} />
         <Route
           path="/personal"
           element={
