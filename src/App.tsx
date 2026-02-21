@@ -9,8 +9,6 @@ import WorkTasks from "./pages/WorkTasks";
 import Personal from "./pages/Personal";
 import Auth from "./pages/Auth";
 import InstallApp from "./pages/InstallApp";
-import DeeplyLanding from "./pages/DeeplyLanding";
-import DeeplyDashboard from "./components/deeply/DeeplyDashboard";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -27,8 +25,6 @@ const AppContent = () => {
       <Routes>
         <Route path="/" element={<WorkTasks />} />
         <Route path="/personal" element={<Personal />} />
-        <Route path="/deeply" element={<DeeplyLanding />} />
-        <Route path="/deeply/dashboard" element={<DeeplyDashboard />} />
         <Route path="/auth" element={<Auth />} />
         <Route path="/install/*" element={<InstallApp />} />
         <Route path="/Install/*" element={<InstallApp />} />

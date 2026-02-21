@@ -1,10 +1,10 @@
 import { useState, useEffect, useCallback, useRef } from "react";
-import { useNavigate } from "react-router-dom";
+
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Checkbox } from "@/components/ui/checkbox";
-import { ArrowLeft, Play, Pause, RotateCcw, Headphones, Timer, Map, BarChart3, Plus, Trash2 } from "lucide-react";
+import { Play, Pause, RotateCcw, Headphones, Timer, Map, BarChart3, Plus, Trash2 } from "lucide-react";
 
 // Frequency types
 const FREQUENCIES = [
@@ -43,7 +43,6 @@ interface SessionLog {
 }
 
 const DeeplyDashboard = () => {
-  const navigate = useNavigate();
   const audioContextRef = useRef<AudioContext | null>(null);
   const oscillatorsRef = useRef<OscillatorNode[]>([]);
 
@@ -188,29 +187,7 @@ const DeeplyDashboard = () => {
   const todayCompleted = currentTasks.filter(t => t.done).length;
 
   return (
-    <div className="min-h-screen bg-[#0a0a0f] text-[#e8e8ed]" dir="rtl">
-      {/* Header */}
-      <header className="sticky top-0 z-50 bg-[#0a0a0f]/80 backdrop-blur-xl border-b border-white/5">
-        <div className="max-w-7xl mx-auto px-4 h-14 flex items-center justify-between">
-          <div className="flex items-center gap-3">
-            <span className="text-lg font-bold bg-gradient-to-r from-violet-400 to-cyan-400 bg-clip-text text-transparent">Deeply</span>
-            <span className="text-xs text-[#e8e8ed]/30">Dashboard</span>
-          </div>
-          <div className="flex items-center gap-4">
-            {/* Mini stats */}
-            <div className="hidden sm:flex items-center gap-4 text-xs text-[#e8e8ed]/40">
-              <span>{todayMinutes} דק׳ היום</span>
-              <span>{todaySessions.length} סשנים</span>
-              <span>{todayCompleted} משימות</span>
-            </div>
-            <Button variant="ghost" size="sm" onClick={() => navigate("/deeply")} className="text-[#e8e8ed]/60 hover:text-[#e8e8ed] gap-1">
-              <ArrowLeft className="h-4 w-4" />
-              חזרה
-            </Button>
-          </div>
-        </div>
-      </header>
-
+    <div className="h-full bg-[#0a0a0f] text-[#e8e8ed] overflow-auto" dir="rtl">
       <div className="max-w-7xl mx-auto p-4 grid lg:grid-cols-3 gap-4">
         {/* Left column: Session area */}
         <div className="lg:col-span-1 space-y-4">
