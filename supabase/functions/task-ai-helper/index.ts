@@ -11,12 +11,42 @@ serve(async (req) => {
   }
 
   try {
-    const { taskDescription, taskCategory, conversationHistory, startTime } = await req.json();
+    const body = await req.json();
+    const { taskDescription, taskCategory, conversationHistory, startTime, type, messages } = body;
     const LOVABLE_API_KEY = Deno.env.get("LOVABLE_API_KEY");
-    
+
     if (!LOVABLE_API_KEY) {
       throw new Error("LOVABLE_API_KEY is not configured");
     }
+
+    // Deeply AI Chat
+    if (type === "deeply-chat" && messages) {
+      const deeplySystem = `אתה מאמן פרודוקטיביות וריכוז מקצועי. אתה מתמחה בשיטות עבודה עמוקה (Deep Work), פומודורו, Flow State, Atomic Habits, ומוטיבציה.
+בסיס הידע שלך כולל מעל 100 ספרי פרודוקטיביות: Deep Work (קל ניופורט), Atomic Habits (ג'יימס קליר), The War of Art, Flow (צ'יקסנטמיהאי), GTD, Eat That Frog, Indistractable, Make Time, Peak Performance, The Compound Effect ועוד.
+תן עצות מעשיות, קצרות וממוקדות. דבר בעברית. השתמש באימוג'ים. היה מעודד ואנרגטי.`;
+
+      const aiResponse = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
+        method: "POST",
+        headers: { Authorization: `Bearer ${LOVABLE_API_KEY}`, "Content-Type": "application/json" },
+        body: JSON.stringify({
+          model: "google/gemini-2.5-flash",
+          messages: [{ role: "system", content: deeplySystem }, ...messages],
+        }),
+      });
+
+      if (!aiResponse.ok) {
+        const errText = await aiResponse.text();
+        console.error("AI error:", aiResponse.status, errText);
+        throw new Error("AI gateway error");
+      }
+
+      const aiData = await aiResponse.json();
+      const reply = aiData.choices?.[0]?.message?.content || "אין תשובה";
+      return new Response(JSON.stringify({ reply }), { headers: { ...corsHeaders, "Content-Type": "application/json" } });
+    }
+
+
+
 
     let systemPrompt: string;
     let userPrompt: string;
