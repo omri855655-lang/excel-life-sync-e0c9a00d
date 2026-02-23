@@ -3,11 +3,19 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Checkbox } from "@/components/ui/checkbox";
-import { Play, Pause, RotateCcw, Timer, Map, Plus, Trash2, BookOpen, ChevronDown, ChevronUp, Flame, CalendarClock, Music } from "lucide-react";
+import { Play, Pause, RotateCcw, Timer, Map, Plus, Trash2, BookOpen, ChevronDown, ChevronUp, Flame, CalendarClock, Music, StopCircle, MessageCircle } from "lucide-react";
 import { AUDIO_PRESETS, CATEGORIES, GUIDES, MOTIVATION_TIPS, type AudioPreset } from "./audioPresets";
 import { useAudioEngine } from "./useAudioEngine";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
+
+// Background themes
+const BG_THEMES = [
+  { id: "dark", name: "חשוך", bg: "bg-[#0a0a0f]", text: "text-[#e8e8ed]" },
+  { id: "bottle-green", name: "ירוק בקבוק", bg: "bg-[#0a2818]", text: "text-[#d0f0d8]" },
+  { id: "deep-blue", name: "כחול עמוק", bg: "bg-[#0a1628]", text: "text-[#c8d8f0]" },
+  { id: "warm-brown", name: "חום חם", bg: "bg-[#1a1410]", text: "text-[#e8ddd0]" },
+];
 
 // Timer presets
 const TIMER_PRESETS = [
@@ -68,12 +76,29 @@ const DeeplyDashboard = () => {
   // Sound category
   const [activeCategory, setActiveCategory] = useState<string>("focus");
 
+  // Background theme
+  const [bgTheme, setBgTheme] = useState(() => {
+    const saved = localStorage.getItem("deeply-bg-theme");
+    return saved || "dark";
+  });
+
   // Timer
   const [timerPreset, setTimerPreset] = useState(TIMER_PRESETS[0]);
   const [timeLeft, setTimeLeft] = useState(TIMER_PRESETS[0].work * 60);
   const [isTimerRunning, setIsTimerRunning] = useState(false);
   const [isBreak, setIsBreak] = useState(false);
   const timerRef = useRef<NodeJS.Timeout | null>(null);
+
+  // Stopwatch
+  const [stopwatchTime, setStopwatchTime] = useState(0);
+  const [isStopwatchRunning, setIsStopwatchRunning] = useState(false);
+  const stopwatchRef = useRef<NodeJS.Timeout | null>(null);
+
+  // AI Chat
+  const [showAiChat, setShowAiChat] = useState(false);
+  const [aiMessages, setAiMessages] = useState<{role: "user" | "assistant"; content: string}[]>([]);
+  const [aiInput, setAiInput] = useState("");
+  const [aiLoading, setAiLoading] = useState(false);
 
   // Tasks
   const [workMode, setWorkMode] = useState<"deep" | "shallow">("deep");
@@ -135,6 +160,7 @@ const DeeplyDashboard = () => {
   useEffect(() => { localStorage.setItem("deeply-shallow-tasks", JSON.stringify(shallowTasks)); }, [shallowTasks]);
   useEffect(() => { localStorage.setItem("deeply-roadmap", JSON.stringify(roadmapChecks)); }, [roadmapChecks]);
   useEffect(() => { localStorage.setItem("deeply-sessions", JSON.stringify(sessions)); }, [sessions]);
+  useEffect(() => { localStorage.setItem("deeply-bg-theme", bgTheme); }, [bgTheme]);
 
   // Timer logic
   useEffect(() => {
@@ -161,10 +187,46 @@ const DeeplyDashboard = () => {
     return () => { if (timerRef.current) clearTimeout(timerRef.current); };
   }, [isTimerRunning, timeLeft, isBreak, timerPreset, activePresetId]);
 
+  // Stopwatch logic
+  useEffect(() => {
+    if (isStopwatchRunning) {
+      stopwatchRef.current = setInterval(() => setStopwatchTime(t => t + 1), 1000);
+    } else {
+      if (stopwatchRef.current) clearInterval(stopwatchRef.current);
+    }
+    return () => { if (stopwatchRef.current) clearInterval(stopwatchRef.current); };
+  }, [isStopwatchRunning]);
+
   const formatTime = (s: number) => {
-    const m = Math.floor(s / 60);
+    const h = Math.floor(s / 3600);
+    const m = Math.floor((s % 3600) / 60);
     const sec = s % 60;
+    if (h > 0) return `${String(h).padStart(2, "0")}:${String(m).padStart(2, "0")}:${String(sec).padStart(2, "0")}`;
     return `${String(m).padStart(2, "0")}:${String(sec).padStart(2, "0")}`;
+  };
+
+  // AI Chat
+  const sendAiMessage = async () => {
+    if (!aiInput.trim() || aiLoading) return;
+    const userMsg = { role: "user" as const, content: aiInput.trim() };
+    const newMessages = [...aiMessages, userMsg];
+    setAiMessages(newMessages);
+    setAiInput("");
+    setAiLoading(true);
+
+    try {
+      const { data, error } = await supabase.functions.invoke("task-ai-helper", {
+        body: { type: "deeply-chat", messages: newMessages },
+      });
+      if (error) throw error;
+      const reply = data?.reply || data?.suggestion || "אין תשובה";
+      setAiMessages(prev => [...prev, { role: "assistant", content: reply }]);
+    } catch (e) {
+      console.error("AI chat error:", e);
+      setAiMessages(prev => [...prev, { role: "assistant", content: "שגיאה בחיבור ל-AI. נסה שוב." }]);
+    } finally {
+      setAiLoading(false);
+    }
   };
 
   const formatHour = (dateStr: string) => {
@@ -205,10 +267,63 @@ const DeeplyDashboard = () => {
   // Find upcoming task (next one that hasn't passed)
   const now = new Date();
   const upcomingTask = calendarTasks.find(t => new Date(t.start_time) >= now) || calendarTasks[calendarTasks.length - 1];
+  const currentTheme = BG_THEMES.find(t => t.id === bgTheme) || BG_THEMES[0];
 
   return (
-    <div className="h-full bg-[#0a0a0f] text-[#e8e8ed] overflow-auto" dir="rtl">
+    <div className={`h-full ${currentTheme.bg} ${currentTheme.text} overflow-auto`} dir="rtl">
       <div className="max-w-7xl mx-auto p-4 space-y-4">
+
+        {/* Background selector + AI Chat button */}
+        <div className="flex items-center gap-2 flex-wrap">
+          <span className="text-xs opacity-50">רקע:</span>
+          {BG_THEMES.map(theme => (
+            <button
+              key={theme.id}
+              onClick={() => setBgTheme(theme.id)}
+              className={`px-3 py-1 rounded-full text-xs transition-all ${bgTheme === theme.id ? "ring-2 ring-white/30 bg-white/10" : "bg-white/5 hover:bg-white/10"}`}
+            >
+              {theme.name}
+            </button>
+          ))}
+          <button
+            onClick={() => setShowAiChat(!showAiChat)}
+            className="mr-auto px-3 py-1.5 rounded-full text-xs bg-violet-500/20 text-violet-300 hover:bg-violet-500/30 flex items-center gap-1.5 transition-all"
+          >
+            <MessageCircle className="h-3.5 w-3.5" />
+            AI מאמן
+          </button>
+        </div>
+
+        {/* AI Chat panel */}
+        {showAiChat && (
+          <Card className="bg-white/5 border-violet-500/20">
+            <CardContent className="p-4 space-y-3">
+              <div className="max-h-[300px] overflow-y-auto space-y-2">
+                {aiMessages.length === 0 && (
+                  <p className="text-center text-sm opacity-40 py-4">שאל אותי על ריכוז, מוטיבציה, שיטות עבודה עמוקה, או כל דבר שקשור לפרודוקטיביות 🧠</p>
+                )}
+                {aiMessages.map((msg, i) => (
+                  <div key={i} className={`text-sm rounded-xl p-3 ${msg.role === "user" ? "bg-violet-500/15 mr-8" : "bg-white/5 ml-8"}`}>
+                    <p className="whitespace-pre-wrap">{msg.content}</p>
+                  </div>
+                ))}
+                {aiLoading && <div className="text-xs opacity-40 animate-pulse text-center">חושב...</div>}
+              </div>
+              <div className="flex gap-2">
+                <input
+                  value={aiInput}
+                  onChange={e => setAiInput(e.target.value)}
+                  onKeyDown={e => e.key === "Enter" && sendAiMessage()}
+                  placeholder="שאל על ריכוז, מוטיבציה, שיטות..."
+                  className="flex-1 px-3 py-2 rounded-lg bg-white/5 border border-white/10 text-sm placeholder:opacity-30 focus:outline-none focus:ring-1 focus:ring-violet-500/50"
+                />
+                <Button size="icon" variant="ghost" onClick={sendAiMessage} disabled={aiLoading} className="text-violet-400">
+                  <MessageCircle className="h-4 w-4" />
+                </Button>
+              </div>
+            </CardContent>
+          </Card>
+        )}
 
         {/* Upcoming calendar task banner */}
         {upcomingTask && (
@@ -536,14 +651,14 @@ const DeeplyDashboard = () => {
           </CardContent>
         </Card>
 
-        {/* Main grid: Timer + Tasks + Roadmap */}
-        <div className="grid lg:grid-cols-3 gap-4">
-          {/* Timer */}
+        {/* Main grid: Timer + Stopwatch + Tasks + Roadmap */}
+        <div className="grid lg:grid-cols-4 gap-4">
+          {/* Pomodoro Timer */}
           <Card className="bg-white/5 border-white/5">
             <CardHeader className="pb-3">
-              <CardTitle className="text-sm flex items-center gap-2 text-[#e8e8ed]">
+              <CardTitle className="text-sm flex items-center gap-2">
                 <Timer className="h-4 w-4 text-cyan-400" />
-                טיימר
+                טיימר פומודורו
               </CardTitle>
             </CardHeader>
             <CardContent>
@@ -553,7 +668,7 @@ const DeeplyDashboard = () => {
                     key={p.id}
                     onClick={() => { setTimerPreset(p); setTimeLeft(p.work * 60); setIsTimerRunning(false); setIsBreak(false); }}
                     className={`flex-1 py-2 rounded-lg text-sm transition-all ${
-                      timerPreset.id === p.id ? "bg-cyan-500/20 text-cyan-300 border border-cyan-500/30" : "bg-white/5 text-[#e8e8ed]/60"
+                      timerPreset.id === p.id ? "bg-cyan-500/20 text-cyan-300 border border-cyan-500/30" : "bg-white/5 opacity-60"
                     }`}
                   >
                     {p.name}
@@ -561,11 +676,11 @@ const DeeplyDashboard = () => {
                 ))}
               </div>
               <div className="text-center">
-                <div className="text-5xl font-mono font-bold mb-1 tabular-nums">
+                <div className="text-5xl font-mono font-bold mb-1 tabular-nums text-white drop-shadow-[0_0_10px_rgba(255,255,255,0.3)]">
                   {formatTime(timeLeft)}
                 </div>
-                <p className="text-xs text-[#e8e8ed]/40 mb-4">
-                  {isBreak ? "הפסקה" : timerPreset.id === "pomodoro" ? "סשן עבודה" : "ספרינט"}
+                <p className="text-xs opacity-60 mb-4">
+                  {isBreak ? "🟢 הפסקה" : timerPreset.id === "pomodoro" ? "🍅 סשן עבודה" : "🏃 ספרינט"}
                 </p>
                 <div className="flex gap-2 justify-center">
                   <Button
@@ -579,7 +694,44 @@ const DeeplyDashboard = () => {
                     variant="ghost"
                     size="icon"
                     onClick={() => { setIsTimerRunning(false); setIsBreak(false); setTimeLeft(timerPreset.work * 60); }}
-                    className="text-[#e8e8ed]/40 hover:text-[#e8e8ed]"
+                    className="opacity-40 hover:opacity-100"
+                  >
+                    <RotateCcw className="h-4 w-4" />
+                  </Button>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+
+          {/* Stopwatch */}
+          <Card className="bg-white/5 border-white/5">
+            <CardHeader className="pb-3">
+              <CardTitle className="text-sm flex items-center gap-2">
+                <StopCircle className="h-4 w-4 text-emerald-400" />
+                סטופר חופשי
+              </CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div className="text-center">
+                <div className="text-5xl font-mono font-bold mb-1 tabular-nums text-white drop-shadow-[0_0_10px_rgba(255,255,255,0.3)]">
+                  {formatTime(stopwatchTime)}
+                </div>
+                <p className="text-xs opacity-60 mb-4">
+                  {isStopwatchRunning ? "⏱️ רץ..." : stopwatchTime > 0 ? "⏸️ מושהה" : "לחץ התחל"}
+                </p>
+                <div className="flex gap-2 justify-center">
+                  <Button
+                    onClick={() => setIsStopwatchRunning(!isStopwatchRunning)}
+                    className={`rounded-full px-6 ${isStopwatchRunning ? "bg-red-500/20 text-red-300 hover:bg-red-500/30" : "bg-emerald-500/20 text-emerald-300 hover:bg-emerald-500/30"}`}
+                    variant="ghost"
+                  >
+                    {isStopwatchRunning ? <><Pause className="h-4 w-4 ml-1" /> עצור</> : <><Play className="h-4 w-4 ml-1" /> התחל</>}
+                  </Button>
+                  <Button
+                    variant="ghost"
+                    size="icon"
+                    onClick={() => { setIsStopwatchRunning(false); setStopwatchTime(0); }}
+                    className="opacity-40 hover:opacity-100"
                   >
                     <RotateCcw className="h-4 w-4" />
                   </Button>

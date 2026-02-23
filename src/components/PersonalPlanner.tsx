@@ -748,6 +748,15 @@ const PersonalPlanner = () => {
                   return isSameDay(eStart, day) && eStart.getHours() === h;
                 });
 
+                // Calculate overlapping groups for side-by-side display
+                const allDayEvents = filteredEvents.filter((e) => {
+                  const eStart = new Date(e.startTime);
+                  const eEnd = new Date(e.endTime);
+                  const slotStart = setMinutes(setHours(new Date(day), h), 0);
+                  const slotEnd = addHours(slotStart, 1);
+                  return isSameDay(eStart, day) && eStart < slotEnd && eEnd > slotStart;
+                });
+
                 // Drag preview for this slot
                 const showDragPreview = draggedTask && dragCreateState && isSameDay(dragCreateState.day, day) && (() => {
                   const startTotal = dragCreateState.startHour * 60 + dragCreateState.startMinute;
@@ -789,7 +798,7 @@ const PersonalPlanner = () => {
                       </div>
                     )}
 
-                    {/* Events */}
+                    {/* Events - side by side when overlapping */}
                     {slotEvents.map((event) => {
                       const startMin = new Date(event.startTime).getMinutes();
                       const duration = differenceInMinutes(
@@ -802,6 +811,12 @@ const PersonalPlanner = () => {
                         : (duration / 60) * HOUR_HEIGHT;
                       const top = (startMin / 60) * HOUR_HEIGHT;
 
+                      // Calculate position for side-by-side overlapping events
+                      const overlapIndex = allDayEvents.findIndex(e => e.id === event.id);
+                      const overlapCount = allDayEvents.length;
+                      const widthPercent = overlapCount > 1 ? (100 / overlapCount) : 100;
+                      const leftPercent = overlapCount > 1 ? (overlapIndex * widthPercent) : 0;
+
                       return (
                         <div
                           key={event.id}
@@ -812,13 +827,15 @@ const PersonalPlanner = () => {
                             setDraggedTask(null);
                           }}
                           onDragEnd={() => setDraggingEvent(null)}
-                          className={`absolute inset-x-1 rounded-md px-2 py-1 text-xs cursor-grab active:cursor-grabbing overflow-hidden z-20 shadow-sm hover:shadow-md transition-shadow border select-none ${draggingEvent?.id === event.id ? "opacity-50" : ""}`}
+                          className={`absolute rounded-md px-2 py-1 text-xs cursor-grab active:cursor-grabbing overflow-hidden z-20 shadow-sm hover:shadow-md transition-shadow border select-none ${draggingEvent?.id === event.id ? "opacity-50" : ""}`}
                           style={{
                             top,
                             height: Math.max(height, 20),
                             backgroundColor: event.color + "22",
                             borderColor: event.color,
                             borderRightWidth: 3,
+                            left: `${leftPercent}%`,
+                            width: `${widthPercent - 1}%`,
                           }}
                           onClick={() => handleClickEvent(event)}
                         >
