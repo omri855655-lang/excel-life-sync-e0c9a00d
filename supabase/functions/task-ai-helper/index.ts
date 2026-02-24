@@ -2,7 +2,7 @@ import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
-  "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
+  "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type, x-supabase-client-platform, x-supabase-client-platform-version, x-supabase-client-runtime, x-supabase-client-runtime-version",
 };
 
 serve(async (req) => {
@@ -193,14 +193,14 @@ ${taskDescription}
     }
 
     // Build messages array with conversation history if provided
-    const messages: { role: string; content: string }[] = [
+    const aiMessages: { role: string; content: string }[] = [
       { role: "system", content: systemPrompt },
     ];
 
     // Add conversation history if exists (includes the latest user message)
     if (conversationHistory && Array.isArray(conversationHistory) && conversationHistory.length > 0) {
       for (const msg of conversationHistory) {
-        messages.push({
+        aiMessages.push({
           role: msg.role === 'user' ? 'user' : 'assistant',
           content: msg.content
         });
@@ -208,7 +208,7 @@ ${taskDescription}
       // Don't add userPrompt again - it's already the last message in conversationHistory
     } else {
       // No history - add the user prompt directly
-      messages.push({ role: "user", content: userPrompt });
+      aiMessages.push({ role: "user", content: userPrompt });
     }
 
     const response = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
@@ -219,7 +219,7 @@ ${taskDescription}
       },
       body: JSON.stringify({
         model: "google/gemini-2.5-flash",
-        messages,
+        messages: aiMessages,
       }),
     });
 
