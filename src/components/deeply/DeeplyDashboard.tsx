@@ -13,8 +13,12 @@ import { useAuth } from "@/hooks/useAuth";
 const BG_THEMES = [
   { id: "dark", name: "חשוך", bg: "bg-[#0a0a0f]", text: "text-[#e8e8ed]" },
   { id: "bottle-green", name: "ירוק בקבוק", bg: "bg-[#0a2818]", text: "text-[#d0f0d8]" },
+  { id: "mint-green", name: "ירוק מנטה", bg: "bg-[#0d2b2a]", text: "text-[#b8f0e8]" },
   { id: "deep-blue", name: "כחול עמוק", bg: "bg-[#0a1628]", text: "text-[#c8d8f0]" },
+  { id: "ocean-teal", name: "אוקיינוס", bg: "bg-[#0a1f2e]", text: "text-[#a8dce8]" },
   { id: "warm-brown", name: "חום חם", bg: "bg-[#1a1410]", text: "text-[#e8ddd0]" },
+  { id: "midnight-purple", name: "סגול לילה", bg: "bg-[#140a20]", text: "text-[#d8c8f0]" },
+  { id: "charcoal", name: "פחם", bg: "bg-[#1a1a1a]", text: "text-[#d4d4d4]" },
 ];
 
 // Timer presets
@@ -162,11 +166,34 @@ const DeeplyDashboard = () => {
   useEffect(() => { localStorage.setItem("deeply-sessions", JSON.stringify(sessions)); }, [sessions]);
   useEffect(() => { localStorage.setItem("deeply-bg-theme", bgTheme); }, [bgTheme]);
 
+  // Play completion sound
+  const playCompletionSound = () => {
+    try {
+      const ctx = new AudioContext();
+      const osc = ctx.createOscillator();
+      const gain = ctx.createGain();
+      osc.connect(gain);
+      gain.connect(ctx.destination);
+      gain.gain.value = 0.3;
+      
+      // Play a pleasant chime sequence
+      osc.frequency.value = 523.25; // C5
+      osc.type = "sine";
+      osc.start();
+      osc.frequency.setValueAtTime(659.25, ctx.currentTime + 0.2); // E5
+      osc.frequency.setValueAtTime(783.99, ctx.currentTime + 0.4); // G5
+      gain.gain.setValueAtTime(0.3, ctx.currentTime + 0.5);
+      gain.gain.linearRampToValueAtTime(0, ctx.currentTime + 1.2);
+      osc.stop(ctx.currentTime + 1.2);
+    } catch {}
+  };
+
   // Timer logic
   useEffect(() => {
     if (isTimerRunning && timeLeft > 0) {
       timerRef.current = setTimeout(() => setTimeLeft(t => t - 1), 1000);
     } else if (isTimerRunning && timeLeft === 0) {
+      playCompletionSound();
       if (!isBreak) {
         const log: SessionLog = {
           id: Date.now().toString(),
