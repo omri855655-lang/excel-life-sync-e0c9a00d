@@ -3,6 +3,8 @@ import { useNavigate } from "react-router-dom";
 import { useAuth } from "@/hooks/useAuth";
 import { supabase } from "@/integrations/supabase/client";
 import { useCustomBoards } from "@/hooks/useCustomBoards";
+import { useUserPreferences } from "@/hooks/useUserPreferences";
+import { useLanguage } from "@/hooks/useLanguage";
 import TaskSpreadsheetDb from "@/components/TaskSpreadsheetDb";
 import BooksManager from "@/components/BooksManager";
 import ShowsManager from "@/components/ShowsManager";
@@ -37,6 +39,8 @@ const Personal = () => {
   const [activeTab, setActiveTab] = useState("dashboard");
   const [sharedSheets, setSharedSheets] = useState<SharedSheet[]>([]);
   const { boards: customBoards } = useCustomBoards();
+  const { isTabVisible } = useUserPreferences();
+  const { t, dir } = useLanguage();
 
   // Fetch shared work sheets (where someone shared with me)
   const fetchSharedSheets = useCallback(async () => {
@@ -103,14 +107,14 @@ const Personal = () => {
 
   const handleSignOut = async () => {
     await signOut();
-    toast.success("התנתקת בהצלחה");
+    toast.success(t("signedOutSuccess"));
     navigate("/");
   };
 
   if (loading) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-background">
-        <div className="animate-pulse text-muted-foreground">טוען...</div>
+        <div className="animate-pulse text-muted-foreground">{t("loading")}</div>
       </div>
     );
   }
@@ -120,12 +124,12 @@ const Personal = () => {
   }
 
   return (
-    <div className="flex flex-col h-screen bg-background" dir="rtl">
+    <div className={`flex flex-col h-screen bg-background`} dir={dir}>
       {/* Header */}
       <header className="flex items-center gap-3 px-4 py-3 border-b border-border bg-card shadow-sm">
         <FileSpreadsheet className="h-6 w-6 text-primary" />
-        <h1 className="text-xl font-bold text-foreground">אזור אישי</h1>
-        <div className="mr-auto flex items-center gap-2">
+        <h1 className="text-xl font-bold text-foreground">{t("personalArea")}</h1>
+        <div className={`${dir === "rtl" ? "mr-auto" : "ml-auto"} flex items-center gap-2`}>
           <Button
             variant="outline"
             size="sm"
@@ -133,7 +137,7 @@ const Personal = () => {
             className="gap-2"
           >
             <Download className="h-4 w-4" />
-            <span className="hidden sm:inline">התקנת אפליקציה</span>
+            <span className="hidden sm:inline">{t("installApp")}</span>
           </Button>
           <span className="text-sm text-muted-foreground hidden sm:block">{user.email}</span>
           <NotificationBell />
@@ -162,57 +166,77 @@ const Personal = () => {
           <TabsList className="h-12 bg-transparent w-max min-w-full">
             <TabsTrigger value="dashboard" className="gap-2">
               <LayoutDashboard className="h-4 w-4" />
-              דשבורד
+              {t("dashboard")}
             </TabsTrigger>
-            <TabsTrigger value="tasks" className="gap-2">
-              <ListTodo className="h-4 w-4" />
-              משימות אישיות
-            </TabsTrigger>
-            <TabsTrigger value="work" className="gap-2">
-              <Briefcase className="h-4 w-4" />
-              משימות עבודה
-            </TabsTrigger>
+            {isTabVisible("tasks") && (
+              <TabsTrigger value="tasks" className="gap-2">
+                <ListTodo className="h-4 w-4" />
+                {t("personalTasks")}
+              </TabsTrigger>
+            )}
+            {isTabVisible("work") && (
+              <TabsTrigger value="work" className="gap-2">
+                <Briefcase className="h-4 w-4" />
+                {t("workTasks")}
+              </TabsTrigger>
+            )}
             {sharedSheets.map((shared) => (
               <TabsTrigger key={`shared-${shared.sheet_id}`} value={`shared-${shared.sheet_id}`} className="gap-2">
                 <Briefcase className="h-4 w-4" />
                 <span className="max-w-[120px] truncate">עבודה ({shared.owner_email})</span>
               </TabsTrigger>
             ))}
-            <TabsTrigger value="books" className="gap-2">
-              <BookOpen className="h-4 w-4" />
-              ספרים
-            </TabsTrigger>
-            <TabsTrigger value="shows" className="gap-2">
-              <Tv className="h-4 w-4" />
-              סדרות
-            </TabsTrigger>
-            <TabsTrigger value="podcasts" className="gap-2">
-              <Headphones className="h-4 w-4" />
-              פודקאסטים
-            </TabsTrigger>
-            <TabsTrigger value="routine" className="gap-2">
-              <CalendarCheck className="h-4 w-4" />
-              לוז יומי
-            </TabsTrigger>
-            <TabsTrigger value="projects" className="gap-2">
-              <FolderKanban className="h-4 w-4" />
-              פרויקטים
-            </TabsTrigger>
-            <TabsTrigger value="courses" className="gap-2">
-              <GraduationCap className="h-4 w-4" />
-              קורסים
-            </TabsTrigger>
-            <TabsTrigger value="planner" className="gap-2">
-              <CalendarDays className="h-4 w-4" />
-              מתכנן לוז
-            </TabsTrigger>
-            <TabsTrigger value="deeply" className="gap-2">
-              <Focus className="h-4 w-4" />
-              Deeply
-            </TabsTrigger>
+            {isTabVisible("books") && (
+              <TabsTrigger value="books" className="gap-2">
+                <BookOpen className="h-4 w-4" />
+                {t("books")}
+              </TabsTrigger>
+            )}
+            {isTabVisible("shows") && (
+              <TabsTrigger value="shows" className="gap-2">
+                <Tv className="h-4 w-4" />
+                {t("shows")}
+              </TabsTrigger>
+            )}
+            {isTabVisible("podcasts") && (
+              <TabsTrigger value="podcasts" className="gap-2">
+                <Headphones className="h-4 w-4" />
+                {t("podcasts")}
+              </TabsTrigger>
+            )}
+            {isTabVisible("routine") && (
+              <TabsTrigger value="routine" className="gap-2">
+                <CalendarCheck className="h-4 w-4" />
+                {t("dailyRoutine")}
+              </TabsTrigger>
+            )}
+            {isTabVisible("projects") && (
+              <TabsTrigger value="projects" className="gap-2">
+                <FolderKanban className="h-4 w-4" />
+                {t("projects")}
+              </TabsTrigger>
+            )}
+            {isTabVisible("courses") && (
+              <TabsTrigger value="courses" className="gap-2">
+                <GraduationCap className="h-4 w-4" />
+                {t("courses")}
+              </TabsTrigger>
+            )}
+            {isTabVisible("planner") && (
+              <TabsTrigger value="planner" className="gap-2">
+                <CalendarDays className="h-4 w-4" />
+                {t("planner")}
+              </TabsTrigger>
+            )}
+            {isTabVisible("deeply") && (
+              <TabsTrigger value="deeply" className="gap-2">
+                <Focus className="h-4 w-4" />
+                Deeply
+              </TabsTrigger>
+            )}
             <TabsTrigger value="settings" className="gap-2">
               <Settings className="h-4 w-4" />
-              הגדרות
+              {t("settings")}
             </TabsTrigger>
             {customBoards.map((board) => (
               <TabsTrigger key={`board-${board.id}`} value={`board-${board.id}`} className="gap-2">
