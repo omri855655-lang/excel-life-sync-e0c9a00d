@@ -2,16 +2,21 @@ import { useState, useEffect, useRef } from "react";
 import { useAuth } from "@/hooks/useAuth";
 import { supabase } from "@/integrations/supabase/client";
 import { useCustomBoards } from "@/hooks/useCustomBoards";
+import { useUserPreferences, DEFAULT_TABS } from "@/hooks/useUserPreferences";
 import { Switch } from "@/components/ui/switch";
 import { Label } from "@/components/ui/label";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Lock, Shield, LayoutGrid, Plus, Trash2, X } from "lucide-react";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Lock, Shield, LayoutGrid, Plus, Trash2, X, Eye, EyeOff, Globe } from "lucide-react";
 import { toast } from "sonner";
+import { useLanguage } from "@/hooks/useLanguage";
 
 const SettingsPanel = () => {
   const { user } = useAuth();
+  const { toggleTab, isTabVisible } = useUserPreferences();
+  const { lang, setLang } = useLanguage();
   const [pinEnabled, setPinEnabled] = useState(true);
   const [hasPin, setHasPin] = useState(false);
   const [loading, setLoading] = useState(true);
@@ -25,6 +30,7 @@ const SettingsPanel = () => {
   const [newBoardName, setNewBoardName] = useState("");
   const [newBoardStatuses, setNewBoardStatuses] = useState("לביצוע,בתהליך,הושלם");
   const [newBoardDashboard, setNewBoardDashboard] = useState(false);
+  const [boardTemplate, setBoardTemplate] = useState("custom");
 
   useEffect(() => {
     if (!user) return;
@@ -187,6 +193,26 @@ const SettingsPanel = () => {
                 <Label className="text-base font-semibold">דשבורד חדש</Label>
                 <Button size="icon" variant="ghost" className="h-7 w-7" onClick={() => setShowAddBoard(false)}><X className="h-4 w-4" /></Button>
               </div>
+
+              <div className="space-y-2">
+                <Label>בחר תבנית</Label>
+                <Select value={boardTemplate} onValueChange={(v) => {
+                  setBoardTemplate(v);
+                  if (v === "tasks") { setNewBoardStatuses("טרם החל,בטיפול,בוצע"); setNewBoardDashboard(true); }
+                  else if (v === "tracking") { setNewBoardStatuses("לצפות,צופה,נצפה"); setNewBoardDashboard(false); }
+                  else if (v === "kanban") { setNewBoardStatuses("לביצוע,בתהליך,בבדיקה,הושלם"); setNewBoardDashboard(true); }
+                  else { setNewBoardStatuses("לביצוע,בתהליך,הושלם"); setNewBoardDashboard(false); }
+                }}>
+                  <SelectTrigger><SelectValue /></SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="tasks">📋 רשימת משימות (כולל דשבורד)</SelectItem>
+                    <SelectItem value="tracking">📚 רשימת מעקב (כמו ספרים/פודקאסטים)</SelectItem>
+                    <SelectItem value="kanban">📊 קנבן (לביצוע → בבדיקה → הושלם)</SelectItem>
+                    <SelectItem value="custom">⚙️ מותאם אישית</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+
               <div className="space-y-2">
                 <Label>שם הדשבורד</Label>
                 <Input placeholder='לדוגמה: "לימודים", "כושר", "מתכונים"' value={newBoardName} onChange={(e) => setNewBoardName(e.target.value)} />
@@ -205,6 +231,48 @@ const SettingsPanel = () => {
           ) : (
             <Button variant="outline" onClick={() => setShowAddBoard(true)} className="w-full gap-2"><Plus className="h-4 w-4" />הוסף דשבורד חדש</Button>
           )}
+        </CardContent>
+      </Card>
+
+      {/* Tab Visibility Card */}
+      <Card>
+        <CardHeader>
+          <CardTitle className="flex items-center gap-2"><Eye className="h-5 w-5" />הצגת לשוניות</CardTitle>
+        </CardHeader>
+        <CardContent className="space-y-3">
+          <p className="text-sm text-muted-foreground">בחר אילו לשוניות יוצגו בסרגל העליון. לשוניות מוסתרות לא יופיעו אבל הנתונים שלהן נשמרים.</p>
+          <div className="space-y-2">
+            {DEFAULT_TABS.filter(t => t.removable).map((tab) => (
+              <div key={tab.id} className="flex items-center justify-between p-2 rounded-lg border bg-muted/20">
+                <span className="text-sm font-medium">{tab.name}</span>
+                <div className="flex items-center gap-2">
+                  {isTabVisible(tab.id) ? (
+                    <Eye className="h-4 w-4 text-muted-foreground" />
+                  ) : (
+                    <EyeOff className="h-4 w-4 text-muted-foreground" />
+                  )}
+                  <Switch
+                    checked={isTabVisible(tab.id)}
+                    onCheckedChange={() => toggleTab(tab.id)}
+                  />
+                </div>
+              </div>
+            ))}
+          </div>
+        </CardContent>
+      </Card>
+
+      {/* Language Card */}
+      <Card>
+        <CardHeader>
+          <CardTitle className="flex items-center gap-2"><Globe className="h-5 w-5" />שפה / Language</CardTitle>
+        </CardHeader>
+        <CardContent className="space-y-3">
+          <p className="text-sm text-muted-foreground">בחר את שפת הממשק / Choose interface language</p>
+          <div className="flex gap-2">
+            <Button variant={lang === "he" ? "default" : "outline"} onClick={() => setLang("he")} className="flex-1">עברית</Button>
+            <Button variant={lang === "en" ? "default" : "outline"} onClick={() => setLang("en")} className="flex-1">English</Button>
+          </div>
         </CardContent>
       </Card>
     </div>

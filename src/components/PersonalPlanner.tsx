@@ -14,6 +14,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { toast } from "sonner";
 import { ChevronRight, ChevronLeft, Plus, GripVertical, Clock, Trash2, Download, Flame, AlertTriangle, CalendarRange, RotateCcw } from "lucide-react";
 import { ScrollArea } from "@/components/ui/scroll-area";
+import { getHolidaysForDate } from "@/data/holidays";
 
 interface AggregatedTask {
   id: string;
@@ -502,6 +503,21 @@ const PersonalPlanner = () => {
       });
     } else {
       const isCustom = !newEventData.sourceId && (newEventData.sourceType === "custom" || !newEventData.sourceType);
+      
+      // Check for duplicate tasks
+      if (isCustom) {
+        const titleLower = newEventData.title.toLowerCase().trim();
+        const allTaskTitles = [
+          ...personalTasks.filter(t => !t.archived).map(t => t.description?.toLowerCase().trim()),
+          ...workTasks.filter(t => !t.archived).map(t => t.description?.toLowerCase().trim()),
+        ];
+        const duplicate = allTaskTitles.find(t => t && (t === titleLower || t.includes(titleLower) || titleLower.includes(t)));
+        if (duplicate) {
+          const proceed = confirm(`⚠️ נמצאה משימה דומה: "${duplicate}"\nהאם להמשיך בכל זאת?`);
+          if (!proceed) return;
+        }
+      }
+
       const savedEvent = await addEvent({
         title: newEventData.title,
         description: newEventData.description,
@@ -736,9 +752,14 @@ const PersonalPlanner = () => {
           {days.map((day) => (
             <div key={day.toISOString()} className="flex-1 border-l border-border min-w-[100px] relative">
               {/* Day header */}
-              <div className={`h-10 border-b border-border flex flex-col items-center justify-center text-sm sticky top-0 bg-card z-10 ${isSameDay(day, new Date()) ? "bg-primary/10 font-bold" : ""}`}>
+              <div className={`min-h-[40px] border-b border-border flex flex-col items-center justify-center text-sm sticky top-0 bg-card z-10 ${isSameDay(day, new Date()) ? "bg-primary/10 font-bold" : ""}`}>
                 <span>{format(day, "EEEE", { locale: he })}</span>
                 <span className="text-xs text-muted-foreground">{format(day, "dd/MM")}</span>
+                {getHolidaysForDate(format(day, "yyyy-MM-dd")).map((h, i) => (
+                  <span key={i} className="text-[9px] px-1.5 rounded-full font-medium mt-0.5" style={{ backgroundColor: h.color + "22", color: h.color }}>
+                    {h.name}
+                  </span>
+                ))}
               </div>
 
               {/* Hour slots */}
@@ -902,6 +923,11 @@ const PersonalPlanner = () => {
                   onDrop={() => handleDrop(day)}
                 >
                   <div className="text-xs font-medium mb-1">{format(day, "d")}</div>
+                  {getHolidaysForDate(format(day, "yyyy-MM-dd")).map((h, i) => (
+                    <div key={`h-${i}`} className="text-[9px] truncate rounded px-1 mb-0.5" style={{ backgroundColor: h.color + "22", color: h.color }}>
+                      {h.name}
+                    </div>
+                  ))}
                   {dayEvents.slice(0, 3).map((event) => (
                     <div
                       key={event.id}
