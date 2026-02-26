@@ -49,7 +49,8 @@ const PersonalPlanner = () => {
   const [currentDate, setCurrentDate] = useState(new Date());
   const [hourHeight, setHourHeight] = useState(DEFAULT_HOUR_HEIGHT);
   const [expandedDayIndex, setExpandedDayIndex] = useState<number | null>(null);
-  const [expandedHours, setExpandedHours] = useState<Set<number>>(new Set());
+  const [hourHeights, setHourHeights] = useState<Record<number, number>>({});
+  const [resizingHour, setResizingHour] = useState<{ hour: number; startY: number; startHeight: number } | null>(null);
   const [draggedTask, setDraggedTask] = useState<AggregatedTask | null>(null);
   const [draggingEvent, setDraggingEvent] = useState<CalendarEvent | null>(null);
   const [showEventDialog, setShowEventDialog] = useState(false);
@@ -62,6 +63,7 @@ const PersonalPlanner = () => {
     category: "משימה",
     startTime: "",
     endTime: "",
+    color: "" as string,
     sourceType: "custom" as string,
     sourceId: null as string | null,
   });
@@ -226,16 +228,12 @@ const PersonalPlanner = () => {
   // Snap to 15-minute intervals
   const snapMinutes = (minutes: number) => Math.round(minutes / SNAP_MINUTES) * SNAP_MINUTES;
 
-  const EXPANDED_HOUR_HEIGHT = 180;
-  const getHourHeight = (h: number) => expandedHours.has(h) ? EXPANDED_HOUR_HEIGHT : hourHeight;
+  const getHourHeight = (h: number) => hourHeights[h] || hourHeight;
 
-  const toggleHourExpand = (h: number) => {
-    setExpandedHours(prev => {
-      const next = new Set(prev);
-      if (next.has(h)) next.delete(h);
-      else next.add(h);
-      return next;
-    });
+  const handleHourResizeStart = (e: React.MouseEvent, h: number) => {
+    e.preventDefault();
+    e.stopPropagation();
+    setResizingHour({ hour: h, startY: e.clientY, startHeight: getHourHeight(h) });
   };
 
   // Get hour and minute from Y position relative to grid
@@ -350,6 +348,7 @@ const PersonalPlanner = () => {
       category: draggedTask.source === "work" ? "עבודה" : draggedTask.source === "project" ? "פרויקט" : draggedTask.source === "recurring" ? "לוז יומי" : "אישי",
       startTime: start.toISOString(),
       endTime: end.toISOString(),
+      color: "",
       sourceType,
       sourceId: draggedTask.id,
     });
@@ -504,6 +503,20 @@ const PersonalPlanner = () => {
     };
   }, [resizingEvent, events, updateEvent]);
 
+  // Hour row drag-to-resize effect
+  useEffect(() => {
+    if (!resizingHour) return;
+    const handleMove = (e: MouseEvent) => {
+      const delta = e.clientY - resizingHour.startY;
+      const newHeight = Math.max(30, Math.min(300, resizingHour.startHeight + delta));
+      setHourHeights(prev => ({ ...prev, [resizingHour.hour]: newHeight }));
+    };
+    const handleUp = () => setResizingHour(null);
+    document.addEventListener('mousemove', handleMove);
+    document.addEventListener('mouseup', handleUp);
+    return () => { document.removeEventListener('mousemove', handleMove); document.removeEventListener('mouseup', handleUp); };
+  }, [resizingHour]);
+
    const handleSaveEvent = async () => {
     if (!newEventData.title.trim()) {
       toast.error("יש להזין כותרת");
@@ -517,7 +530,7 @@ const PersonalPlanner = () => {
         category: newEventData.category,
         startTime: newEventData.startTime,
         endTime: newEventData.endTime,
-        color: getCategoryColor(newEventData.category),
+        color: newEventData.color || getCategoryColor(newEventData.category),
       });
     } else {
       const isCustom = !newEventData.sourceId && (newEventData.sourceType === "custom" || !newEventData.sourceType);
@@ -542,7 +555,7 @@ const PersonalPlanner = () => {
         category: newEventData.category,
         startTime: newEventData.startTime,
         endTime: newEventData.endTime,
-        color: getCategoryColor(newEventData.category),
+        color: newEventData.color || getCategoryColor(newEventData.category),
         sourceType: newEventData.sourceType,
         sourceId: newEventData.sourceId,
       });
@@ -612,6 +625,7 @@ const PersonalPlanner = () => {
       category: event.category,
       startTime: event.startTime,
       endTime: event.endTime,
+      color: event.color || "",
       sourceType: event.sourceType || "custom",
       sourceId: event.sourceId,
     });
@@ -628,6 +642,7 @@ const PersonalPlanner = () => {
       category: "אחר",
       startTime: start.toISOString(),
       endTime: end.toISOString(),
+      color: "",
       sourceType: "custom",
       sourceId: null,
     });
@@ -754,20 +769,32 @@ const PersonalPlanner = () => {
         {/* Time column */}
         <div className="w-16 flex-shrink-0 border-l border-border">
           <div className="h-10 border-b border-border" />
-          {HOURS.map((h) => (
-            <div
-              key={h}
-              className={`border-b border-border text-xs text-muted-foreground flex items-start justify-center pt-1 cursor-pointer hover:bg-muted/40 transition-colors ${expandedHours.has(h) ? "bg-muted/30 font-semibold" : ""}`}
-              style={{ height: getHourHeight(h) }}
-              onClick={() => viewMode === "day" && toggleHourExpand(h)}
-              title={viewMode === "day" ? (expandedHours.has(h) ? "לחץ לכווץ שעה" : "לחץ להרחיב שעה") : undefined}
-            >
-              {String(h).padStart(2, "0")}:00
-              {viewMode === "day" && (
-                <span className="mr-1 text-[10px] opacity-60">{expandedHours.has(h) ? "▲" : "▼"}</span>
-              )}
-            </div>
-          ))}
+          {HOURS.map((h) => {
+            const hHeight = getHourHeight(h);
+            return (
+              <div
+                key={h}
+                className="border-b border-border text-xs text-muted-foreground flex flex-col items-center pt-1 relative select-none"
+                style={{ height: hHeight }}
+              >
+                <span className="font-medium">{String(h).padStart(2, "0")}:00</span>
+                {hHeight >= 80 && [15, 30, 45].map(m => (
+                  <div key={m} className="absolute right-0 left-0 flex items-center pointer-events-none" style={{ top: `${(m / 60) * 100}%` }}>
+                    <span className="text-[9px] text-muted-foreground/40 w-full text-center">:{String(m).padStart(2, "0")}</span>
+                  </div>
+                ))}
+                {viewMode === "day" && (
+                  <div
+                    className="absolute bottom-0 left-0 right-0 h-2.5 cursor-ns-resize hover:bg-primary/30 active:bg-primary/40 transition-colors rounded-b"
+                    onMouseDown={(e) => handleHourResizeStart(e, h)}
+                    title="גרור כדי לשנות גובה השעה"
+                  >
+                    <div className="w-6 h-0.5 rounded-full bg-muted-foreground/30 mx-auto mt-1" />
+                  </div>
+                )}
+              </div>
+            );
+          })}
         </div>
 
         {/* Day columns */}
@@ -832,6 +859,10 @@ const PersonalPlanner = () => {
                     onDrop={(e) => handleDrop(day, h, e)}
                     onDragLeave={() => {}}
                   >
+                    {/* Minute marks */}
+                    {getHourHeight(h) >= 80 && [15, 30, 45].map(m => (
+                      <div key={m} className="absolute w-full border-t border-dashed border-border/20 pointer-events-none" style={{ top: `${(m / 60) * 100}%` }} />
+                    ))}
                     {/* Drag stretch preview */}
                     {showDragPreview && dragCreateState && h === dragCreateState.startHour && (
                       <div
@@ -867,9 +898,16 @@ const PersonalPlanner = () => {
                         : (duration / 60) * currentHourHeight;
                       const top = (startMin / 60) * currentHourHeight;
 
-                      // Calculate position for side-by-side overlapping events
-                      const overlapIndex = allDayEvents.findIndex(e => e.id === event.id);
-                      const overlapCount = allDayEvents.length;
+                      // Only side-by-side for truly overlapping events
+                      const evStart = new Date(event.startTime);
+                      const evEnd = new Date(event.endTime);
+                      const trueOverlaps = allDayEvents.filter(other => {
+                        const oStart = new Date(other.startTime);
+                        const oEnd = new Date(other.endTime);
+                        return oStart < evEnd && oEnd > evStart;
+                      });
+                      const overlapIndex = trueOverlaps.findIndex(e => e.id === event.id);
+                      const overlapCount = trueOverlaps.length;
                       const widthPercent = overlapCount > 1 ? (100 / overlapCount) : 100;
                       const leftPercent = overlapCount > 1 ? (overlapIndex * widthPercent) : 0;
 
@@ -1234,6 +1272,21 @@ const PersonalPlanner = () => {
               </Select>
             </div>
 
+            <div>
+              <label className="text-sm font-medium">צבע</label>
+              <div className="flex gap-2 flex-wrap mt-1">
+                {["#3b82f6","#ef4444","#22c55e","#a855f7","#f97316","#06b6d4","#eab308","#ec4899","#6366f1","#14b8a6","#f43f5e","#8b5cf6"].map(c => (
+                  <button
+                    key={c}
+                    type="button"
+                    className={`w-7 h-7 rounded-full border-2 transition-all ${(newEventData.color || getCategoryColor(newEventData.category)) === c ? 'border-foreground scale-110 ring-2 ring-foreground/20' : 'border-transparent hover:scale-105'}`}
+                    style={{ backgroundColor: c }}
+                    onClick={() => setNewEventData(p => ({ ...p, color: c }))}
+                  />
+                ))}
+              </div>
+            </div>
+
             <div className="grid grid-cols-2 gap-3">
               <div>
                 <label className="text-sm font-medium">שעת התחלה</label>
@@ -1259,7 +1312,7 @@ const PersonalPlanner = () => {
                     }}
                   >
                     <SelectTrigger className="w-[70px]"><SelectValue /></SelectTrigger>
-                    <SelectContent>{[0, 5, 10, 15, 20, 25, 30, 35, 40, 45, 50, 55].map(m => <SelectItem key={m} value={String(m)}>{String(m).padStart(2, "0")}</SelectItem>)}</SelectContent>
+                    <SelectContent>{Array.from({ length: 60 }, (_, i) => i).map(m => <SelectItem key={m} value={String(m)}>{String(m).padStart(2, "0")}</SelectItem>)}</SelectContent>
                   </Select>
                 </div>
                 <Input
@@ -1298,7 +1351,7 @@ const PersonalPlanner = () => {
                     }}
                   >
                     <SelectTrigger className="w-[70px]"><SelectValue /></SelectTrigger>
-                    <SelectContent>{[0, 5, 10, 15, 20, 25, 30, 35, 40, 45, 50, 55].map(m => <SelectItem key={m} value={String(m)}>{String(m).padStart(2, "0")}</SelectItem>)}</SelectContent>
+                    <SelectContent>{Array.from({ length: 60 }, (_, i) => i).map(m => <SelectItem key={m} value={String(m)}>{String(m).padStart(2, "0")}</SelectItem>)}</SelectContent>
                   </Select>
                 </div>
                 <Input

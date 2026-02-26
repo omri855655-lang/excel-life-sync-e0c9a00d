@@ -106,15 +106,10 @@ async function markSent(
   });
 }
 
-// Format time in Israel timezone (UTC+3 for IST / UTC+2 for winter - using +3 as default)
+// Format time in Israel timezone with proper DST handling
 function toIsraelTimeStr(dateStr: string): string {
   const d = new Date(dateStr);
-  // Offset to Israel time: UTC+3 (summer) - approximate, good enough
-  const israelMs = d.getTime() + 3 * 60 * 60 * 1000;
-  const israel = new Date(israelMs);
-  const hh = String(israel.getUTCHours()).padStart(2, "0");
-  const mm = String(israel.getUTCMinutes()).padStart(2, "0");
-  return `${hh}:${mm}`;
+  return d.toLocaleTimeString("he-IL", { timeZone: "Asia/Jerusalem", hour: "2-digit", minute: "2-digit", hour12: false });
 }
 
 function buildEventEmailHtml(
@@ -198,7 +193,7 @@ serve(async (req: Request): Promise<Response> => {
     const tomorrowDate = new Date(now);
     tomorrowDate.setDate(tomorrowDate.getDate() + 1);
     const tomorrowStr = tomorrowDate.toISOString().split("T")[0];
-    const hour = now.getUTCHours() + 3; // Israel timezone
+    const hour = parseInt(now.toLocaleString("en-US", { timeZone: "Asia/Jerusalem", hour: "numeric", hour12: false })); // Israel timezone with DST
 
     console.log(`Push check: ${todayStr}, hour=${hour}, now=${now.toISOString()}`);
 
