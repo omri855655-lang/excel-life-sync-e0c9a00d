@@ -49,6 +49,7 @@ const PersonalPlanner = () => {
   const [currentDate, setCurrentDate] = useState(new Date());
   const [hourHeight, setHourHeight] = useState(DEFAULT_HOUR_HEIGHT);
   const [expandedDayIndex, setExpandedDayIndex] = useState<number | null>(null);
+  const [expandedHours, setExpandedHours] = useState<Set<number>>(new Set());
   const [draggedTask, setDraggedTask] = useState<AggregatedTask | null>(null);
   const [draggingEvent, setDraggingEvent] = useState<CalendarEvent | null>(null);
   const [showEventDialog, setShowEventDialog] = useState(false);
@@ -224,6 +225,18 @@ const PersonalPlanner = () => {
 
   // Snap to 15-minute intervals
   const snapMinutes = (minutes: number) => Math.round(minutes / SNAP_MINUTES) * SNAP_MINUTES;
+
+  const EXPANDED_HOUR_HEIGHT = 180;
+  const getHourHeight = (h: number) => expandedHours.has(h) ? EXPANDED_HOUR_HEIGHT : hourHeight;
+
+  const toggleHourExpand = (h: number) => {
+    setExpandedHours(prev => {
+      const next = new Set(prev);
+      if (next.has(h)) next.delete(h);
+      else next.add(h);
+      return next;
+    });
+  };
 
   // Get hour and minute from Y position relative to grid
   const getTimeFromY = (y: number): { hour: number; minute: number } => {
@@ -744,10 +757,15 @@ const PersonalPlanner = () => {
           {HOURS.map((h) => (
             <div
               key={h}
-              className="border-b border-border text-xs text-muted-foreground flex items-start justify-center pt-1"
-              style={{ height: hourHeight }}
+              className={`border-b border-border text-xs text-muted-foreground flex items-start justify-center pt-1 cursor-pointer hover:bg-muted/40 transition-colors ${expandedHours.has(h) ? "bg-muted/30 font-semibold" : ""}`}
+              style={{ height: getHourHeight(h) }}
+              onClick={() => viewMode === "day" && toggleHourExpand(h)}
+              title={viewMode === "day" ? (expandedHours.has(h) ? "לחץ לכווץ שעה" : "לחץ להרחיב שעה") : undefined}
             >
               {String(h).padStart(2, "0")}:00
+              {viewMode === "day" && (
+                <span className="mr-1 text-[10px] opacity-60">{expandedHours.has(h) ? "▲" : "▼"}</span>
+              )}
             </div>
           ))}
         </div>
@@ -807,7 +825,7 @@ const PersonalPlanner = () => {
                   <div
                     key={h}
                     className="border-b border-border/50 relative group hover:bg-muted/30 transition-colors"
-                    style={{ height: hourHeight }}
+                    style={{ height: getHourHeight(h) }}
                     data-slot-day={day.toISOString()}
                     data-slot-hour={h}
                     onDragOver={(e) => handleSlotDragOver(e, day, h)}
@@ -819,10 +837,10 @@ const PersonalPlanner = () => {
                       <div
                         className="absolute inset-x-1 rounded-md bg-primary/20 border-2 border-dashed border-primary z-30 pointer-events-none"
                         style={{
-                          top: (dragCreateState.startMinute / 60) * hourHeight,
+                          top: (dragCreateState.startMinute / 60) * getHourHeight(h),
                           height: Math.max(
                             ((dragCreateState.currentHour * 60 + dragCreateState.currentMinute) -
-                              (dragCreateState.startHour * 60 + dragCreateState.startMinute)) / 60 * hourHeight,
+                              (dragCreateState.startHour * 60 + dragCreateState.startMinute)) / 60 * getHourHeight(h),
                             15
                           ),
                         }}
@@ -842,11 +860,12 @@ const PersonalPlanner = () => {
                         new Date(event.endTime),
                         new Date(event.startTime)
                       );
+                      const currentHourHeight = getHourHeight(h);
                       const isResizing = resizingEvent?.eventId === event.id;
                       const height = isResizing && resizePreviewHeight !== null
                         ? resizePreviewHeight
-                        : (duration / 60) * hourHeight;
-                      const top = (startMin / 60) * hourHeight;
+                        : (duration / 60) * currentHourHeight;
+                      const top = (startMin / 60) * currentHourHeight;
 
                       // Calculate position for side-by-side overlapping events
                       const overlapIndex = allDayEvents.findIndex(e => e.id === event.id);
