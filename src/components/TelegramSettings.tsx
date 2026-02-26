@@ -128,8 +128,8 @@ const TelegramSettings = () => {
   if (loading) return null;
 
   const botLink = linkCode
-    ? `https://t.me/ExcelLifeSyncBot?start=${linkCode}`
-    : "https://t.me/ExcelLifeSyncBot";
+    ? `https://t.me/exceltimebot?start=${linkCode}`
+    : "https://t.me/exceltimebot";
 
   return (
     <Card>
