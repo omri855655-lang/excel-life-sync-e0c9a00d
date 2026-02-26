@@ -1,5 +1,5 @@
 import { useState, useEffect, useCallback, useRef } from "react";
-import { Brain, Loader2, Send, History } from "lucide-react";
+import { Brain, Loader2, Send, History, ChevronDown } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import {
   Dialog,
@@ -11,10 +11,18 @@ import { Slider } from "@/components/ui/slider";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { ScrollArea } from "@/components/ui/scroll-area";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
+import { format } from "date-fns";
+import { he } from "date-fns/locale";
 import type { Task } from "@/hooks/useTasks";
 
 interface MentalDifficultyHelperProps {
@@ -26,6 +34,14 @@ interface MentalDifficultyHelperProps {
 interface Message {
   role: "user" | "assistant";
   content: string;
+}
+
+interface SessionRecord {
+  id: string;
+  task_description: string;
+  difficulty_level: number;
+  messages: Message[];
+  updated_at: string;
 }
 
 const difficultyLabels: Record<number, { label: string; emoji: string; color: string }> = {
@@ -44,6 +60,7 @@ const MentalDifficultyHelper = ({ task, open, onOpenChange }: MentalDifficultyHe
   const [loading, setLoading] = useState(false);
   const [started, setStarted] = useState(false);
   const [sessionId, setSessionId] = useState<string | null>(null);
+  const [pastSessions, setPastSessions] = useState<SessionRecord[]>([]);
   const bottomRef = useRef<HTMLDivElement>(null);
 
   const currentDifficulty = difficultyLabels[difficulty];
@@ -52,10 +69,10 @@ const MentalDifficultyHelper = ({ task, open, onOpenChange }: MentalDifficultyHe
     bottomRef.current?.scrollIntoView({ behavior: 'smooth' });
   }, [messages, loading]);
 
-  // Load existing session for this task when dialog opens
   useEffect(() => {
     if (open && user && task.id) {
       loadExistingSession();
+      loadAllSessions();
     }
   }, [open, user, task.id]);
 
@@ -79,6 +96,30 @@ const MentalDifficultyHelper = ({ task, open, onOpenChange }: MentalDifficultyHe
         setStarted(true);
       }
     }
+  };
+
+  const loadAllSessions = async () => {
+    if (!user) return;
+    const { data } = await supabase
+      .from("mental_coaching_sessions")
+      .select("id, task_description, difficulty_level, messages, updated_at")
+      .eq("user_id", user.id)
+      .order("updated_at", { ascending: false })
+      .limit(20);
+
+    if (data) {
+      setPastSessions(data.map(d => ({
+        ...d,
+        messages: (d.messages as unknown as Message[]) || [],
+      })));
+    }
+  };
+
+  const loadSession = (session: SessionRecord) => {
+    setMessages(session.messages);
+    setDifficulty(session.difficulty_level);
+    setSessionId(session.id);
+    setStarted(true);
   };
 
   const saveSession = useCallback(async (msgs: Message[], diffLevel: number) => {
@@ -200,11 +241,40 @@ ${userInput ? `הסיבה שזה קשה לי: ${userInput}` : "אני לא בט�
           <DialogTitle className="flex items-center gap-2">
             <Brain className="h-5 w-5 text-purple-500" />
             עזרה מנטלית למשימה
-            {started && (
-              <Button variant="ghost" size="sm" onClick={handleNewSession} className="mr-auto text-xs">
-                שיחה חדשה
-              </Button>
-            )}
+            <div className="mr-auto flex items-center gap-1">
+              {started && (
+                <Button variant="ghost" size="sm" onClick={handleNewSession} className="text-xs">
+                  שיחה חדשה
+                </Button>
+              )}
+              <DropdownMenu>
+                <DropdownMenuTrigger asChild>
+                  <Button variant="ghost" size="sm" className="text-xs gap-1">
+                    <History className="h-3.5 w-3.5" />
+                    היסטוריה
+                    <ChevronDown className="h-3 w-3" />
+                  </Button>
+                </DropdownMenuTrigger>
+                <DropdownMenuContent align="end" className="max-h-[300px] overflow-auto w-[280px]">
+                  {pastSessions.length === 0 ? (
+                    <DropdownMenuItem disabled>אין שיחות קודמות</DropdownMenuItem>
+                  ) : (
+                    pastSessions.map((session) => (
+                      <DropdownMenuItem
+                        key={session.id}
+                        onClick={() => loadSession(session)}
+                        className="flex flex-col items-start gap-0.5 cursor-pointer"
+                      >
+                        <span className="text-xs font-medium line-clamp-1">{session.task_description}</span>
+                        <span className="text-[10px] text-muted-foreground">
+                          {format(new Date(session.updated_at), "dd/MM/yyyy HH:mm", { locale: he })} • רמה {session.difficulty_level}/5 • {session.messages.length} הודעות
+                        </span>
+                      </DropdownMenuItem>
+                    ))
+                  )}
+                </DropdownMenuContent>
+              </DropdownMenu>
+            </div>
           </DialogTitle>
         </DialogHeader>
 
@@ -291,7 +361,7 @@ ${userInput ? `הסיבה שזה קשה לי: ${userInput}` : "אני לא בט�
               <Textarea
                 value={userInput}
                 onChange={(e) => setUserInput(e.target.value)}
-                placeholder="ספר לי עוד..."
+                placeholder="ספר לי עוד, או בקש דוגמא ממחקר/ספר נוסף..."
                 className="min-h-[40px] max-h-[80px] resize-none flex-1"
                 dir="rtl"
                 onKeyDown={(e) => {

@@ -12,7 +12,8 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
 import { Textarea } from "@/components/ui/textarea";
 import { toast } from "sonner";
-import { ChevronRight, ChevronLeft, Plus, GripVertical, Clock, Trash2, Download, Flame, AlertTriangle, CalendarRange, RotateCcw } from "lucide-react";
+import { ChevronRight, ChevronLeft, Plus, GripVertical, Clock, Trash2, Download, Flame, AlertTriangle, CalendarRange, RotateCcw, ZoomIn, ZoomOut } from "lucide-react";
+import { Slider } from "@/components/ui/slider";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { getHolidaysForDate } from "@/data/holidays";
 
@@ -31,8 +32,10 @@ interface AggregatedTask {
 type ViewMode = "day" | "week" | "month" | "year";
 
 const HOURS = Array.from({ length: 24 }, (_, i) => i);
-const HOUR_HEIGHT = 60; // px per hour
+const DEFAULT_HOUR_HEIGHT = 60; // px per hour
 const SNAP_MINUTES = 15; // snap to 15-min intervals
+const MIN_HOUR_HEIGHT = 30;
+const MAX_HOUR_HEIGHT = 120;
 
 const PersonalPlanner = () => {
   const { user } = useAuth();
@@ -44,6 +47,8 @@ const PersonalPlanner = () => {
   const [projectTasks, setProjectTasks] = useState<any[]>([]);
   const [viewMode, setViewMode] = useState<ViewMode>("week");
   const [currentDate, setCurrentDate] = useState(new Date());
+  const [hourHeight, setHourHeight] = useState(DEFAULT_HOUR_HEIGHT);
+  const [expandedDayIndex, setExpandedDayIndex] = useState<number | null>(null);
   const [draggedTask, setDraggedTask] = useState<AggregatedTask | null>(null);
   const [draggingEvent, setDraggingEvent] = useState<CalendarEvent | null>(null);
   const [showEventDialog, setShowEventDialog] = useState(false);
@@ -222,7 +227,7 @@ const PersonalPlanner = () => {
 
   // Get hour and minute from Y position relative to grid
   const getTimeFromY = (y: number): { hour: number; minute: number } => {
-    const totalMinutes = (y / HOUR_HEIGHT) * 60;
+    const totalMinutes = (y / hourHeight) * 60;
     const hour = Math.floor(totalMinutes / 60);
     const minute = snapMinutes(totalMinutes % 60);
     return { hour: Math.max(0, Math.min(23, hour)), minute: Math.min(45, minute) };
@@ -239,7 +244,7 @@ const PersonalPlanner = () => {
 
     const rect = e.currentTarget.getBoundingClientRect();
     const yInSlot = e.clientY - rect.top;
-    const minute = snapMinutes((yInSlot / HOUR_HEIGHT) * 60);
+    const minute = snapMinutes((yInSlot / hourHeight) * 60);
     const currentHour = slotHour;
     const currentMinute = Math.min(45, minute);
 
@@ -388,7 +393,7 @@ const PersonalPlanner = () => {
         const day = new Date(dayStr);
         const rect = slotEl.getBoundingClientRect();
         const yInSlot = touch.clientY - rect.top;
-        const minute = snapMinutes((yInSlot / HOUR_HEIGHT) * 60);
+        const minute = snapMinutes((yInSlot / hourHeight) * 60);
         const currentMinute = Math.min(45, minute);
 
         setDragCreateState((prev) => {
@@ -442,7 +447,7 @@ const PersonalPlanner = () => {
     });
 
     const duration = differenceInMinutes(new Date(event.endTime), new Date(event.startTime));
-    setResizePreviewHeight((duration / 60) * HOUR_HEIGHT);
+    setResizePreviewHeight((duration / 60) * hourHeight);
   };
 
   useEffect(() => {
@@ -450,18 +455,18 @@ const PersonalPlanner = () => {
 
     const handleMouseMove = (e: MouseEvent) => {
       const deltaY = e.clientY - resizingEvent.startY;
-      const deltaMinutes = snapMinutes((deltaY / HOUR_HEIGHT) * 60);
+      const deltaMinutes = snapMinutes((deltaY / hourHeight) * 60);
       const originalDuration = differenceInMinutes(
         new Date(resizingEvent.originalEndTime),
         new Date(events.find((ev) => ev.id === resizingEvent.eventId)?.startTime || "")
       );
       const newDuration = Math.max(15, originalDuration + deltaMinutes);
-      setResizePreviewHeight((newDuration / 60) * HOUR_HEIGHT);
+      setResizePreviewHeight((newDuration / 60) * hourHeight);
     };
 
     const handleMouseUp = async (e: MouseEvent) => {
       const deltaY = e.clientY - resizingEvent.startY;
-      const deltaMinutes = snapMinutes((deltaY / HOUR_HEIGHT) * 60);
+      const deltaMinutes = snapMinutes((deltaY / hourHeight) * 60);
       const event = events.find((ev) => ev.id === resizingEvent.eventId);
 
       if (event) {
@@ -740,7 +745,7 @@ const PersonalPlanner = () => {
             <div
               key={h}
               className="border-b border-border text-xs text-muted-foreground flex items-start justify-center pt-1"
-              style={{ height: HOUR_HEIGHT }}
+              style={{ height: hourHeight }}
             >
               {String(h).padStart(2, "0")}:00
             </div>
@@ -749,10 +754,21 @@ const PersonalPlanner = () => {
 
         {/* Day columns */}
         <div className="flex flex-1">
-          {days.map((day) => (
-            <div key={day.toISOString()} className="flex-1 border-l border-border min-w-[100px] relative">
+          {days.map((day, dayIndex) => {
+            const isExpanded = expandedDayIndex === dayIndex;
+            const dayEventCount = filteredEvents.filter(e => isSameDay(new Date(e.startTime), day)).length;
+            return (
+            <div
+              key={day.toISOString()}
+              className={`border-l border-border min-w-[100px] relative transition-all duration-200 ${isExpanded ? "flex-[3]" : "flex-1"}`}
+              style={isExpanded ? { minWidth: 250 } : undefined}
+            >
               {/* Day header */}
-              <div className={`min-h-[40px] border-b border-border flex flex-col items-center justify-center text-sm sticky top-0 bg-card z-10 ${isSameDay(day, new Date()) ? "bg-primary/10 font-bold" : ""}`}>
+              <div
+                className={`min-h-[40px] border-b border-border flex flex-col items-center justify-center text-sm sticky top-0 bg-card z-10 cursor-pointer hover:bg-muted/50 transition-colors ${isSameDay(day, new Date()) ? "bg-primary/10 font-bold" : ""}`}
+                onClick={() => viewMode === "week" && setExpandedDayIndex(isExpanded ? null : dayIndex)}
+                title={viewMode === "week" ? (isExpanded ? "לחץ לכווץ" : `לחץ להרחיב (${dayEventCount} אירועים)`) : undefined}
+              >
                 <span>{format(day, "EEEE", { locale: he })}</span>
                 <span className="text-xs text-muted-foreground">{format(day, "dd/MM")}</span>
                 {getHolidaysForDate(format(day, "yyyy-MM-dd")).map((h, i) => (
@@ -791,7 +807,7 @@ const PersonalPlanner = () => {
                   <div
                     key={h}
                     className="border-b border-border/50 relative group hover:bg-muted/30 transition-colors"
-                    style={{ height: HOUR_HEIGHT }}
+                    style={{ height: hourHeight }}
                     data-slot-day={day.toISOString()}
                     data-slot-hour={h}
                     onDragOver={(e) => handleSlotDragOver(e, day, h)}
@@ -803,10 +819,10 @@ const PersonalPlanner = () => {
                       <div
                         className="absolute inset-x-1 rounded-md bg-primary/20 border-2 border-dashed border-primary z-30 pointer-events-none"
                         style={{
-                          top: (dragCreateState.startMinute / 60) * HOUR_HEIGHT,
+                          top: (dragCreateState.startMinute / 60) * hourHeight,
                           height: Math.max(
                             ((dragCreateState.currentHour * 60 + dragCreateState.currentMinute) -
-                              (dragCreateState.startHour * 60 + dragCreateState.startMinute)) / 60 * HOUR_HEIGHT,
+                              (dragCreateState.startHour * 60 + dragCreateState.startMinute)) / 60 * hourHeight,
                             15
                           ),
                         }}
@@ -829,8 +845,8 @@ const PersonalPlanner = () => {
                       const isResizing = resizingEvent?.eventId === event.id;
                       const height = isResizing && resizePreviewHeight !== null
                         ? resizePreviewHeight
-                        : (duration / 60) * HOUR_HEIGHT;
-                      const top = (startMin / 60) * HOUR_HEIGHT;
+                        : (duration / 60) * hourHeight;
+                      const top = (startMin / 60) * hourHeight;
 
                       // Calculate position for side-by-side overlapping events
                       const overlapIndex = allDayEvents.findIndex(e => e.id === event.id);
@@ -884,7 +900,9 @@ const PersonalPlanner = () => {
                 );
               })}
             </div>
-          ))}
+            );
+          })}
+
         </div>
       </div>
     );
@@ -1119,6 +1137,26 @@ const PersonalPlanner = () => {
                 </button>
               ))}
             </div>
+
+            {/* Zoom control for day/week view */}
+            {(viewMode === "day" || viewMode === "week") && (
+              <div className="flex items-center gap-1.5">
+                <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => setHourHeight(h => Math.max(MIN_HOUR_HEIGHT, h - 10))}>
+                  <ZoomOut className="h-3.5 w-3.5" />
+                </Button>
+                <Slider
+                  value={[hourHeight]}
+                  onValueChange={(v) => setHourHeight(v[0])}
+                  min={MIN_HOUR_HEIGHT}
+                  max={MAX_HOUR_HEIGHT}
+                  step={5}
+                  className="w-20"
+                />
+                <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => setHourHeight(h => Math.min(MAX_HOUR_HEIGHT, h + 10))}>
+                  <ZoomIn className="h-3.5 w-3.5" />
+                </Button>
+              </div>
+            )}
 
             <Button variant="outline" size="sm" className="gap-1 h-8" onClick={handleAddCustomEvent}>
               <Plus className="h-3.5 w-3.5" />
