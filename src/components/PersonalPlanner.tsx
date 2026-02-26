@@ -1220,17 +1220,15 @@ const PersonalPlanner = () => {
                 <label className="text-sm font-medium">שעת התחלה</label>
                 <div className="flex gap-1 items-center" dir="ltr">
                   <Select
-                    value={newEventData.startTime ? String(new Date(newEventData.startTime).getHours() % 12 || 12) : "9"}
+                    value={newEventData.startTime ? String(new Date(newEventData.startTime).getHours()) : "9"}
                     onValueChange={(v) => {
                       const d = new Date(newEventData.startTime || new Date());
-                      const isPM = d.getHours() >= 12;
-                      const h24 = isPM ? (parseInt(v) % 12) + 12 : parseInt(v) % 12;
-                      d.setHours(h24);
+                      d.setHours(parseInt(v));
                       setNewEventData((p) => ({ ...p, startTime: d.toISOString() }));
                     }}
                   >
-                    <SelectTrigger className="w-[65px]"><SelectValue /></SelectTrigger>
-                    <SelectContent>{Array.from({ length: 12 }, (_, i) => i + 1).map(h => <SelectItem key={h} value={String(h)}>{String(h)}</SelectItem>)}</SelectContent>
+                    <SelectTrigger className="w-[70px]"><SelectValue /></SelectTrigger>
+                    <SelectContent>{Array.from({ length: 24 }, (_, i) => i).map(h => <SelectItem key={h} value={String(h)}>{String(h).padStart(2, "0")}</SelectItem>)}</SelectContent>
                   </Select>
                   <span>:</span>
                   <Select
@@ -1241,24 +1239,8 @@ const PersonalPlanner = () => {
                       setNewEventData((p) => ({ ...p, startTime: d.toISOString() }));
                     }}
                   >
-                    <SelectTrigger className="w-[65px]"><SelectValue /></SelectTrigger>
-                    <SelectContent>{[0, 15, 30, 45].map(m => <SelectItem key={m} value={String(m)}>{String(m).padStart(2, "0")}</SelectItem>)}</SelectContent>
-                  </Select>
-                  <Select
-                    value={newEventData.startTime && new Date(newEventData.startTime).getHours() >= 12 ? "PM" : "AM"}
-                    onValueChange={(v) => {
-                      const d = new Date(newEventData.startTime || new Date());
-                      const currentH = d.getHours();
-                      if (v === "PM" && currentH < 12) d.setHours(currentH + 12);
-                      if (v === "AM" && currentH >= 12) d.setHours(currentH - 12);
-                      setNewEventData((p) => ({ ...p, startTime: d.toISOString() }));
-                    }}
-                  >
-                    <SelectTrigger className="w-[65px]"><SelectValue /></SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="AM">AM</SelectItem>
-                      <SelectItem value="PM">PM</SelectItem>
-                    </SelectContent>
+                    <SelectTrigger className="w-[70px]"><SelectValue /></SelectTrigger>
+                    <SelectContent>{[0, 5, 10, 15, 20, 25, 30, 35, 40, 45, 50, 55].map(m => <SelectItem key={m} value={String(m)}>{String(m).padStart(2, "0")}</SelectItem>)}</SelectContent>
                   </Select>
                 </div>
                 <Input
@@ -1277,17 +1259,15 @@ const PersonalPlanner = () => {
                 <label className="text-sm font-medium">שעת סיום</label>
                 <div className="flex gap-1 items-center" dir="ltr">
                   <Select
-                    value={newEventData.endTime ? String(new Date(newEventData.endTime).getHours() % 12 || 12) : "10"}
+                    value={newEventData.endTime ? String(new Date(newEventData.endTime).getHours()) : "10"}
                     onValueChange={(v) => {
                       const d = new Date(newEventData.endTime || new Date());
-                      const isPM = d.getHours() >= 12;
-                      const h24 = isPM ? (parseInt(v) % 12) + 12 : parseInt(v) % 12;
-                      d.setHours(h24);
+                      d.setHours(parseInt(v));
                       setNewEventData((p) => ({ ...p, endTime: d.toISOString() }));
                     }}
                   >
-                    <SelectTrigger className="w-[65px]"><SelectValue /></SelectTrigger>
-                    <SelectContent>{Array.from({ length: 12 }, (_, i) => i + 1).map(h => <SelectItem key={h} value={String(h)}>{String(h)}</SelectItem>)}</SelectContent>
+                    <SelectTrigger className="w-[70px]"><SelectValue /></SelectTrigger>
+                    <SelectContent>{Array.from({ length: 24 }, (_, i) => i).map(h => <SelectItem key={h} value={String(h)}>{String(h).padStart(2, "0")}</SelectItem>)}</SelectContent>
                   </Select>
                   <span>:</span>
                   <Select
@@ -1298,24 +1278,8 @@ const PersonalPlanner = () => {
                       setNewEventData((p) => ({ ...p, endTime: d.toISOString() }));
                     }}
                   >
-                    <SelectTrigger className="w-[65px]"><SelectValue /></SelectTrigger>
-                    <SelectContent>{[0, 15, 30, 45].map(m => <SelectItem key={m} value={String(m)}>{String(m).padStart(2, "0")}</SelectItem>)}</SelectContent>
-                  </Select>
-                  <Select
-                    value={newEventData.endTime && new Date(newEventData.endTime).getHours() >= 12 ? "PM" : "AM"}
-                    onValueChange={(v) => {
-                      const d = new Date(newEventData.endTime || new Date());
-                      const currentH = d.getHours();
-                      if (v === "PM" && currentH < 12) d.setHours(currentH + 12);
-                      if (v === "AM" && currentH >= 12) d.setHours(currentH - 12);
-                      setNewEventData((p) => ({ ...p, endTime: d.toISOString() }));
-                    }}
-                  >
-                    <SelectTrigger className="w-[65px]"><SelectValue /></SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="AM">AM</SelectItem>
-                      <SelectItem value="PM">PM</SelectItem>
-                    </SelectContent>
+                    <SelectTrigger className="w-[70px]"><SelectValue /></SelectTrigger>
+                    <SelectContent>{[0, 5, 10, 15, 20, 25, 30, 35, 40, 45, 50, 55].map(m => <SelectItem key={m} value={String(m)}>{String(m).padStart(2, "0")}</SelectItem>)}</SelectContent>
                   </Select>
                 </div>
                 <Input
