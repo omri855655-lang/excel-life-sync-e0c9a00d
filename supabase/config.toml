@@ -14,3 +14,9 @@ verify_jwt = false
 
 [functions.get-notifications]
 verify_jwt = false
+
+[functions.telegram-webhook]
+verify_jwt = false
+
+[functions.telegram-daily-summary]
+verify_jwt = false
