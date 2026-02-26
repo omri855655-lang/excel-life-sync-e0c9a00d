@@ -1,0 +1,1 @@
+CREATE UNIQUE INDEX telegram_users_user_id_unique ON public.telegram_users (user_id);
