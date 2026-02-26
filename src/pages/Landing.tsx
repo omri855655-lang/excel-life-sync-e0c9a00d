@@ -41,7 +41,7 @@ const Landing = () => {
         <div className="max-w-6xl mx-auto px-4 py-3 flex items-center justify-between">
           <div className="flex items-center gap-2">
             <FileSpreadsheet className="h-6 w-6 text-primary" />
-            <span className="text-lg font-bold text-foreground">מערכת ניהול אישית</span>
+            <span className="text-lg font-bold text-foreground">ExcelTime</span>
           </div>
           <div className="flex items-center gap-2">
             {loading ? null : user ? (
