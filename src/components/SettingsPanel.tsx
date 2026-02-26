@@ -12,6 +12,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Lock, Shield, LayoutGrid, Plus, Trash2, X, Eye, EyeOff, Globe } from "lucide-react";
 import { toast } from "sonner";
 import { useLanguage } from "@/hooks/useLanguage";
+import TelegramSettings from "@/components/TelegramSettings";
 
 const SettingsPanel = () => {
   const { user } = useAuth();
@@ -261,6 +262,9 @@ const SettingsPanel = () => {
           </div>
         </CardContent>
       </Card>
+
+      {/* Telegram Card */}
+      <TelegramSettings />
 
       {/* Language Card */}
       <Card>
