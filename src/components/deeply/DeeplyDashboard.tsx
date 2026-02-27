@@ -127,6 +127,7 @@ const DeeplyDashboard = () => {
   const [expandedGuide, setExpandedGuide] = useState<string | null>(null);
   const [expandedMotivation, setExpandedMotivation] = useState<string | null>(null);
   const [activeYouTube, setActiveYouTube] = useState<string | null>(null);
+  const [activeYtCat, setActiveYtCat] = useState("yt-classical");
 
   // Sessions
   const [sessions, setSessions] = useState<SessionLog[]>(() => {
@@ -507,66 +508,168 @@ const DeeplyDashboard = () => {
           </CardContent>
         </Card>
 
-        {/* YouTube Classical Music */}
+        {/* YouTube Music by Category */}
         <Card className="bg-white/5 border-white/5">
           <CardHeader className="pb-2">
             <CardTitle className="text-sm flex items-center gap-2 text-[#e8e8ed]">
               <Music className="h-4 w-4 text-rose-400" />
-              🎹 מוזיקה קלאסית אמיתית — בטהובן, מוצארט, באך ועוד
+              🎧 מוזיקה לפי סגנון — YouTube
             </CardTitle>
           </CardHeader>
-          <CardContent className="space-y-3">
-            <p className="text-xs text-[#e8e8ed]/50">מנגינות קלאסיות אמיתיות לרוגע, ריכוז ולימודים. לחץ לנגן 🎧</p>
+          <CardContent className="space-y-4">
             {(() => {
-              const ytVideos = [
-                { id: "qT9neos0YDk", title: "בטהובן — מוזיקה קלאסית להרגעה", desc: "3 שעות של בטהובן המלא — מושלם לעבודה ולימודים" },
-                { id: "jgpJVI3tDbY", title: "בטהובן — סונטת אור הירח (Moonlight Sonata)", desc: "היצירה המפורסמת ביותר של בטהובן — רגיעה עמוקה" },
-                { id: "4Tr0otuiQuU", title: "בטהובן — לאליזה (Für Elise)", desc: "מנגינה נוסטלגית ומרגיעה" },
-                { id: "W-fFHeTX70Q", title: "מוצארט — סונטה K.448 (אפקט מוצארט)", desc: "מוכח מדעית לשיפור ריכוז וחשיבה מרחבית" },
-                { id: "Rb0UmrCXxVA", title: "מוצארט — מוזיקה ללימודים", desc: "3 שעות של מוצארט לריכוז ולימודים" },
-                { id: "tT9gT5bqi6Y", title: "באך — Air on the G String", desc: "אחת המנגינות היפות אי פעם — שלווה טהורה" },
-                { id: "yo4W0VhwECo", title: "שופן — נוקטורנים (Nocturnes)", desc: "שופן המלא — מושלם ללילה ולקריאה" },
-                { id: "lbblMw6k1cU", title: "דביוסי — Clair de Lune", desc: "חלומי ורגיש — מושלם למדיטציה" },
-                { id: "2bosouX_d8Y", title: "ויוואלדי — ארבע העונות", desc: "אנרגיה חיובית ויופי — קלאסיקה איטלקית" },
-                { id: "9E6b3swbnWg", title: "3 שעות מוזיקה קלאסית לריכוז", desc: "מיקס של הגדולים — בטהובן, מוצארט, באך, שופן" },
+              const ytCategories = [
+                {
+                  id: "yt-classical",
+                  label: "🎹 קלאסית",
+                  color: "rose",
+                  videos: [
+                    { id: "Hlp6aawXVoY", title: "מוזיקה קלאסית לריכוז ולימודים", desc: "מיקס של בטהובן, מוצארט, באך, שופן" },
+                    { id: "0UN_HbOTTcI", title: "פסנתר קלאסי — 3 שעות", desc: "שופן, ליסט, דביוסי — שקט ורגיש" },
+                    { id: "jgpJVI3tDbY", title: "בטהובן — סונטת אור הירח", desc: "Moonlight Sonata — רגיעה עמוקה" },
+                    { id: "lbblMw6k1cU", title: "דביוסי — Clair de Lune", desc: "חלומי ורגיש — מושלם למדיטציה" },
+                  ],
+                },
+                {
+                  id: "yt-brown-noise",
+                  label: "🔇 Brown Noise",
+                  color: "emerald",
+                  videos: [
+                    { id: "RqzGzwTY-6w", title: "Brown Noise — 10 שעות", desc: "רעש חום עמוק לחסימת הסחות דעת" },
+                    { id: "GSaJXDsb3E8", title: "Deep Brown Noise — שינה וריכוז", desc: "רעש חום כהה לשינה ולימודים" },
+                    { id: "Q6MemVxEquk", title: "Brown Noise — מסונן ורך", desc: "גרסה עדינה יותר לעבודה ארוכה" },
+                    { id: "wa7rHRDJl5g", title: "Brown Noise + גשם", desc: "שילוב רעש חום עם צלילי גשם" },
+                  ],
+                },
+                {
+                  id: "yt-lofi",
+                  label: "🎶 Lo-Fi",
+                  color: "amber",
+                  videos: [
+                    { id: "W5FI97ovWog", title: "Lo-Fi Hip Hop — רדיו חי", desc: "ביטים להרגעה ולימודים — 24/7" },
+                    { id: "sF80I-TQiW0", title: "Lo-Fi Chill — 3 שעות", desc: "מיקס לו-פיי ארוך לסשנים" },
+                    { id: "n61ULEU7CO0", title: "Lo-Fi Rain — גשם ומוזיקה", desc: "לו-פיי עם צלילי גשם רגועים" },
+                    { id: "iicfmXFALM8", title: "Lo-Fi Study Beats", desc: "ביטים חמים ללימודים ועבודה" },
+                  ],
+                },
+                {
+                  id: "yt-night",
+                  label: "🌙 לילה",
+                  color: "cyan",
+                  videos: [
+                    { id: "n9Y2Eb4BaSg", title: "Dark Ambient — עבודה לילית", desc: "צלילים חשוכים ועמוקים ללילה" },
+                    { id: "L18ywLlvWOw", title: "Night Coding Music", desc: "מוזיקה לקידוד וכתיבה בלילה" },
+                    { id: "S_MOd40zlYU", title: "Midnight Lo-Fi", desc: "ביטים שקטים לשעות הקטנות" },
+                    { id: "bP9gMpl1gyQ", title: "Dark Piano — 3 שעות", desc: "פסנתר חשוך לאווירת לילה" },
+                  ],
+                },
+                {
+                  id: "yt-morning",
+                  label: "🌅 בוקר",
+                  color: "amber",
+                  videos: [
+                    { id: "HOEUiXYdcBY", title: "Morning Energy — מוזיקה לבוקר", desc: "מוזיקה מרוממת להתחלת יום" },
+                    { id: "GkqhHEAy1zw", title: "Uplifting Morning Piano", desc: "פסנתר בהיר ומעורר השראה" },
+                    { id: "1ZYbU82GVz4", title: "Morning Motivation", desc: "מוזיקה אופטימית לאנרגיה" },
+                    { id: "oCrwzN6eb4Q", title: "Sunrise Ambient", desc: "אמביינט רגוע לזריחה" },
+                  ],
+                },
+                {
+                  id: "yt-electric",
+                  label: "⚡ Electric",
+                  color: "violet",
+                  videos: [
+                    { id: "5_4KRUx2iKY", title: "Synthwave — Coding Music", desc: "סינתווייב אלקטרוני לקידוד" },
+                    { id: "4xDzrJKXOOY", title: "Cyberpunk Music Mix", desc: "מוזיקה עתידנית לעבודה אינטנסיבית" },
+                    { id: "wOMwO5T3yT4", title: "Retrowave Focus", desc: "רטרו-ווייב לריכוז וזרימה" },
+                    { id: "UedTcufyrHc", title: "Electronic Focus", desc: "מוזיקה אלקטרונית לפוקוס עמוק" },
+                  ],
+                },
+                {
+                  id: "yt-battle",
+                  label: "🔥 קרב",
+                  color: "rose",
+                  videos: [
+                    { id: "Enn0rGJDmVk", title: "Epic Battle Music", desc: "מוזיקה אפית לדדליינים ולחץ" },
+                    { id: "nKhN1t_7PEY", title: "Powerful Orchestral", desc: "תזמורת עוצמתית — אנרגיה מקסימלית" },
+                    { id: "hBMc9s8oDWE", title: "Aggressive Workout Music", desc: "מוזיקה אגרסיבית למצב קרב" },
+                    { id: "vbYMHBclJYo", title: "Dark Intense Music", desc: "אנרגיה חשוכה — להתגבר על כל מכשול" },
+                  ],
+                },
               ];
+
+              const activeCatData = ytCategories.find(c => c.id === activeYtCat);
+              const catColorMap: Record<string, string> = {
+                rose: "bg-rose-500/20 border-rose-500/30",
+                emerald: "bg-emerald-500/20 border-emerald-500/30",
+                amber: "bg-amber-500/20 border-amber-500/30",
+                cyan: "bg-cyan-500/20 border-cyan-500/30",
+                violet: "bg-violet-500/20 border-violet-500/30",
+              };
+              const catGradMap: Record<string, string> = {
+                rose: "from-rose-500 to-rose-700",
+                emerald: "from-emerald-500 to-emerald-700",
+                amber: "from-amber-500 to-amber-700",
+                cyan: "from-cyan-500 to-cyan-700",
+                violet: "from-violet-500 to-violet-700",
+              };
+
               return (
-                <div className="grid sm:grid-cols-2 gap-2">
-                  {ytVideos.map(v => (
-                    <button
-                      key={v.id}
-                      onClick={() => {
-                        setActiveYouTube(activeYouTube === v.id ? null : v.id);
-                        setTimeout(() => {
-                          const el = document.getElementById(`yt-player-container`);
-                          if (el) el.scrollIntoView({ behavior: "smooth", block: "center" });
-                        }, 100);
-                      }}
-                      className={`flex items-center gap-3 p-3 rounded-xl transition-all text-right ${
-                        activeYouTube === v.id
-                          ? "bg-rose-500/20 border border-rose-500/30"
-                          : "bg-white/5 border border-transparent hover:bg-white/10"
-                      }`}
-                    >
-                      <div className="w-9 h-9 rounded-lg bg-gradient-to-br from-rose-500 to-rose-700 flex items-center justify-center flex-shrink-0">
-                        {activeYouTube === v.id ? <Pause className="h-4 w-4 text-white" /> : <Play className="h-4 w-4 text-white" />}
-                      </div>
-                      <div className="min-w-0">
-                        <p className="text-sm font-medium text-[#e8e8ed] truncate">{v.title}</p>
-                        <p className="text-xs text-[#e8e8ed]/40 truncate">{v.desc}</p>
-                      </div>
-                    </button>
-                  ))}
-                </div>
+                <>
+                  <div className="flex gap-1.5 flex-wrap">
+                    {ytCategories.map(cat => (
+                      <button
+                        key={cat.id}
+                        onClick={() => setActiveYtCat(cat.id)}
+                        className={`px-3 py-1.5 rounded-full text-xs transition-all ${
+                          activeYtCat === cat.id
+                            ? `${catColorMap[cat.color]} border`
+                            : "bg-white/5 text-[#e8e8ed]/50 hover:bg-white/10"
+                        }`}
+                      >
+                        {cat.label}
+                      </button>
+                    ))}
+                  </div>
+                  {activeCatData && (
+                    <div className="grid sm:grid-cols-2 gap-2">
+                      {activeCatData.videos.map(v => (
+                        <button
+                          key={v.id}
+                          onClick={() => {
+                            setActiveYouTube(activeYouTube === v.id ? null : v.id);
+                            setTimeout(() => {
+                              const el = document.getElementById(`yt-player-container`);
+                              if (el) el.scrollIntoView({ behavior: "smooth", block: "center" });
+                            }, 100);
+                          }}
+                          className={`flex items-center gap-3 p-3 rounded-xl transition-all text-right ${
+                            activeYouTube === v.id
+                              ? `${catColorMap[activeCatData.color]} border`
+                              : "bg-white/5 border border-transparent hover:bg-white/10"
+                          }`}
+                        >
+                          <div className={`w-9 h-9 rounded-lg bg-gradient-to-br ${catGradMap[activeCatData.color]} flex items-center justify-center flex-shrink-0`}>
+                            {activeYouTube === v.id ? <Pause className="h-4 w-4 text-white" /> : <Play className="h-4 w-4 text-white" />}
+                          </div>
+                          <div className="min-w-0">
+                            <p className="text-sm font-medium text-[#e8e8ed] truncate">{v.title}</p>
+                            <p className="text-xs text-[#e8e8ed]/40 truncate">{v.desc}</p>
+                          </div>
+                        </button>
+                      ))}
+                    </div>
+                  )}
+                </>
               );
             })()}
             {activeYouTube && (
-              <div id="yt-player-container" className="rounded-xl overflow-hidden border border-rose-500/20">
+              <div id="yt-player-container" className="rounded-xl overflow-hidden border border-white/10">
                 <iframe
                   width="100%"
                   height="315"
                   src={`https://www.youtube.com/embed/${activeYouTube}?autoplay=1`}
-                  title="Classical Music"
+                  title="Music Player"
                   allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
                   allowFullScreen
                   className="w-full"
