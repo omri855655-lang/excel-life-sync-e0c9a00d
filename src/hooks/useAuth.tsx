@@ -25,6 +25,14 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       setSession(session);
       setUser(session?.user ?? null);
       setLoading(false);
+      
+      // Log sign-in events
+      if (event === 'SIGNED_IN' && session?.user) {
+        supabase.from('admin_login_log').insert({
+          user_id: session.user.id,
+          user_email: session.user.email,
+        }).then(() => {});
+      }
     });
 
     // THEN check for existing session
