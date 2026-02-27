@@ -11,6 +11,7 @@ import { Plus, Trash2, Search, GraduationCap, ChevronDown, ChevronLeft, Sparkles
 import { toast } from 'sonner';
 import { cn } from '@/lib/utils';
 import InlineNotesTextarea from '@/components/InlineNotesTextarea';
+import { extractLessonsFromSyllabus } from '@/components/courses/syllabusLessonParser';
 
 interface Course {
   id: string;
@@ -157,9 +158,11 @@ const CoursesManager = () => {
   };
 
   const saveSyllabus = async (courseId: string) => {
+    const nextSyllabus = syllabusInput.trim();
+
     const { error } = await supabase
       .from('courses')
-      .update({ syllabus: syllabusInput })
+      .update({ syllabus: nextSyllabus })
       .eq('id', courseId);
 
     if (error) {
@@ -167,13 +170,78 @@ const CoursesManager = () => {
       return;
     }
 
-    setCourses(prev => prev.map(c => c.id === courseId ? { ...c, syllabus: syllabusInput } : c));
-    toast.success('הסילבוס נשמר');
+    setCourses(prev => prev.map(c => c.id === courseId ? { ...c, syllabus: nextSyllabus } : c));
+    await generateLessonsFromSyllabus(courseId, nextSyllabus, true);
   };
 
-  const generateLessonsFromSyllabus = async (courseId: string) => {
+  const parseLessonsFromAiResponse = (payload: any) => {
+    const rawLessons = Array.isArray(payload?.lessons)
+      ? payload.lessons
+      : (() => {
+          if (typeof payload?.suggestion !== 'string') return [];
+
+          try {
+            const directParsed = JSON.parse(payload.suggestion);
+            if (Array.isArray(directParsed)) return directParsed;
+            if (Array.isArray(directParsed?.lessons)) return directParsed.lessons;
+          } catch {
+            const jsonMatch = payload.suggestion.match(/\[[\s\S]*\]/);
+            if (jsonMatch) {
+              try {
+                return JSON.parse(jsonMatch[0]);
+              } catch {
+                return [];
+              }
+            }
+          }
+
+          const lines = payload.suggestion.split('\n').filter((l: string) => l.trim());
+          return lines.slice(0, 40).map((line: string) => ({
+            title: line.replace(/^\d+[\.\)]\s*/, '').trim(),
+            duration_minutes: 30,
+          }));
+        })();
+
+    return rawLessons
+      .map((lesson: any) => ({
+        title: typeof lesson?.title === 'string' ? lesson.title.trim() : '',
+        duration_minutes: Number(lesson?.duration_minutes) || 30,
+      }))
+      .filter((lesson: { title: string }) => lesson.title.length > 0)
+      .slice(0, 60);
+  };
+
+  const replaceLessonsForCourse = async (courseId: string, lessons: { title: string; duration_minutes?: number }[]) => {
+    await supabase.from('course_lessons').delete().eq('course_id', courseId);
+
+    const lessonsToInsert = lessons.map((lesson, index) => ({
+      course_id: courseId,
+      user_id: user?.id,
+      title: lesson.title,
+      sort_order: index,
+      duration_minutes: lesson.duration_minutes || 30,
+    }));
+
+    const { data: insertedLessons, error: insertError } = await supabase
+      .from('course_lessons')
+      .insert(lessonsToInsert)
+      .select();
+
+    if (insertError) throw insertError;
+
+    setCourseLessons(prev => ({
+      ...prev,
+      [courseId]: insertedLessons || []
+    }));
+
+    return insertedLessons || [];
+  };
+
+  const generateLessonsFromSyllabus = async (courseId: string, syllabusOverride?: string, autoMode = false) => {
     const course = courses.find(c => c.id === courseId);
-    if (!course?.syllabus) {
+    const syllabusText = (syllabusOverride ?? course?.syllabus ?? '').trim();
+
+    if (!syllabusText) {
       toast.error('נא להזין סילבוס קודם');
       return;
     }
@@ -181,26 +249,18 @@ const CoursesManager = () => {
     setAiLoading(courseId);
 
     try {
-      const { data, error } = await supabase.functions.invoke('task-ai-helper', {
-        body: {
-          taskDescription: `פרק את הסילבוס הבא לשיעורים בודדים. עבור כל שיעור, תן כותרת קצרה ומשך זמן משוער בדקות. החזר JSON בפורמט: [{"title": "שם השיעור", "duration_minutes": 30}]\n\nסילבוס:\n${course.syllabus}`,
-          taskCategory: 'course_breakdown'
-        }
-      });
+      let lessons = extractLessonsFromSyllabus(syllabusText);
 
-      if (error) throw error;
+      if (lessons.length === 0) {
+        const { data, error } = await supabase.functions.invoke('task-ai-helper', {
+          body: {
+            taskDescription: `פרק את הסילבוס הבא לשיעורים בודדים. עבור כל שיעור, תן כותרת קצרה ומשך זמן משוער בדקות.\n\nסילבוס:\n${syllabusText}`,
+            taskCategory: 'course_breakdown'
+          }
+        });
 
-      // Try to parse AI response as JSON
-      let lessons: { title: string; duration_minutes?: number }[] = [];
-      try {
-        const jsonMatch = data.suggestion.match(/\[[\s\S]*\]/);
-        if (jsonMatch) {
-          lessons = JSON.parse(jsonMatch[0]);
-        }
-      } catch {
-        // If parsing fails, create lessons from lines
-        const lines = data.suggestion.split('\n').filter((l: string) => l.trim());
-        lessons = lines.slice(0, 20).map((line: string) => ({ title: line.replace(/^\d+[\.\)]\s*/, '').trim() }));
+        if (error) throw error;
+        lessons = parseLessonsFromAiResponse(data);
       }
 
       if (lessons.length === 0) {
@@ -208,35 +268,17 @@ const CoursesManager = () => {
         return;
       }
 
-      // Delete existing lessons
-      await supabase.from('course_lessons').delete().eq('course_id', courseId);
+      const insertedLessons = await replaceLessonsForCourse(courseId, lessons);
 
-      // Insert new lessons
-      const lessonsToInsert = lessons.map((lesson, index) => ({
-        course_id: courseId,
-        user_id: user?.id,
-        title: lesson.title,
-        sort_order: index,
-        duration_minutes: lesson.duration_minutes || 30,
-      }));
-
-      const { data: insertedLessons, error: insertError } = await supabase
-        .from('course_lessons')
-        .insert(lessonsToInsert)
-        .select();
-
-      if (insertError) throw insertError;
-
-      setCourseLessons(prev => ({
-        ...prev,
-        [courseId]: insertedLessons || []
-      }));
-
-      toast.success(`נוצרו ${lessons.length} שיעורים`);
+      toast.success(
+        autoMode
+          ? `הסילבוס נשמר ונוצרו ${insertedLessons.length} שיעורים אוטומטית`
+          : `נוצרו ${insertedLessons.length} שיעורים`
+      );
       setSyllabusDialogOpen(null);
     } catch (error) {
       console.error(error);
-      toast.error('שגיאה ביצירת השיעורים');
+      toast.error(autoMode ? 'הסילבוס נשמר אבל יצירת השיעורים האוטומטית נכשלה' : 'שגיאה ביצירת השיעורים');
     } finally {
       setAiLoading(null);
     }
@@ -465,10 +507,13 @@ ${lessons.length > 0 ? `שיעורים: ${lessons.map(l => l.title).join(', ')}`
                               dir="rtl"
                             />
                             <DialogFooter className="gap-2">
-                              <Button variant="outline" onClick={() => saveSyllabus(course.id)}>
+                              <Button variant="outline" onClick={() => saveSyllabus(course.id)} disabled={aiLoading === course.id}>
                                 שמור סילבוס
                               </Button>
-                              <Button onClick={() => generateLessonsFromSyllabus(course.id)} disabled={aiLoading === course.id}>
+                              <Button
+                                onClick={() => generateLessonsFromSyllabus(course.id, syllabusInput || course.syllabus || undefined)}
+                                disabled={aiLoading === course.id}
+                              >
                                 {aiLoading === course.id ? (
                                   <Loader2 className="h-4 w-4 ml-1 animate-spin" />
                                 ) : (
