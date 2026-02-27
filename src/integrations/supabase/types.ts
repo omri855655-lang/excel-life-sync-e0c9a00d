@@ -866,6 +866,7 @@ export type Database = {
       user_preferences: {
         Row: {
           created_at: string
+          custom_categories: Json
           hidden_tabs: Json
           id: string
           updated_at: string
@@ -873,6 +874,7 @@ export type Database = {
         }
         Insert: {
           created_at?: string
+          custom_categories?: Json
           hidden_tabs?: Json
           id?: string
           updated_at?: string
@@ -880,6 +882,7 @@ export type Database = {
         }
         Update: {
           created_at?: string
+          custom_categories?: Json
           hidden_tabs?: Json
           id?: string
           updated_at?: string

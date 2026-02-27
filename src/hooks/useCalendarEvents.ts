@@ -35,7 +35,7 @@ interface DbCalendarEvent {
   updated_at: string;
 }
 
-const CATEGORY_COLORS: Record<string, string> = {
+const DEFAULT_CATEGORY_COLORS: Record<string, string> = {
   "משימה": "#3b82f6",
   "פגישה": "#ef4444",
   "הליכה": "#22c55e",
@@ -47,10 +47,10 @@ const CATEGORY_COLORS: Record<string, string> = {
 };
 
 export const getCategoryColor = (category: string): string => {
-  return CATEGORY_COLORS[category] || CATEGORY_COLORS["אחר"];
+  return DEFAULT_CATEGORY_COLORS[category] || DEFAULT_CATEGORY_COLORS["אחר"];
 };
 
-export const CATEGORIES = Object.keys(CATEGORY_COLORS);
+export const CATEGORIES = Object.keys(DEFAULT_CATEGORY_COLORS);
 
 const mapDbToEvent = (db: DbCalendarEvent): CalendarEvent => ({
   id: db.id,
