@@ -175,51 +175,61 @@ const CoursesManager = () => {
   };
 
   const parseLessonsFromAiResponse = (payload: any) => {
-    const rawLessons = Array.isArray(payload?.lessons)
-      ? payload.lessons
-      : (() => {
-          if (typeof payload?.suggestion !== 'string') return [];
+    const rawLessons = (() => {
+      const directLessons = Array.isArray(payload?.lessons) ? payload.lessons : [];
+      if (directLessons.length > 0) return directLessons;
 
+      if (typeof payload?.suggestion !== 'string') return [];
+
+      try {
+        const directParsed = JSON.parse(payload.suggestion);
+        if (Array.isArray(directParsed)) return directParsed;
+        if (Array.isArray(directParsed?.lessons)) return directParsed.lessons;
+      } catch {
+        const jsonMatch = payload.suggestion.match(/\[[\s\S]*\]/);
+        if (jsonMatch) {
           try {
-            const directParsed = JSON.parse(payload.suggestion);
-            if (Array.isArray(directParsed)) return directParsed;
-            if (Array.isArray(directParsed?.lessons)) return directParsed.lessons;
+            return JSON.parse(jsonMatch[0]);
           } catch {
-            const jsonMatch = payload.suggestion.match(/\[[\s\S]*\]/);
-            if (jsonMatch) {
-              try {
-                return JSON.parse(jsonMatch[0]);
-              } catch {
-                return [];
-              }
-            }
+            // continue to line-based fallback
           }
+        }
+      }
 
-          const lines = payload.suggestion.split('\n').filter((l: string) => l.trim());
-          return lines.slice(0, 40).map((line: string) => ({
-            title: line.replace(/^\d+[\.\)]\s*/, '').trim(),
-            duration_minutes: 30,
-          }));
-        })();
+      const lines = payload.suggestion
+        .split('\n')
+        .map((l: string) => l.replace(/^\s*[-*•\d\.\)\-]+\s*/, '').trim())
+        .filter((l: string) => l.length >= 2 && !l.startsWith('{') && !l.startsWith('['));
+
+      return lines.slice(0, 40).map((line: string) => ({
+        title: line,
+        duration_minutes: 30,
+      }));
+    })();
 
     return rawLessons
       .map((lesson: any) => ({
         title: typeof lesson?.title === 'string' ? lesson.title.trim() : '',
-        duration_minutes: Number(lesson?.duration_minutes) || 30,
+        duration_minutes: Math.min(300, Math.max(5, Number(lesson?.duration_minutes) || 30)),
       }))
       .filter((lesson: { title: string }) => lesson.title.length > 0)
       .slice(0, 60);
   };
 
   const replaceLessonsForCourse = async (courseId: string, lessons: { title: string; duration_minutes?: number }[]) => {
-    await supabase.from('course_lessons').delete().eq('course_id', courseId);
+    if (!user?.id) {
+      throw new Error('משתמש לא מחובר');
+    }
+
+    const { error: deleteError } = await supabase.from('course_lessons').delete().eq('course_id', courseId);
+    if (deleteError) throw deleteError;
 
     const lessonsToInsert = lessons.map((lesson, index) => ({
       course_id: courseId,
-      user_id: user?.id,
+      user_id: user.id,
       title: lesson.title,
       sort_order: index,
-      duration_minutes: lesson.duration_minutes || 30,
+      duration_minutes: Math.min(300, Math.max(5, lesson.duration_minutes || 30)),
     }));
 
     const { data: insertedLessons, error: insertError } = await supabase
@@ -251,16 +261,23 @@ const CoursesManager = () => {
     try {
       let lessons = extractLessonsFromSyllabus(syllabusText);
 
-      if (lessons.length === 0) {
-        const { data, error } = await supabase.functions.invoke('task-ai-helper', {
-          body: {
-            taskDescription: `פרק את הסילבוס הבא לשיעורים בודדים. עבור כל שיעור, תן כותרת קצרה ומשך זמן משוער בדקות.\n\nסילבוס:\n${syllabusText}`,
-            taskCategory: 'course_breakdown'
-          }
-        });
+      if (lessons.length < 2) {
+        try {
+          const { data, error } = await supabase.functions.invoke('task-ai-helper', {
+            body: {
+              taskDescription: `פרק את הסילבוס הבא לשיעורים בודדים. עבור כל שיעור, תן כותרת קצרה ומשך זמן משוער בדקות.\n\nסילבוס:\n${syllabusText}`,
+              taskCategory: 'course_breakdown'
+            }
+          });
 
-        if (error) throw error;
-        lessons = parseLessonsFromAiResponse(data);
+          if (error) throw error;
+          const aiLessons = parseLessonsFromAiResponse(data);
+          if (aiLessons.length > 0) {
+            lessons = aiLessons;
+          }
+        } catch (aiError) {
+          console.error('AI lesson generation failed, using local parsing fallback:', aiError);
+        }
       }
 
       if (lessons.length === 0) {

@@ -223,8 +223,12 @@ ${taskDescription}
       aiMessages.push({ role: "user", content: userPrompt });
     }
 
+    const model = taskCategory === "course_breakdown"
+      ? "google/gemini-3-flash-preview"
+      : "google/gemini-2.5-pro";
+
     const requestBody: Record<string, unknown> = {
-      model: "google/gemini-2.5-pro",
+      model,
       messages: aiMessages,
     };
 
@@ -320,7 +324,13 @@ ${taskDescription}
             lessons = parsedSuggestion.lessons;
           }
         } catch {
-          // ignore and return raw suggestion for client-side fallback parsing
+          lessons = suggestion
+            .split("\n")
+            .map((line: string) => line.replace(/^\s*[-*•\d\.\)\-]+\s*/, "").trim())
+            .filter((line: string) => line.length >= 2 && line.length <= 140)
+            .filter((line: string) => !line.startsWith("{") && !line.startsWith("[") && !line.includes("```"))
+            .slice(0, 60)
+            .map((title: string) => ({ title, duration_minutes: 30 }));
         }
       }
 
