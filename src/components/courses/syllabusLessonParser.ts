@@ -26,14 +26,15 @@ const cleanLessonTitle = (raw: string): string =>
     .trim();
 
 const extractFallbackLessonTitles = (syllabus: string): string[] => {
+  // Only split by newlines for fallback — never by dots/semicolons
   const chunks = syllabus
     .replace(/\r/g, "")
-    .split(/\n|[.;]|(?:\s-\s)/g)
+    .split(/\n/)
     .map((chunk) => cleanLessonTitle(chunk))
     .filter((chunk) => chunk.length >= 4 && chunk.length <= 120)
     .filter((chunk) => !GENERIC_HEADING_REGEX.test(chunk));
 
-  return Array.from(new Set(chunks)).slice(0, 60);
+  return Array.from(new Set(chunks));
 };
 
 export const extractLessonsFromSyllabus = (syllabus: string): ParsedSyllabusLesson[] => {
