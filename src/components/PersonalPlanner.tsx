@@ -1,7 +1,8 @@
 import { useState, useEffect, useMemo, useRef, useCallback } from "react";
 import { useAuth } from "@/hooks/useAuth";
 import { useTasks, Task } from "@/hooks/useTasks";
-import { useCalendarEvents, CalendarEvent, getCategoryColor, CATEGORIES } from "@/hooks/useCalendarEvents";
+import { useCalendarEvents, CalendarEvent, getCategoryColor } from "@/hooks/useCalendarEvents";
+import { useCustomCategories, COLOR_PALETTE, CustomCategory } from "@/hooks/useCustomCategories";
 import { useRecurringTasks } from "@/hooks/useRecurringTasks";
 import { supabase } from "@/integrations/supabase/client";
 import { format, addDays, addYears, subYears, startOfYear, endOfYear, startOfWeek, endOfWeek, startOfMonth, endOfMonth, startOfDay, endOfDay, addHours, isSameDay, isSameMonth, addMonths, subMonths, addWeeks, subWeeks, isWithinInterval, differenceInMinutes, setHours, setMinutes, addMinutes, eachDayOfInterval, getDay } from "date-fns";
@@ -43,6 +44,11 @@ const PersonalPlanner = () => {
   const { tasks: workTasks } = useTasks("work");
   const { tasks: recurringTasks, isTaskDueToday, isTaskCompletedToday } = useRecurringTasks();
   const { events, addEvent, updateEvent, deleteEvent } = useCalendarEvents();
+  const { categories, categoryNames, addCategory, removeCategory, getCategoryColor: getDynCategoryColor } = useCustomCategories();
+
+  const [showCategoryManager, setShowCategoryManager] = useState(false);
+  const [newCatName, setNewCatName] = useState("");
+  const [newCatColor, setNewCatColor] = useState("#3b82f6");
 
   const [projectTasks, setProjectTasks] = useState<any[]>([]);
   const [viewMode, setViewMode] = useState<ViewMode>("week");
@@ -530,7 +536,7 @@ const PersonalPlanner = () => {
         category: newEventData.category,
         startTime: newEventData.startTime,
         endTime: newEventData.endTime,
-        color: newEventData.color || getCategoryColor(newEventData.category),
+        color: newEventData.color || getDynCategoryColor(newEventData.category),
       });
     } else {
       const isCustom = !newEventData.sourceId && (newEventData.sourceType === "custom" || !newEventData.sourceType);
@@ -555,7 +561,7 @@ const PersonalPlanner = () => {
         category: newEventData.category,
         startTime: newEventData.startTime,
         endTime: newEventData.endTime,
-        color: newEventData.color || getCategoryColor(newEventData.category),
+        color: newEventData.color || getDynCategoryColor(newEventData.category),
         sourceType: newEventData.sourceType,
         sourceId: newEventData.sourceId,
       });
@@ -1255,35 +1261,25 @@ const PersonalPlanner = () => {
 
             <div>
               <label className="text-sm font-medium">קטגוריה</label>
-              <Select value={newEventData.category} onValueChange={(v) => setNewEventData((p) => ({ ...p, category: v }))}>
-                <SelectTrigger>
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  {CATEGORIES.map((c) => (
-                    <SelectItem key={c} value={c}>
-                      <div className="flex items-center gap-2">
-                        <div className="w-3 h-3 rounded-full" style={{ backgroundColor: getCategoryColor(c) }} />
-                        {c}
-                      </div>
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
-
-            <div>
-              <label className="text-sm font-medium">צבע</label>
-              <div className="flex gap-2 flex-wrap mt-1">
-                {["#3b82f6","#ef4444","#22c55e","#a855f7","#f97316","#06b6d4","#eab308","#ec4899","#6366f1","#14b8a6","#f43f5e","#8b5cf6"].map(c => (
-                  <button
-                    key={c}
-                    type="button"
-                    className={`w-7 h-7 rounded-full border-2 transition-all ${(newEventData.color || getCategoryColor(newEventData.category)) === c ? 'border-foreground scale-110 ring-2 ring-foreground/20' : 'border-transparent hover:scale-105'}`}
-                    style={{ backgroundColor: c }}
-                    onClick={() => setNewEventData(p => ({ ...p, color: c }))}
-                  />
-                ))}
+              <div className="flex gap-2 items-center">
+                <Select value={newEventData.category} onValueChange={(v) => setNewEventData((p) => ({ ...p, category: v, color: getDynCategoryColor(v) }))}>
+                  <SelectTrigger className="flex-1">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {categoryNames.map((c) => (
+                      <SelectItem key={c} value={c}>
+                        <div className="flex items-center gap-2">
+                          <div className="w-3 h-3 rounded-full" style={{ backgroundColor: getDynCategoryColor(c) }} />
+                          {c}
+                        </div>
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+                <Button type="button" variant="outline" size="sm" className="text-xs shrink-0" onClick={() => setShowCategoryManager(true)}>
+                  ⚙️ ניהול
+                </Button>
               </div>
             </div>
 
@@ -1415,6 +1411,74 @@ const PersonalPlanner = () => {
             <Button variant="ghost" onClick={() => { setShowLinkToDashboard(false); setPendingLinkEvent(null); }}>
               לא, תודה
             </Button>
+          </div>
+        </DialogContent>
+      </Dialog>
+
+      {/* Category Manager Dialog */}
+      <Dialog open={showCategoryManager} onOpenChange={setShowCategoryManager}>
+        <DialogContent className="max-w-lg max-h-[80vh] overflow-auto" dir="rtl">
+          <DialogHeader>
+            <DialogTitle>ניהול קטגוריות</DialogTitle>
+          </DialogHeader>
+
+          <div className="space-y-4">
+            {/* Existing categories */}
+            <div className="space-y-2">
+              <label className="text-sm font-medium">קטגוריות קיימות</label>
+              <div className="space-y-1.5 max-h-[200px] overflow-auto">
+                {categories.map((cat) => (
+                  <div key={cat.name} className="flex items-center gap-2 p-2 rounded-lg border border-border">
+                    <div className="w-5 h-5 rounded-full shrink-0" style={{ backgroundColor: cat.color }} />
+                    <span className="text-sm flex-1">{cat.name}</span>
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      className="h-6 w-6 p-0 text-destructive hover:text-destructive"
+                      onClick={() => removeCategory(cat.name)}
+                    >
+                      <Trash2 className="h-3 w-3" />
+                    </Button>
+                  </div>
+                ))}
+              </div>
+            </div>
+
+            {/* Add new category */}
+            <div className="space-y-2 border-t border-border pt-3">
+              <label className="text-sm font-medium">הוסף קטגוריה חדשה</label>
+              <Input
+                value={newCatName}
+                onChange={(e) => setNewCatName(e.target.value)}
+                placeholder="שם הקטגוריה..."
+              />
+              <label className="text-sm font-medium">בחר צבע</label>
+              <div className="flex gap-1.5 flex-wrap">
+                {COLOR_PALETTE.map((c) => (
+                  <button
+                    key={c}
+                    type="button"
+                    className={`w-7 h-7 rounded-full border-2 transition-all ${newCatColor === c ? "border-foreground scale-110 ring-2 ring-foreground/20" : "border-transparent hover:scale-105"}`}
+                    style={{ backgroundColor: c }}
+                    onClick={() => setNewCatColor(c)}
+                  />
+                ))}
+              </div>
+              <Button
+                size="sm"
+                className="gap-1"
+                onClick={() => {
+                  if (newCatName.trim()) {
+                    addCategory(newCatName.trim(), newCatColor);
+                    setNewCatName("");
+                  }
+                }}
+                disabled={!newCatName.trim()}
+              >
+                <Plus className="h-3.5 w-3.5" />
+                הוסף קטגוריה
+              </Button>
+            </div>
           </div>
         </DialogContent>
       </Dialog>
