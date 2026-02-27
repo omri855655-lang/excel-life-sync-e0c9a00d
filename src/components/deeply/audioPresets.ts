@@ -6,14 +6,26 @@ export interface AudioPreset {
   nameHe: string;
   desc: string;
   category: "focus" | "creative" | "calm" | "study" | "classical" | "deep-focus" | "night-work" | "deep-work" | "flow" | "morning" | "battle" | "noise" | "lofi" | "electric";
-  // Synthesis parameters
+  // Core synthesis
   baseFreq: number;
-  binauralOffset: number; // Hz difference between L/R for binaural beat
+  binauralOffset: number;
   waveform: OscillatorType;
-  harmonics?: { freq: number; gain: number; wave: OscillatorType }[];
-  lfoRate?: number; // slow amplitude modulation rate
-  lfoDepth?: number; // 0-1
   gainLevel: number;
+  // Extended synthesis
+  harmonics?: { freq: number; gain: number; wave: OscillatorType; detune?: number; filterFreq?: number; panL?: number; panR?: number }[];
+  lfoRate?: number;
+  lfoDepth?: number;
+  detune?: number;
+  // Noise generation
+  noiseType?: "white" | "brown" | "pink";
+  toneLevel?: number; // volume of tonal layer when combined with noise (0-1)
+  // Filters
+  filterType?: BiquadFilterType;
+  filterFreq?: number;
+  filterQ?: number;
+  filter2Type?: BiquadFilterType;
+  filter2Freq?: number;
+  filter2Q?: number;
 }
 
 export const CATEGORIES = [
@@ -27,19 +39,23 @@ export const CATEGORIES = [
   { id: "morning", name: "התחלת יום", icon: "🌅", color: "amber" },
   { id: "night-work", name: "עבודה לילית", icon: "🌙", color: "cyan" },
   { id: "battle", name: "מצב קרב", icon: "🔥", color: "rose" },
-  { id: "noise", name: "Brown Noise", icon: "🔇", color: "emerald" },
+  { id: "noise", name: "רעש חוסם", icon: "🔇", color: "emerald" },
   { id: "lofi", name: "Lo-Fi Focus", icon: "🎶", color: "amber" },
   { id: "electric", name: "Electric Flow", icon: "⚡", color: "rose" },
   { id: "classical", name: "מוזיקה קלאסית", icon: "🎵", color: "rose" },
 ] as const;
 
 export const AUDIO_PRESETS: AudioPreset[] = [
-  // === FOCUS ===
+
+  // ═══════════════════════════════════════════
+  // FOCUS — Clean binaural beats, pure sine, minimal harmonics
+  // Designed for: analytical thinking, coding, problem solving
+  // ═══════════════════════════════════════════
   {
     id: "gamma-focus",
     name: "Gamma Focus",
     nameHe: "גלי גמא — ריכוז חד",
-    desc: "40Hz binaural beat לריכוז עמוק ופתרון בעיות",
+    desc: "40Hz binaural — תדר גמא לריכוז חד ופתרון בעיות מורכבות",
     category: "focus",
     baseFreq: 200,
     binauralOffset: 40,
@@ -48,9 +64,9 @@ export const AUDIO_PRESETS: AudioPreset[] = [
   },
   {
     id: "beta-high",
-    name: "High Beta",
-    nameHe: "בטא גבוה — עירנות",
-    desc: "30Hz binaural beat לעירנות מקסימלית וביצוע מהיר",
+    name: "High Beta Alert",
+    nameHe: "בטא גבוה — עירנות מקסימלית",
+    desc: "30Hz binaural — מעורר ערנות ומהירות עיבוד, כמו קפה למוח",
     category: "focus",
     baseFreq: 250,
     binauralOffset: 30,
@@ -60,9 +76,9 @@ export const AUDIO_PRESETS: AudioPreset[] = [
   },
   {
     id: "beta-active",
-    name: "Active Mind",
-    nameHe: "בטא פעיל — חשיבה לוגית",
-    desc: "20Hz binaural beat לחשיבה אנליטית וקבלת החלטות",
+    name: "Logic Engine",
+    nameHe: "מנוע לוגי — 20Hz",
+    desc: "20Hz binaural — חשיבה אנליטית, מתמטיקה, קבלת החלטות",
     category: "focus",
     baseFreq: 180,
     binauralOffset: 20,
@@ -70,181 +86,243 @@ export const AUDIO_PRESETS: AudioPreset[] = [
     gainLevel: 0.12,
   },
 
-  // === DEEP FOCUS ===
+  // ═══════════════════════════════════════════
+  // DEEP FOCUS — Layered tones with subtle filtering for immersion
+  // Designed for: extended coding sessions, deep reading, complex analysis
+  // Uses higher gamma + subtle harmonic layers for "tunnel" effect
+  // ═══════════════════════════════════════════
   {
     id: "deep-focus-40",
     name: "Laser Lock",
     nameHe: "נעילת לייזר — 40Hz",
-    desc: "גמא חזק לריכוז מוחלט, מושלם לקידוד ותכנות",
+    desc: "גמא ממוקד עם שכבת רקע עמוקה — כמו מנהרה של ריכוז",
     category: "deep-focus",
     baseFreq: 190,
     binauralOffset: 40,
     waveform: "sine",
-    harmonics: [{ freq: 380, gain: 0.02, wave: "sine" }],
+    harmonics: [
+      { freq: 95, gain: 0.04, wave: "sine", panL: 0.8, panR: 0.6 },
+      { freq: 380, gain: 0.02, wave: "sine", panL: 0.6, panR: 0.8 },
+    ],
+    filterType: "lowpass",
+    filterFreq: 600,
+    filterQ: 0.5,
     gainLevel: 0.11,
   },
   {
     id: "deep-focus-tunnel",
     name: "Tunnel Vision",
     nameHe: "ראיית מנהרה — 38Hz",
-    desc: "תדר גמא שמצמצם שדה קשב לנקודה אחת",
+    desc: "שכבות תדרים שמצמצמים את שדה הקשב לנקודה אחת",
     category: "deep-focus",
-    baseFreq: 210,
+    baseFreq: 150,
     binauralOffset: 38,
     waveform: "sine",
-    lfoRate: 0.05,
-    lfoDepth: 0.15,
+    harmonics: [
+      { freq: 75, gain: 0.05, wave: "triangle", panL: 1, panR: 0.3 },
+      { freq: 225, gain: 0.03, wave: "sine", panL: 0.3, panR: 1 },
+    ],
+    lfoRate: 0.03,
+    lfoDepth: 0.12,
     gainLevel: 0.10,
   },
   {
     id: "deep-focus-hyper",
-    name: "Hyperfocus",
-    nameHe: "היפרפוקוס — 42Hz",
-    desc: "תדר גמא גבוה לשקיעה מוחלטת במשימה",
+    name: "Hyperfocus Zone",
+    nameHe: "אזור היפרפוקוס — 42Hz",
+    desc: "גמא גבוה + דרון בס עמוק — שקיעה מוחלטת במשימה",
     category: "deep-focus",
     baseFreq: 195,
     binauralOffset: 42,
     waveform: "sine",
-    gainLevel: 0.11,
+    harmonics: [
+      { freq: 65, gain: 0.06, wave: "sine" }, // deep sub bass drone
+      { freq: 130, gain: 0.03, wave: "triangle" },
+    ],
+    gainLevel: 0.10,
   },
 
-  // === DEEP WORK ===
+  // ═══════════════════════════════════════════
+  // DEEP WORK — Warm, enveloping tones that block out the world
+  // Inspired by Cal Newport's principles: sustained, distraction-free
+  // Uses mid-range binaural with warm filtering
+  // ═══════════════════════════════════════════
   {
     id: "deep-work-cal",
-    name: "Cal Newport Mode",
-    nameHe: "מצב קל ניופורט — 35Hz",
-    desc: "בטא-גמא לעבודה עמוקה ממושכת ללא הסחות",
+    name: "Newport Protocol",
+    nameHe: "פרוטוקול ניופורט — 35Hz",
+    desc: "בטא-גמא חם ומעטף — לסשנים של 90 דקות ללא הסחה",
     category: "deep-work",
-    baseFreq: 220,
+    baseFreq: 160,
     binauralOffset: 35,
     waveform: "sine",
-    lfoRate: 0.03,
-    lfoDepth: 0.1,
+    harmonics: [
+      { freq: 80, gain: 0.05, wave: "sine" },
+      { freq: 320, gain: 0.02, wave: "triangle", filterFreq: 400 },
+    ],
+    filterType: "lowpass",
+    filterFreq: 500,
+    filterQ: 0.7,
+    lfoRate: 0.02,
+    lfoDepth: 0.08,
     gainLevel: 0.10,
   },
   {
     id: "deep-work-marathon",
     name: "Deep Marathon",
     nameHe: "מרתון עמוק — 28Hz",
-    desc: "בטא ממוקד לסשנים ארוכים של 2-4 שעות",
+    desc: "בטא ממוקד ויציב — מיועד לסשנים ארוכים של 2-4 שעות",
     category: "deep-work",
-    baseFreq: 200,
+    baseFreq: 140,
     binauralOffset: 28,
     waveform: "sine",
-    harmonics: [{ freq: 400, gain: 0.02, wave: "sine" }],
+    harmonics: [
+      { freq: 70, gain: 0.04, wave: "sine" },
+      { freq: 210, gain: 0.03, wave: "sine" },
+      { freq: 280, gain: 0.02, wave: "triangle", filterFreq: 350 },
+    ],
     gainLevel: 0.10,
   },
   {
     id: "deep-work-mono",
-    name: "Monotask",
+    name: "Single Task",
     nameHe: "משימה אחת — 32Hz",
-    desc: "בטא גבוה ממוקד שמסייע למונו-טאסקינג",
+    desc: "תדר יחיד נקי — מסייע למונו-טאסקינג מוחלט",
     category: "deep-work",
     baseFreq: 215,
     binauralOffset: 32,
     waveform: "sine",
+    // intentionally no harmonics — purity
     gainLevel: 0.11,
   },
 
-  // === CREATIVE ===
+  // ═══════════════════════════════════════════
+  // CREATIVE — Alpha waves with rich, colorful harmonics
+  // Designed for: brainstorming, writing, art, design
+  // Uses alpha range (8-12Hz) with complex, shifting tones
+  // ═══════════════════════════════════════════
   {
     id: "alpha-creative",
-    name: "Alpha Flow",
-    nameHe: "גלי אלפא — זרימה יצירתית",
-    desc: "10Hz binaural beat לפתיחת מחשבה ויצירתיות",
+    name: "Alpha Canvas",
+    nameHe: "קנבס אלפא — זרימה יצירתית",
+    desc: "10Hz binaural עם שכבות צבעוניות — פותח דמיון ויצירתיות",
     category: "creative",
     baseFreq: 300,
     binauralOffset: 10,
     waveform: "sine",
+    harmonics: [
+      { freq: 450, gain: 0.03, wave: "triangle", panL: 0.9, panR: 0.3 },
+      { freq: 600, gain: 0.02, wave: "sine", panL: 0.3, panR: 0.9 },
+    ],
     lfoRate: 0.1,
     lfoDepth: 0.3,
-    gainLevel: 0.12,
+    gainLevel: 0.11,
   },
   {
     id: "alpha-low",
     name: "Daydream",
     nameHe: "חלימה בהקיץ — 8Hz",
-    desc: "אלפא נמוך לדמיון מודרך ואסוציאציות חופשיות",
+    desc: "אלפא נמוך — דמיון מודרך, אסוציאציות חופשיות, רעיונות חדשים",
     category: "creative",
     baseFreq: 340,
     binauralOffset: 8,
     waveform: "sine",
+    harmonics: [
+      { freq: 170, gain: 0.04, wave: "sine" }, // octave below — dreamy depth
+      { freq: 510, gain: 0.02, wave: "triangle", detune: 5 }, // slight shimmer
+    ],
     lfoRate: 0.07,
     lfoDepth: 0.4,
-    gainLevel: 0.11,
-  },
-  {
-    id: "alpha-mid",
-    name: "Gentle Waves",
-    nameHe: "גלים עדינים — 12Hz",
-    desc: "אלפא מאוזן לסיעור מוחות וכתיבה",
-    category: "creative",
-    baseFreq: 270,
-    binauralOffset: 12,
-    waveform: "triangle",
-    gainLevel: 0.09,
+    gainLevel: 0.10,
   },
   {
     id: "creative-spark",
-    name: "Creative Spark",
-    nameHe: "ניצוץ יצירתי — 9Hz",
-    desc: "אלפא-תטא לרגע הברקה ומחשבה מחוץ לקופסה",
+    name: "Eureka Spark",
+    nameHe: "ניצוץ יוריקה — 9Hz",
+    desc: "אלפא-תטא — רגע ההברקה, מחשבה מחוץ לקופסה",
     category: "creative",
-    baseFreq: 320,
+    baseFreq: 285,
     binauralOffset: 9,
-    waveform: "sine",
+    waveform: "triangle",
+    harmonics: [
+      { freq: 427, gain: 0.04, wave: "sine", panL: 1, panR: 0.2 },
+      { freq: 570, gain: 0.03, wave: "triangle", panL: 0.2, panR: 1, detune: -3 },
+      { freq: 142, gain: 0.03, wave: "sine" },
+    ],
     lfoRate: 0.08,
     lfoDepth: 0.35,
-    gainLevel: 0.10,
+    gainLevel: 0.09,
   },
 
-  // === FLOW ===
+  // ═══════════════════════════════════════════
+  // FLOW — Smooth, evolving, immersive textures
+  // Based on Csikszentmihalyi's flow state principles
+  // Uses alpha range with very slow modulation for "timelessness"
+  // ═══════════════════════════════════════════
   {
     id: "flow-alpha",
     name: "Flow State",
     nameHe: "מצב זרימה — 11Hz",
-    desc: "אלפא מדויק לכניסה למצב Flow של צ'יקסנטמיהאי",
+    desc: "אלפא מדויק — כניסה למצב Flow: אתגר מותאם + ריכוז מלא",
     category: "flow",
-    baseFreq: 285,
+    baseFreq: 220,
     binauralOffset: 11,
     waveform: "sine",
-    lfoRate: 0.06,
-    lfoDepth: 0.25,
-    gainLevel: 0.11,
-  },
-  {
-    id: "flow-runner",
-    name: "Runner's High",
-    nameHe: "ראנרס היי — 10Hz",
-    desc: "זרימה אנרגטית — כמו ריצה חופשית",
-    category: "flow",
-    baseFreq: 300,
-    binauralOffset: 10,
-    waveform: "triangle",
-    lfoRate: 0.12,
+    harmonics: [
+      { freq: 330, gain: 0.04, wave: "sine" }, // perfect fifth — consonant, flowing
+      { freq: 440, gain: 0.03, wave: "sine" }, // octave
+      { freq: 110, gain: 0.03, wave: "sine" }, // sub octave
+    ],
+    lfoRate: 0.03,
     lfoDepth: 0.2,
     gainLevel: 0.10,
   },
   {
-    id: "flow-zen",
-    name: "Zen Flow",
-    nameHe: "זן — זרימה שקטה — 9Hz",
-    desc: "אלפא-תטא איטי לזרימה רגועה וממוקדת",
+    id: "flow-river",
+    name: "River Flow",
+    nameHe: "זרימת נהר — 10Hz",
+    desc: "אלפא עם מודולציה גלית — כמו נהר שזורם בשקט",
     category: "flow",
-    baseFreq: 310,
-    binauralOffset: 9,
+    baseFreq: 174,
+    binauralOffset: 10,
     waveform: "sine",
+    harmonics: [
+      { freq: 261, gain: 0.04, wave: "triangle", panL: 0.8, panR: 0.4, detune: 2 },
+      { freq: 348, gain: 0.03, wave: "sine", panL: 0.4, panR: 0.8, detune: -2 },
+      { freq: 87, gain: 0.05, wave: "sine" },
+    ],
     lfoRate: 0.04,
     lfoDepth: 0.3,
     gainLevel: 0.09,
   },
+  {
+    id: "flow-zen",
+    name: "Zen Flow",
+    nameHe: "זן — שקט בתנועה",
+    desc: "אלפא-תטא — זרימה רגועה, מיינדפולנס בפעולה",
+    category: "flow",
+    baseFreq: 165,
+    binauralOffset: 9,
+    waveform: "sine",
+    harmonics: [
+      { freq: 247, gain: 0.04, wave: "sine" }, // fifth
+      { freq: 82, gain: 0.04, wave: "sine" }, // sub octave
+    ],
+    lfoRate: 0.025,
+    lfoDepth: 0.25,
+    gainLevel: 0.09,
+  },
 
-  // === CALM ===
+  // ═══════════════════════════════════════════
+  // CALM — Very low frequencies, deep modulation
+  // Designed for: meditation, anxiety relief, sleep prep
+  // Uses theta/delta range with slow "breathing" modulation
+  // ═══════════════════════════════════════════
   {
     id: "theta-calm",
     name: "Deep Theta",
     nameHe: "תטא עמוק — רוגע מלא",
-    desc: "6Hz binaural beat למדיטציה ורגיעה עמוקה",
+    desc: "6Hz — מדיטציה ורגיעה עמוקה, המוח נרגע לגמרי",
     category: "calm",
     baseFreq: 150,
     binauralOffset: 6,
@@ -255,13 +333,16 @@ export const AUDIO_PRESETS: AudioPreset[] = [
   },
   {
     id: "theta-light",
-    name: "Light Theta",
-    nameHe: "תטא קל — מעבר לשינה",
-    desc: "4Hz binaural beat להרפיה ומעבר לשינה",
+    name: "Twilight Drift",
+    nameHe: "שקיעה — מעבר לשינה",
+    desc: "4Hz — הרפיה, מעבר עדין בין ערות לשינה",
     category: "calm",
     baseFreq: 120,
     binauralOffset: 4,
     waveform: "sine",
+    harmonics: [
+      { freq: 60, gain: 0.04, wave: "sine" }, // deep sub
+    ],
     lfoRate: 0.03,
     lfoDepth: 0.6,
     gainLevel: 0.08,
@@ -270,7 +351,7 @@ export const AUDIO_PRESETS: AudioPreset[] = [
     id: "delta-rest",
     name: "Delta Rest",
     nameHe: "דלתא — מנוחה מוחלטת",
-    desc: "2Hz binaural beat להתאוששות ומנוחת עומק",
+    desc: "2Hz — התאוששות ומנוחת עומק, כמו שינה עמוקה",
     category: "calm",
     baseFreq: 100,
     binauralOffset: 2,
@@ -283,26 +364,31 @@ export const AUDIO_PRESETS: AudioPreset[] = [
     id: "ocean-breath",
     name: "Ocean Breath",
     nameHe: "נשימת אוקיינוס — 3Hz",
-    desc: "דלתא-תטא עם מודולציה איטית כמו גלי ים",
+    desc: "דלתא-תטא עם נשימה איטית — כמו גלי ים על החוף",
     category: "calm",
     baseFreq: 110,
     binauralOffset: 3,
     waveform: "sine",
+    harmonics: [
+      { freq: 165, gain: 0.03, wave: "sine", panL: 0.9, panR: 0.4 },
+      { freq: 220, gain: 0.02, wave: "sine", panL: 0.4, panR: 0.9 },
+      { freq: 55, gain: 0.04, wave: "sine" },
+    ],
     lfoRate: 0.04,
     lfoDepth: 0.65,
-    harmonics: [
-      { freq: 165, gain: 0.03, wave: "sine" },
-      { freq: 220, gain: 0.02, wave: "sine" },
-    ],
     gainLevel: 0.07,
   },
 
-  // === STUDY ===
+  // ═══════════════════════════════════════════
+  // STUDY — Clean beta-low, optimized for information retention
+  // Designed for: reading, memorization, exam prep
+  // Uses lower beta (12-18Hz) for sustained attention without fatigue
+  // ═══════════════════════════════════════════
   {
     id: "study-focus",
     name: "Study Mode",
     nameHe: "מצב לימודים — 14Hz",
-    desc: "בטא נמוך לקריאה ממושכת ושינון",
+    desc: "בטא נמוך — קריאה ממושכת, שינון, הבנת טקסטים",
     category: "study",
     baseFreq: 220,
     binauralOffset: 14,
@@ -313,353 +399,496 @@ export const AUDIO_PRESETS: AudioPreset[] = [
     id: "memory-boost",
     name: "Memory Boost",
     nameHe: "חיזוק זיכרון — 12Hz",
-    desc: "אלפא-בטא לשיפור קליטת מידע ושימור",
+    desc: "אלפא-בטא — שיפור קליטת מידע, שימור וארגון בזיכרון",
     category: "study",
     baseFreq: 240,
     binauralOffset: 12,
     waveform: "sine",
-    harmonics: [{ freq: 480, gain: 0.02, wave: "sine" }],
+    harmonics: [
+      { freq: 480, gain: 0.02, wave: "sine" },
+      { freq: 120, gain: 0.03, wave: "sine" },
+    ],
     gainLevel: 0.10,
   },
   {
     id: "reading-flow",
     name: "Reading Flow",
     nameHe: "זרימת קריאה — 10Hz",
-    desc: "אלפא לקריאה רציפה והבנת טקסטים",
+    desc: "אלפא — לקריאה רציפה ארוכה, הבנה שלמה",
     category: "study",
     baseFreq: 260,
     binauralOffset: 10,
     waveform: "sine",
-    lfoRate: 0.08,
-    lfoDepth: 0.2,
+    lfoRate: 0.06,
+    lfoDepth: 0.15,
     gainLevel: 0.10,
   },
   {
     id: "exam-prep",
     name: "Exam Prep",
     nameHe: "הכנה למבחן — 18Hz",
-    desc: "בטא ממוקד לחזרה אינטנסיבית לפני מבחנים",
+    desc: "בטא ממוקד — חזרה אינטנסיבית, שליפת מידע מהירה",
     category: "study",
     baseFreq: 210,
     binauralOffset: 18,
     waveform: "sine",
+    harmonics: [{ freq: 420, gain: 0.02, wave: "sine" }],
     gainLevel: 0.11,
   },
 
-  // === MORNING ===
+  // ═══════════════════════════════════════════
+  // MORNING — Bright, ascending, energizing
+  // Designed for: wake-up routine, morning energy boost
+  // Uses major key harmonics + ascending intervals for "sunrise" feel
+  // ═══════════════════════════════════════════
   {
     id: "morning-rise",
-    name: "Morning Rise",
-    nameHe: "השכמה — 15Hz",
-    desc: "בטא נמוך לעירנות בוקר עדינה וטבעית",
+    name: "Gentle Rise",
+    nameHe: "השכמה עדינה — 15Hz",
+    desc: "בטא עדין עם הרמוניות מז׳ור — כמו קרני שמש ראשונות",
     category: "morning",
-    baseFreq: 230,
+    baseFreq: 261.63, // C4
     binauralOffset: 15,
     waveform: "sine",
-    lfoRate: 0.1,
-    lfoDepth: 0.2,
-    gainLevel: 0.10,
+    harmonics: [
+      { freq: 329.63, gain: 0.05, wave: "sine" }, // E4 — major third
+      { freq: 392.00, gain: 0.04, wave: "sine" }, // G4 — perfect fifth
+      { freq: 523.25, gain: 0.02, wave: "triangle" }, // C5 — octave
+    ],
+    lfoRate: 0.08,
+    lfoDepth: 0.15,
+    gainLevel: 0.09,
   },
   {
     id: "morning-energy",
-    name: "Morning Energy",
-    nameHe: "אנרגיה בוקר — 22Hz",
-    desc: "בטא אקטיבי להפעלת הגוף והמוח בבוקר",
+    name: "Morning Power",
+    nameHe: "אנרגיה בוקרית — 22Hz",
+    desc: "בטא אקטיבי + הרמוניות מרוממות — הפעלת גוף ומוח",
     category: "morning",
-    baseFreq: 250,
+    baseFreq: 293.66, // D4
     binauralOffset: 22,
-    waveform: "sine",
-    gainLevel: 0.11,
+    waveform: "triangle",
+    harmonics: [
+      { freq: 369.99, gain: 0.04, wave: "triangle" }, // F#4
+      { freq: 440.00, gain: 0.03, wave: "sine" }, // A4
+      { freq: 587.33, gain: 0.02, wave: "triangle" }, // D5
+    ],
+    gainLevel: 0.10,
   },
   {
     id: "morning-sunshine",
-    name: "Sunshine Start",
-    nameHe: "זריחה — 18Hz",
-    desc: "תדר מעורר ונעים כמו קרני שמש ראשונות",
+    name: "Sunrise Chords",
+    nameHe: "אקורדי זריחה — 18Hz",
+    desc: "אקורד מז׳ור 7 — אופטימיות, חיוביות, יום חדש",
     category: "morning",
-    baseFreq: 240,
+    baseFreq: 220.00, // A3
     binauralOffset: 18,
-    waveform: "triangle",
-    harmonics: [{ freq: 480, gain: 0.02, wave: "sine" }],
-    lfoRate: 0.08,
-    lfoDepth: 0.15,
-    gainLevel: 0.10,
+    waveform: "sine",
+    harmonics: [
+      { freq: 277.18, gain: 0.05, wave: "sine" }, // C#4
+      { freq: 329.63, gain: 0.04, wave: "sine" }, // E4
+      { freq: 415.30, gain: 0.03, wave: "triangle" }, // G#4 — major 7th, bright
+      { freq: 440.00, gain: 0.02, wave: "sine" }, // A4
+    ],
+    lfoRate: 0.06,
+    lfoDepth: 0.12,
+    gainLevel: 0.08,
   },
 
-  // === NIGHT WORK ===
+  // ═══════════════════════════════════════════
+  // NIGHT WORK — Dark, subdued tones that don't strain tired ears
+  // Designed for: late night coding, writing, studying
+  // Uses lower frequencies, warm filtering, minor keys
+  // ═══════════════════════════════════════════
   {
     id: "night-owl",
     name: "Night Owl",
     nameHe: "ינשוף לילה — 25Hz",
-    desc: "בטא מאוזן לעבודה לילית בלי עייפות",
+    desc: "בטא חשוך ומסונן — עבודה לילית ללא עייפות אוזניים",
     category: "night-work",
-    baseFreq: 170,
+    baseFreq: 130,
     binauralOffset: 25,
     waveform: "sine",
-    lfoRate: 0.04,
-    lfoDepth: 0.2,
+    harmonics: [
+      { freq: 65, gain: 0.05, wave: "sine" }, // deep bass
+      { freq: 195, gain: 0.03, wave: "sine", filterFreq: 250 },
+    ],
+    filterType: "lowpass",
+    filterFreq: 400,
+    filterQ: 0.5,
+    lfoRate: 0.03,
+    lfoDepth: 0.15,
     gainLevel: 0.09,
   },
   {
     id: "night-focus",
     name: "Midnight Focus",
     nameHe: "פוקוס חצות — 30Hz",
-    desc: "בטא גבוה שעוזר לשמור ריכוז בשעות מאוחרות",
+    desc: "בטא גבוה חשוך — שומר ריכוז בשעות הקטנות של הלילה",
     category: "night-work",
-    baseFreq: 180,
+    baseFreq: 110,
     binauralOffset: 30,
     waveform: "sine",
-    gainLevel: 0.10,
+    harmonics: [
+      { freq: 55, gain: 0.06, wave: "sine" }, // very deep
+      { freq: 165, gain: 0.03, wave: "triangle", filterFreq: 200 },
+    ],
+    filterType: "lowpass",
+    filterFreq: 350,
+    filterQ: 0.7,
+    gainLevel: 0.09,
   },
   {
     id: "night-calm-work",
     name: "Quiet Hours",
     nameHe: "שעות שקט — 20Hz",
-    desc: "בטא עדין לעבודה רגועה בלילה עמוק",
+    desc: "בטא עדין וחשוך — כמו לעבוד לאור נרות",
     category: "night-work",
-    baseFreq: 160,
+    baseFreq: 100,
     binauralOffset: 20,
     waveform: "sine",
-    lfoRate: 0.03,
-    lfoDepth: 0.25,
+    harmonics: [
+      { freq: 150, gain: 0.03, wave: "sine" }, // fifth above — warmth
+      { freq: 50, gain: 0.04, wave: "sine" }, // sub
+    ],
+    filterType: "lowpass",
+    filterFreq: 300,
+    filterQ: 0.5,
+    lfoRate: 0.02,
+    lfoDepth: 0.2,
     gainLevel: 0.08,
   },
 
-  // === BATTLE MODE ===
+  // ═══════════════════════════════════════════
+  // BATTLE MODE — Aggressive, driving, intense
+  // Designed for: deadlines, urgent work, overcoming procrastination
+  // Uses high gamma + harsh waveforms + fast modulation
+  // ═══════════════════════════════════════════
   {
     id: "battle-gamma",
     name: "War Mode",
     nameHe: "מצב מלחמה — 45Hz",
-    desc: "גמא אגרסיבי לאנרגיה מקסימלית ודדליינים",
+    desc: "גמא אגרסיבי עם גל מרובע — כמו סירנת דדליין",
     category: "battle",
     baseFreq: 200,
     binauralOffset: 45,
     waveform: "sawtooth",
-    harmonics: [{ freq: 400, gain: 0.03, wave: "square" }],
-    gainLevel: 0.08,
+    harmonics: [
+      { freq: 400, gain: 0.04, wave: "square" },
+      { freq: 100, gain: 0.05, wave: "sawtooth" },
+    ],
+    filterType: "lowpass",
+    filterFreq: 800,
+    filterQ: 2,
+    lfoRate: 0.3,
+    lfoDepth: 0.15,
+    gainLevel: 0.06,
   },
   {
     id: "battle-adrenaline",
     name: "Adrenaline Rush",
     nameHe: "אדרנלין — 50Hz",
-    desc: "גמא גבוה מאוד — מצב חירום ומהירות",
+    desc: "גמא גבוה מאוד — מצב חירום, אנרגיה מקסימלית",
     category: "battle",
-    baseFreq: 220,
+    baseFreq: 180,
     binauralOffset: 50,
     waveform: "sawtooth",
-    gainLevel: 0.07,
+    harmonics: [
+      { freq: 360, gain: 0.03, wave: "sawtooth", detune: 10 },
+      { freq: 540, gain: 0.02, wave: "square" },
+      { freq: 90, gain: 0.04, wave: "sawtooth", detune: -5 },
+    ],
+    filterType: "lowpass",
+    filterFreq: 1000,
+    filterQ: 3,
+    lfoRate: 0.5,
+    lfoDepth: 0.1,
+    gainLevel: 0.05,
   },
   {
     id: "battle-beast",
     name: "Beast Mode",
     nameHe: "מצב חיה — 42Hz",
-    desc: "גמא עם הרמוניקות חזקות — להתגבר על כל מכשול",
+    desc: "שכבות סינתטיות אגרסיביות — להתגבר על כל מכשול",
     category: "battle",
-    baseFreq: 210,
+    baseFreq: 150,
     binauralOffset: 42,
     waveform: "square",
     harmonics: [
-      { freq: 315, gain: 0.03, wave: "sawtooth" },
-      { freq: 420, gain: 0.02, wave: "square" },
+      { freq: 300, gain: 0.04, wave: "sawtooth", detune: 7 },
+      { freq: 450, gain: 0.03, wave: "square", detune: -3 },
+      { freq: 75, gain: 0.05, wave: "sawtooth" },
     ],
-    gainLevel: 0.06,
+    filterType: "lowpass",
+    filterFreq: 900,
+    filterQ: 2.5,
+    gainLevel: 0.05,
   },
 
-  // === BROWN NOISE ===
+  // ═══════════════════════════════════════════
+  // NOISE — Real generated noise for distraction blocking
+  // Uses actual noise buffers (brown/pink/white) with filtering
+  // Designed for: open offices, noisy environments, cafes
+  // ═══════════════════════════════════════════
   {
     id: "brown-noise-deep",
-    name: "Deep Brown",
+    name: "Deep Brown Noise",
     nameHe: "רעש חום עמוק",
-    desc: "רעש חום עמוק לחסימת הסחות דעת סביבתיות",
+    desc: "רעש חום עמוק — כמו רוח חזקה או מפל מים רחוק, חוסם הסחות",
     category: "noise",
-    baseFreq: 60,
-    binauralOffset: 1,
-    waveform: "sawtooth",
-    harmonics: [
-      { freq: 80, gain: 0.08, wave: "sawtooth" },
-      { freq: 100, gain: 0.06, wave: "sawtooth" },
-      { freq: 130, gain: 0.04, wave: "sawtooth" },
-      { freq: 170, gain: 0.03, wave: "sawtooth" },
-      { freq: 220, gain: 0.02, wave: "sawtooth" },
-    ],
-    lfoRate: 0.02,
-    lfoDepth: 0.3,
-    gainLevel: 0.08,
+    noiseType: "brown",
+    baseFreq: 0,
+    binauralOffset: 0,
+    waveform: "sine",
+    filterType: "lowpass",
+    filterFreq: 500,
+    filterQ: 0.5,
+    gainLevel: 0.15,
   },
   {
     id: "brown-noise-warm",
-    name: "Warm Brown",
-    nameHe: "רעש חום חם",
-    desc: "גרסה חמה יותר של רעש חום — כמו שמיכה לאוזניים",
+    name: "Warm Brown Cocoon",
+    nameHe: "קוקון חום חם",
+    desc: "רעש חום מסונן — כמו שמיכה חמה לאוזניים, עוטף ומרגיע",
     category: "noise",
-    baseFreq: 70,
-    binauralOffset: 1.5,
-    waveform: "sawtooth",
-    harmonics: [
-      { freq: 90, gain: 0.07, wave: "sine" },
-      { freq: 120, gain: 0.05, wave: "sawtooth" },
-      { freq: 160, gain: 0.03, wave: "sine" },
-    ],
-    lfoRate: 0.015,
-    lfoDepth: 0.35,
-    gainLevel: 0.07,
+    noiseType: "brown",
+    baseFreq: 0,
+    binauralOffset: 0,
+    waveform: "sine",
+    filterType: "lowpass",
+    filterFreq: 350,
+    filterQ: 0.7,
+    lfoRate: 0.02,
+    lfoDepth: 0.1,
+    gainLevel: 0.14,
   },
   {
-    id: "brown-noise-cocoon",
-    name: "Cocoon",
-    nameHe: "קוקון שקט",
-    desc: "רעש חום עוטף שיוצר בועת שקט סביבך",
+    id: "pink-noise-soft",
+    name: "Pink Noise Focus",
+    nameHe: "רעש ורוד — מיקוד",
+    desc: "רעש ורוד — מאוזן יותר מחום, מעולה לריכוז ולימודים",
     category: "noise",
-    baseFreq: 50,
-    binauralOffset: 0.5,
-    waveform: "sawtooth",
-    harmonics: [
-      { freq: 75, gain: 0.06, wave: "sawtooth" },
-      { freq: 100, gain: 0.05, wave: "sine" },
-      { freq: 140, gain: 0.03, wave: "sawtooth" },
-      { freq: 200, gain: 0.02, wave: "sine" },
-    ],
-    lfoRate: 0.01,
-    lfoDepth: 0.4,
-    gainLevel: 0.07,
+    noiseType: "pink",
+    baseFreq: 0,
+    binauralOffset: 0,
+    waveform: "sine",
+    filterType: "lowpass",
+    filterFreq: 4000,
+    filterQ: 0.3,
+    gainLevel: 0.10,
+  },
+  {
+    id: "brown-binaural",
+    name: "Brown + Binaural",
+    nameHe: "חום + בינאורלי — 14Hz",
+    desc: "רעש חום ומעליו שכבת בינאורלי 14Hz — חסימה + ריכוז",
+    category: "noise",
+    noiseType: "brown",
+    baseFreq: 180,
+    binauralOffset: 14,
+    waveform: "sine",
+    toneLevel: 0.25,
+    filterType: "lowpass",
+    filterFreq: 400,
+    filterQ: 0.5,
+    gainLevel: 0.12,
   },
 
-  // === LO-FI FOCUS ===
+  // ═══════════════════════════════════════════
+  // LO-FI FOCUS — Warm, detuned, vinyl-like textures
+  // Emulates: lo-fi hip hop beats to study/relax to
+  // Uses triangle waves, detuning for "imperfection", warm filtering
+  // ═══════════════════════════════════════════
   {
     id: "lofi-chill",
     name: "Lo-Fi Chill",
     nameHe: "לו-פיי צ׳יל",
-    desc: "תדרים חמים ונעימים בסגנון Lo-Fi Hip Hop",
+    desc: "טונים חמים ומעט מושחתים — אווירת לו-פיי קלאסית",
     category: "lofi",
-    baseFreq: 220,
+    baseFreq: 196.00, // G3 — warm key
     binauralOffset: 8,
     waveform: "triangle",
     harmonics: [
-      { freq: 330, gain: 0.05, wave: "sine" },
-      { freq: 440, gain: 0.03, wave: "triangle" },
+      { freq: 293.66, gain: 0.05, wave: "triangle", detune: 8 }, // D4 — slightly sharp
+      { freq: 392.00, gain: 0.03, wave: "sine", detune: -5 }, // G4 — slightly flat
+      { freq: 98, gain: 0.06, wave: "triangle" }, // sub bass G2
     ],
+    filterType: "lowpass",
+    filterFreq: 700,
+    filterQ: 1.5,
     lfoRate: 0.06,
-    lfoDepth: 0.3,
-    gainLevel: 0.09,
+    lfoDepth: 0.25,
+    gainLevel: 0.08,
   },
   {
     id: "lofi-study",
     name: "Lo-Fi Study",
     nameHe: "לו-פיי לימודים",
-    desc: "רקע עדין לריכוז ולימודים בסגנון Lo-Fi",
+    desc: "רקע לו-פיי עדין ונעים — מושלם לשעות לימוד ארוכות",
     category: "lofi",
-    baseFreq: 196,
+    baseFreq: 174.61, // F3
     binauralOffset: 10,
     waveform: "triangle",
     harmonics: [
-      { freq: 293.66, gain: 0.04, wave: "sine" },
-      { freq: 392, gain: 0.03, wave: "triangle" },
+      { freq: 261.63, gain: 0.04, wave: "sine", detune: 6 }, // C4
+      { freq: 349.23, gain: 0.03, wave: "triangle", detune: -4 }, // F4
+      { freq: 87, gain: 0.05, wave: "triangle" }, // F2 sub
     ],
-    lfoRate: 0.05,
-    lfoDepth: 0.25,
+    filterType: "lowpass",
+    filterFreq: 600,
+    filterQ: 1.2,
+    lfoRate: 0.04,
+    lfoDepth: 0.2,
     gainLevel: 0.08,
   },
   {
     id: "lofi-rain",
     name: "Lo-Fi Rain",
     nameHe: "לו-פיי גשם",
-    desc: "אווירת גשם חם עם תדרים לו-פיי",
+    desc: "רעש ורוד מסונן + טונים חמים — כמו גשם על חלון בית קפה",
     category: "lofi",
+    noiseType: "pink",
     baseFreq: 185,
     binauralOffset: 7,
     waveform: "triangle",
+    toneLevel: 0.4,
+    filterType: "bandpass",
+    filterFreq: 800,
+    filterQ: 0.5,
     harmonics: [
-      { freq: 277, gain: 0.04, wave: "sine" },
-      { freq: 370, gain: 0.03, wave: "triangle" },
-      { freq: 92, gain: 0.05, wave: "sawtooth" },
+      { freq: 277, gain: 0.03, wave: "triangle", detune: 5 },
+      { freq: 370, gain: 0.02, wave: "sine", detune: -3 },
     ],
-    lfoRate: 0.08,
-    lfoDepth: 0.35,
-    gainLevel: 0.08,
+    lfoRate: 0.05,
+    lfoDepth: 0.15,
+    gainLevel: 0.10,
+  },
+  {
+    id: "lofi-vinyl",
+    name: "Vinyl Warmth",
+    nameHe: "חום תקליט",
+    desc: "צליל חם ומושחת כמו תקליט ישן — נוסטלגי ומרגיע",
+    category: "lofi",
+    baseFreq: 220.00, // A3
+    binauralOffset: 6,
+    waveform: "triangle",
+    harmonics: [
+      { freq: 330.00, gain: 0.04, wave: "triangle", detune: 12 }, // E4 very detuned
+      { freq: 440.00, gain: 0.02, wave: "sine", detune: -8 }, // A4 detuned
+      { freq: 110, gain: 0.05, wave: "triangle", detune: 3 }, // A2 sub
+    ],
+    filterType: "lowpass",
+    filterFreq: 550,
+    filterQ: 2,
+    lfoRate: 0.07,
+    lfoDepth: 0.3,
+    gainLevel: 0.07,
   },
 
-  // === ELECTRIC FLOW ===
+  // ═══════════════════════════════════════════
+  // ELECTRIC FLOW — Synthetic, buzzy, energetic
+  // Designed for: coding, gaming, digital art, technical work
+  // Uses square/sawtooth with fast modulation and resonant filters
+  // ═══════════════════════════════════════════
   {
     id: "electric-pulse",
     name: "Electric Pulse",
     nameHe: "פולס חשמלי — 36Hz",
-    desc: "גמא פועם עם אנרגיה אלקטרונית — לקידוד ועיצוב",
+    desc: "גמא פועם עם אנרגיה סינתטית — לקידוד ועיצוב דיגיטלי",
     category: "electric",
-    baseFreq: 200,
+    baseFreq: 165,
     binauralOffset: 36,
     waveform: "square",
-    harmonics: [{ freq: 400, gain: 0.03, wave: "sawtooth" }],
+    harmonics: [
+      { freq: 330, gain: 0.03, wave: "sawtooth", panL: 0.9, panR: 0.3 },
+      { freq: 82, gain: 0.04, wave: "square", panL: 0.3, panR: 0.9 },
+    ],
+    filterType: "lowpass",
+    filterFreq: 700,
+    filterQ: 3,
     lfoRate: 0.15,
     lfoDepth: 0.2,
-    gainLevel: 0.07,
+    gainLevel: 0.06,
   },
   {
     id: "electric-surge",
     name: "Power Surge",
     nameHe: "גל כוח — 40Hz",
-    desc: "אנרגיה חשמלית גולמית — מושלם לקריאייטיב טכני",
+    desc: "אנרגיה סינתטית גולמית — כמו חיבור למפעל חשמל",
     category: "electric",
-    baseFreq: 185,
+    baseFreq: 130,
     binauralOffset: 40,
     waveform: "sawtooth",
     harmonics: [
-      { freq: 370, gain: 0.03, wave: "square" },
-      { freq: 555, gain: 0.02, wave: "sawtooth" },
+      { freq: 260, gain: 0.03, wave: "square", detune: 15 },
+      { freq: 390, gain: 0.02, wave: "sawtooth", detune: -10 },
+      { freq: 65, gain: 0.04, wave: "sawtooth" },
     ],
+    filterType: "lowpass",
+    filterFreq: 800,
+    filterQ: 4,
     lfoRate: 0.2,
     lfoDepth: 0.15,
-    gainLevel: 0.06,
+    gainLevel: 0.05,
   },
   {
     id: "electric-neon",
-    name: "Neon Lights",
-    nameHe: "אורות ניאון — 33Hz",
-    desc: "תדר עירוני וחשמלי — כמו לעבוד בלילה בעיר גדולה",
+    name: "Neon City",
+    nameHe: "עיר ניאון — 33Hz",
+    desc: "תדרים עירוניים — כמו לעבוד בלילה בטוקיו",
     category: "electric",
-    baseFreq: 195,
+    baseFreq: 146.83, // D3
     binauralOffset: 33,
     waveform: "square",
     harmonics: [
-      { freq: 292, gain: 0.03, wave: "sine" },
-      { freq: 390, gain: 0.02, wave: "square" },
+      { freq: 220, gain: 0.03, wave: "sawtooth", panL: 1, panR: 0.2, detune: 8 },
+      { freq: 293, gain: 0.02, wave: "square", panL: 0.2, panR: 1, detune: -6 },
+      { freq: 73, gain: 0.04, wave: "square" },
     ],
+    filterType: "bandpass",
+    filterFreq: 500,
+    filterQ: 2,
     lfoRate: 0.1,
     lfoDepth: 0.2,
-    gainLevel: 0.07,
+    gainLevel: 0.06,
   },
 
-  // === CLASSICAL-INSPIRED (synthesized harmonic patterns) ===
+  // ═══════════════════════════════════════════
+  // CLASSICAL — Synthesized harmonic patterns from real compositions
+  // Each uses the actual harmonic structure of the piece
+  // Pure sine waves in musical intervals
+  // ═══════════════════════════════════════════
   {
     id: "mozart-effect",
-    name: "Mozart Effect",
-    nameHe: "אפקט מוצארט — K.448",
-    desc: "דפוס הרמוני מבוסס על סונטה לשני פסנתרים של מוצארט — משפר חשיבה מרחבית",
+    name: "Mozart K.448",
+    nameHe: "אפקט מוצארט — סונטה לשני פסנתרים",
+    desc: "D Major — חשיבה מרחבית, אינטליגנציה, מבנה הרמוני מורכב",
     category: "classical",
-    baseFreq: 261.63, // C4
+    baseFreq: 293.66, // D4
     binauralOffset: 10,
     waveform: "sine",
     harmonics: [
-      { freq: 329.63, gain: 0.06, wave: "sine" }, // E4
-      { freq: 392.00, gain: 0.05, wave: "sine" }, // G4
-      { freq: 523.25, gain: 0.03, wave: "sine" }, // C5
+      { freq: 369.99, gain: 0.06, wave: "sine" }, // F#4
+      { freq: 440.00, gain: 0.05, wave: "sine" }, // A4
+      { freq: 587.33, gain: 0.03, wave: "sine" }, // D5
     ],
     lfoRate: 0.15,
-    lfoDepth: 0.25,
+    lfoDepth: 0.2,
     gainLevel: 0.07,
   },
   {
     id: "beethoven-moonlight",
     name: "Moonlight Sonata",
     nameHe: "סונטת אור ירח — בטהובן",
-    desc: "אקורדים מרגיעים מהתנועה הראשונה, C# minor — מושלם להרגעה ומיקוד",
+    desc: "C# minor — רגיעה, מיקוד, שלווה דרמטית (Op.27 No.2)",
     category: "classical",
     baseFreq: 138.59, // C#3
     binauralOffset: 6,
     waveform: "sine",
     harmonics: [
-      { freq: 164.81, gain: 0.07, wave: "sine" }, // E3
-      { freq: 207.65, gain: 0.06, wave: "sine" }, // G#3
-      { freq: 277.18, gain: 0.04, wave: "sine" }, // C#4
+      { freq: 164.81, gain: 0.07, wave: "sine" }, // E3 — minor third
+      { freq: 207.65, gain: 0.06, wave: "sine" }, // G#3 — perfect fifth
+      { freq: 277.18, gain: 0.04, wave: "sine" }, // C#4 — octave
       { freq: 329.63, gain: 0.03, wave: "sine" }, // E4
     ],
     lfoRate: 0.08,
@@ -669,46 +898,26 @@ export const AUDIO_PRESETS: AudioPreset[] = [
   {
     id: "beethoven-pathetique",
     name: "Pathétique Adagio",
-    nameHe: "פתטיק אדג׳יו — בטהובן",
-    desc: "התנועה האיטית של הסונטה הפתטית — נוגעת ומרגיעה עמוקות",
+    nameHe: "פתטיק — בטהובן",
+    desc: "Ab Major — נוגע ומרגיע, התנועה האיטית (Op.13)",
     category: "classical",
-    baseFreq: 174.61, // F3
+    baseFreq: 207.65, // Ab3
     binauralOffset: 5,
     waveform: "sine",
     harmonics: [
-      { freq: 220.00, gain: 0.06, wave: "sine" }, // A3
-      { freq: 261.63, gain: 0.05, wave: "sine" }, // C4
-      { freq: 349.23, gain: 0.03, wave: "sine" }, // F4
-      { freq: 440.00, gain: 0.02, wave: "sine" }, // A4
+      { freq: 261.63, gain: 0.06, wave: "sine" }, // C4 — major third
+      { freq: 311.13, gain: 0.05, wave: "sine" }, // Eb4 — perfect fifth
+      { freq: 415.30, gain: 0.03, wave: "sine" }, // Ab4
     ],
     lfoRate: 0.06,
     lfoDepth: 0.4,
     gainLevel: 0.06,
   },
   {
-    id: "beethoven-fur-elise",
-    name: "Für Elise",
-    nameHe: "לאליזה — בטהובן",
-    desc: "המוטיב המפורסם בגרסה הרמונית עדינה — נוסטלגי ומרגיע",
-    category: "classical",
-    baseFreq: 329.63, // E4
-    binauralOffset: 7,
-    waveform: "sine",
-    harmonics: [
-      { freq: 311.13, gain: 0.06, wave: "sine" }, // D#4/Eb4
-      { freq: 293.66, gain: 0.04, wave: "sine" }, // D4
-      { freq: 246.94, gain: 0.05, wave: "sine" }, // B3
-      { freq: 261.63, gain: 0.04, wave: "sine" }, // C4
-    ],
-    lfoRate: 0.12,
-    lfoDepth: 0.3,
-    gainLevel: 0.06,
-  },
-  {
     id: "bach-prelude",
-    name: "Bach Prelude",
-    nameHe: "פרלוד באך — C Major",
-    desc: "הרמוניות מבוססות על פרלוד של באך — מסדר את המחשבות",
+    name: "Bach Prelude C",
+    nameHe: "פרלוד בדו מז׳ור — באך",
+    desc: "C Major arpeggio — מסדר מחשבות, מבנה מתמטי מושלם (BWV 846)",
     category: "classical",
     baseFreq: 261.63, // C4
     binauralOffset: 8,
@@ -726,7 +935,7 @@ export const AUDIO_PRESETS: AudioPreset[] = [
     id: "bach-air",
     name: "Air on G String",
     nameHe: "אריה על מיתר סול — באך",
-    desc: "מנגינת באך הנצחית — שלווה, עומק ויופי טהור",
+    desc: "G Major — שלווה טהורה, כמו מיתרים שרים (BWV 1068)",
     category: "classical",
     baseFreq: 196.00, // G3
     binauralOffset: 6,
@@ -735,38 +944,36 @@ export const AUDIO_PRESETS: AudioPreset[] = [
       { freq: 246.94, gain: 0.06, wave: "sine" }, // B3
       { freq: 293.66, gain: 0.05, wave: "sine" }, // D4
       { freq: 392.00, gain: 0.03, wave: "sine" }, // G4
-      { freq: 493.88, gain: 0.02, wave: "triangle" }, // B4
     ],
     lfoRate: 0.05,
-    lfoDepth: 0.35,
+    lfoDepth: 0.3,
     gainLevel: 0.06,
   },
   {
     id: "chopin-nocturne",
-    name: "Nocturne Op.9 No.2",
+    name: "Nocturne Op.9/2",
     nameHe: "נוקטורן — שופן",
-    desc: "הנוקטורן המפורסם ביותר של שופן — שקט לילי ורומנטי",
+    desc: "Eb Major — שקט לילי רומנטי, מנגינה שרה (Op.9 No.2)",
     category: "classical",
-    baseFreq: 233.08, // Bb3
+    baseFreq: 311.13, // Eb4
     binauralOffset: 5,
     waveform: "sine",
     harmonics: [
-      { freq: 293.66, gain: 0.06, wave: "sine" }, // D4
-      { freq: 349.23, gain: 0.05, wave: "sine" }, // F4
-      { freq: 466.16, gain: 0.03, wave: "sine" }, // Bb4
-      { freq: 587.33, gain: 0.02, wave: "sine" }, // D5
+      { freq: 392.00, gain: 0.06, wave: "sine" }, // G4 — major third
+      { freq: 466.16, gain: 0.05, wave: "sine" }, // Bb4 — perfect fifth
+      { freq: 622.25, gain: 0.03, wave: "sine" }, // Eb5
     ],
     lfoRate: 0.07,
-    lfoDepth: 0.4,
+    lfoDepth: 0.35,
     gainLevel: 0.06,
   },
   {
     id: "chopin-raindrop",
     name: "Raindrop Prelude",
     nameHe: "פרלוד טיפות גשם — שופן",
-    desc: "הפרלוד של טיפות הגשם — טפטוף מהפנט ומרגיע",
+    desc: "Db Major — טפטוף מהפנט, חזרתיות מרגיעה (Op.28 No.15)",
     category: "classical",
-    baseFreq: 277.18, // Db4/C#4
+    baseFreq: 277.18, // Db4
     binauralOffset: 4,
     waveform: "sine",
     harmonics: [
@@ -774,7 +981,7 @@ export const AUDIO_PRESETS: AudioPreset[] = [
       { freq: 415.30, gain: 0.04, wave: "sine" }, // Ab4
       { freq: 554.37, gain: 0.03, wave: "sine" }, // Db5
     ],
-    lfoRate: 0.2, // faster pulse like raindrops
+    lfoRate: 0.2, // faster — raindrop rhythm
     lfoDepth: 0.3,
     gainLevel: 0.06,
   },
@@ -782,15 +989,15 @@ export const AUDIO_PRESETS: AudioPreset[] = [
     id: "debussy-reverie",
     name: "Rêverie — Debussy",
     nameHe: "חלימה — דביוסי",
-    desc: "אקורדים אימפרסיוניסטיים של דביוסי — תחושת חלום צבעוני",
+    desc: "F Major — אימפרסיוניזם, חלום צבעוני, אקורדים צפים",
     category: "classical",
-    baseFreq: 293.66, // D4
+    baseFreq: 349.23, // F4
     binauralOffset: 5,
     waveform: "sine",
     harmonics: [
-      { freq: 369.99, gain: 0.06, wave: "sine" }, // F#4
-      { freq: 440.00, gain: 0.05, wave: "sine" }, // A4
-      { freq: 554.37, gain: 0.03, wave: "sine" }, // C#5
+      { freq: 440.00, gain: 0.05, wave: "sine" }, // A4 — major third
+      { freq: 523.25, gain: 0.04, wave: "sine" }, // C5 — fifth
+      { freq: 174.61, gain: 0.04, wave: "sine" }, // F3 — octave below
     ],
     lfoRate: 0.06,
     lfoDepth: 0.45,
@@ -800,7 +1007,7 @@ export const AUDIO_PRESETS: AudioPreset[] = [
     id: "debussy-clair",
     name: "Clair de Lune — Debussy",
     nameHe: "אור ירח — דביוסי",
-    desc: "יצירת המופת של דביוסי — חלומי, שקט ורגיש",
+    desc: "Db Major — חלומי, שקט, אור ירח על מים (Suite bergamasque)",
     category: "classical",
     baseFreq: 277.18, // Db4
     binauralOffset: 4,
@@ -808,8 +1015,8 @@ export const AUDIO_PRESETS: AudioPreset[] = [
     harmonics: [
       { freq: 349.23, gain: 0.06, wave: "sine" }, // F4
       { freq: 415.30, gain: 0.05, wave: "sine" }, // Ab4
-      { freq: 523.25, gain: 0.04, wave: "sine" }, // C5
-      { freq: 622.25, gain: 0.02, wave: "sine" }, // Eb5
+      { freq: 523.25, gain: 0.04, wave: "sine" }, // ~C5
+      { freq: 138.59, gain: 0.04, wave: "sine" }, // Db3 — deep octave below
     ],
     lfoRate: 0.04,
     lfoDepth: 0.5,
@@ -817,9 +1024,9 @@ export const AUDIO_PRESETS: AudioPreset[] = [
   },
   {
     id: "debussy-arabesque",
-    name: "Arabesque No.1 — Debussy",
+    name: "Arabesque — Debussy",
     nameHe: "ערבסקה — דביוסי",
-    desc: "דפוסים זורמים ואלגנטיים של דביוסי — כמו מים זורמים",
+    desc: "E Major — דפוסים זורמים, קסם ואלגנטיות (No.1)",
     category: "classical",
     baseFreq: 329.63, // E4
     binauralOffset: 6,
@@ -827,7 +1034,7 @@ export const AUDIO_PRESETS: AudioPreset[] = [
     harmonics: [
       { freq: 415.30, gain: 0.05, wave: "sine" }, // G#4
       { freq: 493.88, gain: 0.04, wave: "sine" }, // B4
-      { freq: 659.25, gain: 0.03, wave: "sine" }, // E5
+      { freq: 164.81, gain: 0.04, wave: "sine" }, // E3
     ],
     lfoRate: 0.1,
     lfoDepth: 0.3,
@@ -837,7 +1044,7 @@ export const AUDIO_PRESETS: AudioPreset[] = [
     id: "vivaldi-spring",
     name: "Spring — Vivaldi",
     nameHe: "אביב — ויוואלדי",
-    desc: "ארבע העונות: אביב — אנרגיה חיובית ושמחת חיים",
+    desc: "E Major — אנרגיה, שמחת חיים, טבע מתעורר (RV 269)",
     category: "classical",
     baseFreq: 329.63, // E4
     binauralOffset: 10,
@@ -855,15 +1062,15 @@ export const AUDIO_PRESETS: AudioPreset[] = [
     id: "vivaldi-winter",
     name: "Winter — Vivaldi",
     nameHe: "חורף — ויוואלדי",
-    desc: "ארבע העונות: חורף — דרמטי ועוצמתי",
+    desc: "F minor — דרמטי, עוצמתי, קור ויופי (RV 297)",
     category: "classical",
-    baseFreq: 196.00, // G3
+    baseFreq: 174.61, // F3
     binauralOffset: 8,
     waveform: "triangle",
     harmonics: [
-      { freq: 246.94, gain: 0.06, wave: "triangle" }, // B3
-      { freq: 293.66, gain: 0.05, wave: "sine" }, // D4
-      { freq: 392.00, gain: 0.04, wave: "triangle" }, // G4
+      { freq: 207.65, gain: 0.06, wave: "triangle" }, // Ab3 — minor third
+      { freq: 261.63, gain: 0.05, wave: "sine" }, // C4 — fifth
+      { freq: 349.23, gain: 0.03, wave: "triangle" }, // F4
     ],
     lfoRate: 0.15,
     lfoDepth: 0.25,
@@ -871,9 +1078,9 @@ export const AUDIO_PRESETS: AudioPreset[] = [
   },
   {
     id: "satie-gymnopedie",
-    name: "Gymnopédie No.1",
+    name: "Gymnopédie No.1 — Satie",
     nameHe: "ג׳ימנופדיה — סאטי",
-    desc: "מנגינה מינימליסטית ושקטה — מושלמת ללימודים וקריאה",
+    desc: "D Major — מינימליסטי, שקט, מושלם ללימודים וקריאה",
     category: "classical",
     baseFreq: 293.66, // D4
     binauralOffset: 6,
@@ -881,7 +1088,7 @@ export const AUDIO_PRESETS: AudioPreset[] = [
     harmonics: [
       { freq: 369.99, gain: 0.05, wave: "sine" }, // F#4
       { freq: 440.00, gain: 0.04, wave: "sine" }, // A4
-      { freq: 523.25, gain: 0.03, wave: "sine" }, // C5
+      { freq: 146.83, gain: 0.04, wave: "sine" }, // D3
     ],
     lfoRate: 0.04,
     lfoDepth: 0.35,
@@ -889,17 +1096,17 @@ export const AUDIO_PRESETS: AudioPreset[] = [
   },
   {
     id: "satie-gnossienne",
-    name: "Gnossienne No.1",
+    name: "Gnossienne No.1 — Satie",
     nameHe: "גנוסיאן — סאטי",
-    desc: "מסתורי ומינימלי — סאטי במיטבו",
+    desc: "F minor — מסתורי, מינימלי, מהפנט",
     category: "classical",
-    baseFreq: 220.00, // A3
+    baseFreq: 174.61, // F3
     binauralOffset: 5,
     waveform: "sine",
     harmonics: [
-      { freq: 277.18, gain: 0.05, wave: "sine" }, // C#4
-      { freq: 329.63, gain: 0.04, wave: "sine" }, // E4
-      { freq: 440.00, gain: 0.03, wave: "sine" }, // A4
+      { freq: 207.65, gain: 0.05, wave: "sine" }, // Ab3
+      { freq: 261.63, gain: 0.04, wave: "sine" }, // C4
+      { freq: 349.23, gain: 0.03, wave: "sine" }, // F4
     ],
     lfoRate: 0.05,
     lfoDepth: 0.4,
@@ -909,34 +1116,34 @@ export const AUDIO_PRESETS: AudioPreset[] = [
     id: "tchaikovsky-swan",
     name: "Swan Lake",
     nameHe: "אגם הברבורים — צ׳ייקובסקי",
-    desc: "מוטיב מרכזי מאגם הברבורים — דרמטי, עמוק ומרגש",
+    desc: "B minor — דרמטי, עמוק, רגשי (Op.20)",
     category: "classical",
-    baseFreq: 185.00, // F#3/Gb3
+    baseFreq: 246.94, // B3
     binauralOffset: 5,
     waveform: "sine",
     harmonics: [
-      { freq: 220.00, gain: 0.06, wave: "sine" }, // A3
-      { freq: 277.18, gain: 0.05, wave: "sine" }, // C#4
-      { freq: 369.99, gain: 0.04, wave: "sine" }, // F#4
-      { freq: 440.00, gain: 0.02, wave: "sine" }, // A4
+      { freq: 293.66, gain: 0.06, wave: "sine" }, // D4 — minor third
+      { freq: 369.99, gain: 0.05, wave: "sine" }, // F#4 — fifth
+      { freq: 493.88, gain: 0.03, wave: "sine" }, // B4
+      { freq: 123.47, gain: 0.04, wave: "sine" }, // B2
     ],
     lfoRate: 0.06,
-    lfoDepth: 0.45,
+    lfoDepth: 0.4,
     gainLevel: 0.06,
   },
   {
     id: "grieg-morning",
     name: "Morning Mood — Grieg",
     nameHe: "מצב רוח בוקר — גריג",
-    desc: "פיר גינט: בוקר — מנגינת בוקר מושלמת ומעוררת השראה",
+    desc: "E Major — מנגינת בוקר מעוררת השראה (Peer Gynt Suite)",
     category: "classical",
     baseFreq: 329.63, // E4
     binauralOffset: 8,
     waveform: "sine",
     harmonics: [
-      { freq: 392.00, gain: 0.06, wave: "sine" }, // G4
+      { freq: 415.30, gain: 0.05, wave: "sine" }, // G#4
       { freq: 493.88, gain: 0.04, wave: "sine" }, // B4
-      { freq: 659.25, gain: 0.03, wave: "sine" }, // E5
+      { freq: 164.81, gain: 0.04, wave: "sine" }, // E3
     ],
     lfoRate: 0.1,
     lfoDepth: 0.2,
@@ -946,18 +1153,18 @@ export const AUDIO_PRESETS: AudioPreset[] = [
     id: "liszt-liebestraum",
     name: "Liebestraum — Liszt",
     nameHe: "חלום אהבה — ליסט",
-    desc: "רומנטיקה טהורה — מנגינה עדינה ורגשית",
+    desc: "Ab Major — רומנטיקה טהורה, מנגינה עדינה ורגשית (No.3)",
     category: "classical",
-    baseFreq: 277.18, // Db4
+    baseFreq: 207.65, // Ab3
     binauralOffset: 5,
     waveform: "sine",
     harmonics: [
-      { freq: 349.23, gain: 0.06, wave: "sine" }, // F4
-      { freq: 415.30, gain: 0.05, wave: "sine" }, // Ab4
-      { freq: 554.37, gain: 0.03, wave: "sine" }, // Db5
+      { freq: 261.63, gain: 0.06, wave: "sine" }, // C4
+      { freq: 311.13, gain: 0.05, wave: "sine" }, // Eb4
+      { freq: 415.30, gain: 0.03, wave: "sine" }, // Ab4
     ],
     lfoRate: 0.07,
-    lfoDepth: 0.4,
+    lfoDepth: 0.35,
     gainLevel: 0.06,
   },
 ];
@@ -976,34 +1183,34 @@ export const GUIDES = [
     content: "דלתא (0.5-4Hz): שינה עמוקה | תטא (4-8Hz): מדיטציה, רגיעה | אלפא (8-13Hz): יצירתיות, זרימה | בטא (13-30Hz): ריכוז, חשיבה | גמא (30-50Hz): ריכוז על, פתרון בעיות",
   },
   {
+    id: "brown-noise",
+    title: "מה זה Brown Noise?",
+    icon: "🔇",
+    content: "רעש חום הוא רעש בתדרים נמוכים שמדמה רעש עמוק כמו סופת רוח, נהר סוער או מפל מים. הוא יעיל לחסימת הסחות דעת סביבתיות. Pink Noise יותר מאוזן — מצוין לריכוז. מחקרים מראים ששניהם משפרים שינה ומפחיתים חרדה.",
+  },
+  {
+    id: "lofi-science",
+    title: "למה Lo-Fi עובד?",
+    icon: "🎶",
+    content: "מחקרים הראו שמוזיקה עם ביטים חזרתיים ופשוטים (60-90 BPM) ללא מילים משפרת ריכוז. Lo-Fi Hip Hop מצוין כי: 1) טמפו קבוע 2) בלי מילים שמסיחות 3) חוסר שלמות (חרקרות, הד) מרגיע את המוח 4) חזרתיות יוצרת תחושת ביטחון.",
+  },
+  {
     id: "mozart",
     title: "אפקט מוצארט",
     icon: "🎹",
     content: "מחקר מ-1993 מצא שהאזנה לסונטה K.448 של מוצארט משפרת חשיבה מרחבית-זמנית. מחקרים נוספים הראו שמוזיקה קלאסית עם מבנה הרמוני מורכב יכולה לשפר ריכוז, זיכרון ולמידה.",
   },
   {
-    id: "beethoven",
-    title: "בטהובן והרגעה",
-    icon: "🎼",
-    content: "מחקרים הראו שמוזיקה איטית של בטהובן (60-70 BPM) כמו סונטת אור הירח מורידה קצב לב ולחץ דם. התנועות האיטיות שלו יוצרות תחושת ביטחון ושלווה. בטהובן הלחין חלק מיצירותיו הגדולות כשהיה חירש — מוזיקה שנולדה מתוך שקט פנימי.",
-  },
-  {
     id: "debussy",
     title: "דביוסי ואימפרסיוניזם",
     icon: "🌸",
-    content: "קלוד דביוסי (1862-1918) פיתח סגנון אימפרסיוניסטי ייחודי המשתמש בסולמות שלמים, אקורדים מקבילים וצלילים ״צפים״. מחקרים הראו שהמוזיקה שלו מפעילה אזורים מוחיים הקשורים לדמיון ויצירתיות. Clair de Lune ו-Rêverie מצוינים לעבודה יצירתית.",
+    content: "קלוד דביוסי פיתח סגנון אימפרסיוניסטי המשתמש בסולמות שלמים ואקורדים ״צפים״. Clair de Lune, Rêverie ו-Arabesque מפעילים אזורים מוחיים הקשורים לדמיון ויצירתיות — מצוינים לעבודה יצירתית.",
   },
   {
     id: "classical-study",
     title: "מוזיקה קלאסית ולימודים",
     icon: "📖",
-    content: "מחקרים מצאו שמוזיקה קלאסית ללא מילים (בטהובן, באך, שופן, סאטי, דביוסי) משפרת ריכוז בזמן לימודים ב-12% בממוצע. המפתח: טempo איטי (60-80 BPM), בלי מילים, עוצמה נמוכה.",
-  },
-  {
-    id: "brown-noise",
-    title: "מה זה Brown Noise?",
-    icon: "🔇",
-    content: "רעש חום (Brown Noise) הוא רעש בתדרים נמוכים שמדמה רעש עמוק כמו סופת רוח, נהר סוער או מפל מים. הוא יעיל במיוחד לחסימת הסחות דעת סביבתיות (שיחות, רעשי רקע) ויוצר בועת שקט שמאפשרת ריכוז עמוק. מחקרים מצביעים על כך שרעש חום משפר שינה ומפחית חרדה.",
+    content: "מחקרים מצאו שמוזיקה קלאסית ללא מילים משפרת ריכוז בזמן לימודים ב-12% בממוצע. המפתח: טמפו איטי (60-80 BPM), בלי מילים, עוצמה נמוכה.",
   },
   {
     id: "pomodoro",
@@ -1024,46 +1231,40 @@ export const GUIDES = [
     content: "Binaural beats עובדים רק עם אוזניות! כל אוזן צריכה לשמוע תדר שונה. עם רמקולים הצלילים מתערבבים ואין אפקט. השתמש באוזניות סגורות לתוצאה הכי טובה.",
   },
   {
-    id: "motivation-science",
-    title: "המדע מאחורי מוטיבציה",
-    icon: "🔥",
-    content: "דופמין הוא לא הורמון של הנאה — הוא הורמון של ציפייה. כשאתה מגדיר יעד ברור ומתחיל לפעול, המוח משחרר דופמין. טריק: חלק משימות גדולות לקטנות, וחגוג כל השלמה. המוח יגמול לך עם עוד דופמין.",
-  },
-  {
     id: "flow-state",
     title: "איך נכנסים למצב Flow?",
     icon: "🌊",
-    content: "מצב Flow קורה כשהמשימה מאתגרת בדיוק נכון — לא קלה מדי (שעמום) ולא קשה מדי (חרדה). 4 תנאים: 1) יעד ברור 2) פידבק מיידי 3) אתגר מותאם 4) ריכוז ללא הפרעות. Deeply עוזר לך ליצור את התנאי הרביעי.",
+    content: "מצב Flow קורה כשהמשימה מאתגרת בדיוק נכון. 4 תנאים: 1) יעד ברור 2) פידבק מיידי 3) אתגר מותאם 4) ריכוז ללא הפרעות. Deeply עוזר לך ליצור את התנאי הרביעי.",
   },
   {
     id: "deep-work-rules",
     title: "4 חוקי העבודה העמוקה",
     icon: "📏",
-    content: "קל ניופורט — 4 חוקים: 1) תקבע זמנים לעבודה עמוקה (אל תחכה ל'מצב רוח') 2) תתרגל שעמום — אל תפנה לטלפון בכל רגע פנוי, אמן את המוח לריכוז 3) תהיה סלקטיבי עם רשתות חברתיות — 80/20, רוב הערך מגיע ממעט פעולות 4) תנקז את העבודה הרדודה — צמצם מיילים, פגישות ומשימות שטחיות. העבודה העמוקה היא מיומנות — ככל שתתרגל יותר, תשתפר.",
+    content: "קל ניופורט: 1) תקבע זמנים לעבודה עמוקה 2) תתרגל שעמום — אמן את המוח לריכוז 3) תהיה סלקטיבי עם רשתות חברתיות 4) תנקז את העבודה הרדודה.",
   },
   {
     id: "second-brain",
     title: "מוח חיצוני (Second Brain)",
     icon: "🗄️",
-    content: "שיטת PARA של טיאגו פורטה: 1) Projects — פרויקטים פעילים 2) Areas — תחומי אחריות מתמשכים 3) Resources — מידע שימושי לעתיד 4) Archives — ארכיון. הרעיון: המוח נועד ליצירת רעיונות, לא לאחסון. תעביר הכל למערכת חיצונית (אפליקציה, מחברת) ותשחרר את המוח לחשיבה עמוקה. CODE: Capture → Organize → Distill → Express.",
+    content: "שיטת PARA של טיאגו פורטה: Projects, Areas, Resources, Archives. המוח נועד ליצירת רעיונות, לא לאחסון.",
   },
   {
     id: "single-tasking",
     title: "נעילת מוח על משימה",
     icon: "🔒",
-    content: "Single-tasking — התרכז במשימה אחת בלבד. הטכניקה: 1) בחר משימה אחת 2) סגור הכל — טאבים, הודעות, מיילים 3) הגדר טיימר (25-50 דק׳) 4) אם עולה מחשבה אחרת — רשום ב'רשימת הסחות' וחזור 5) סיים עם 'טקס סגירה' — רשום היכן עצרת ומה השלב הבא. מחקרים מראים שמעבר בין משימות גורם לאובדן של 23 דקות ריכוז בכל מעבר!",
+    content: "Single-tasking: בחר משימה אחת, סגור הכל, הגדר טיימר, רשום הסחות בצד. מחקרים מראים שמעבר בין משימות גורם לאובדן של 23 דקות ריכוז בכל מעבר!",
   },
   {
     id: "time-blocking",
-    title: "תבניות גושי זמן (Time Blocking)",
+    title: "תבניות גושי זמן",
     icon: "📦",
-    content: "שיטת Time Blocking: חלק את היום לגושי זמן מוקדשים למשימות ספציפיות. כללים: 1) בוקר = עבודה עמוקה (המוח הכי חד) 2) אחה\"צ = פגישות ועבודה רדודה 3) גוש של 90 דק׳ = אופטימלי (מחזור אולטרדיאני) 4) הפסקה 15-20 דק׳ בין גושים 5) תכנן את הגושים ביום הקודם. קל ניופורט: 'כל דקה ביום צריכה להיות מתוכננת — לא בנוקשות, אלא בכוונה.'",
+    content: "Time Blocking: בוקר = עבודה עמוקה, אחה\"צ = פגישות, גוש 90 דק׳ אופטימלי, הפסקה 15-20 דק׳ בין גושים. קל ניופורט: 'כל דקה ביום צריכה להיות מתוכננת בכוונה.'",
   },
   {
     id: "three-task-rule",
     title: "כלל 3 המשימות",
     icon: "3️⃣",
-    content: "בכל יום, בחר רק 3 משימות חשובות. זה הכל. למה זה עובד: 1) מונע שיתוק בחירה (17 פריטים ברשימה = אף אחד לא ייעשה) 2) יוצר תחושת הישג בסוף היום 3) מכריח תעדוף אמיתי. הכלל: כתוב 3 משימות על פתק. עד הערב — סמן את כולן. אם סיימת, בונוס!",
+    content: "בכל יום בחר רק 3 משימות חשובות. זה מונע שיתוק בחירה, יוצר תחושת הישג ומכריח תעדוף אמיתי.",
   },
 ];
 
@@ -1072,96 +1273,84 @@ export const MOTIVATION_TIPS = [
     id: "atomic-habits",
     title: "הרגלים אטומיים",
     icon: "⚛️",
-    content: "ג'יימס קליר: 'אל תתמקד במטרה, תתמקד במערכת.' שינוי של 1% ביום = שיפור של 37 פעמים בשנה. 4 חוקי ההרגל: 1) הפוך אותו לברור 2) הפוך אותו למושך 3) הפוך אותו לקל 4) הפוך אותו למספק. שרשור הרגלים: 'אחרי ש[הרגל קיים], אני [הרגל חדש].'",
+    content: "ג'יימס קליר: 'אל תתמקד במטרה, תתמקד במערכת.' שינוי של 1% ביום = שיפור של 37 פעמים בשנה. 4 חוקי ההרגל: 1) הפוך אותו לברור 2) הפוך אותו למושך 3) הפוך אותו לקל 4) הפוך אותו למספק.",
   },
   {
     id: "deep-work",
     title: "עבודה עמוקה",
     icon: "🧠",
-    content: "קל ניופורט (Deep Work): '4 שעות עבודה עמוקה ממוקדת שוות יותר מ-8 שעות רדודות.' כללי ברזל: זמן קבוע, מקום קבוע, אפס הסחות. Digital Minimalism: צמצם רעש דיגיטלי, בנה קשר בריא לטלפון. Hyperfocus (ביילי): 'שליטה בקשב = שליטה בחיים.'",
+    content: "קל ניופורט: '4 שעות עבודה עמוקה ממוקדת שוות יותר מ-8 שעות רדודות.' כללי ברזל: זמן קבוע, מקום קבוע, אפס הסחות.",
   },
   {
     id: "eat-frog",
     title: "אכול את הצפרדע",
     icon: "🐸",
-    content: "בריאן טרייסי: 'אם הדבר הראשון שאתה עושה בבוקר זה לאכול צפרדע חיה, השאר של היום יהיה קל.' התחל מהמשימה הכי קשה/מאיימה. The One Thing (קלר): 'מה הדבר האחד שאם אעשה אותו, הכל השאר יהיה קל יותר או מיותר?' Essentialism (מקיון): 'תגיד לא לכל מה שלא חיוני.'",
+    content: "בריאן טרייסי: 'אם הדבר הראשון שאתה עושה בבוקר זה לאכול צפרדע חיה, השאר של היום יהיה קל.' התחל מהמשימה הכי קשה.",
   },
   {
     id: "tiny-habits",
     title: "צעדים זעירים",
     icon: "👣",
-    content: "BJ Fogg (Tiny Habits): 'אחרי ש[הרגל קיים], אני [צעד זעיר]. תחגוג מיד.' The Compound Effect (הארדי): 'עקביות קטנה כל יום = תוצאות ענקיות.' The Motivation Myth (היידן): 'מוטיבציה לא גורמת לפעולה — פעולה גורמת למוטיבציה. תתחיל, ואז יבוא החשק.'",
+    content: "BJ Fogg: 'אחרי ש[הרגל קיים], אני [צעד זעיר]. תחגוג מיד.' מוטיבציה לא גורמת לפעולה — פעולה גורמת למוטיבציה.",
   },
   {
     id: "war-of-art",
     title: "לנצח את ההתנגדות",
     icon: "⚔️",
-    content: "סטיבן פרספילד (The War of Art): 'ההתנגדות היא הכוח שמונע ממך ליצור. היא הכי חזקה ברגע שאתה הכי קרוב לפריצת דרך.' The Now Habit (פיורה): 'דחיינות = הגנה מפני חרדה. תכנן זמן להנאה — ופתאום יש כוח לעבוד.' Indistractable (אייל): 'הסחת דעת היא בריחה מכאב פנימי.'",
+    content: "פרספילד: 'ההתנגדות היא הכוח שמונע ממך ליצור. היא הכי חזקה ברגע שאתה הכי קרוב לפריצת דרך.'",
   },
   {
     id: "flow-state",
     title: "מצב זרימה (Flow)",
     icon: "🌊",
-    content: "צ'יקסנטמיהאי: 'Flow = אתגר מותאם + יעד ברור + פידבק מיידי. זה מצב האושר האמיתי.' Make Time (קנאפ): 'בחר היי-לייט יומי אחד. הגן עליו מהסחות. זה מספיק.' Peak (אריקסון): 'אימון מכוון (Deliberate Practice) — תרגול ממוקד בנקודות החולשה.'",
+    content: "צ'יקסנטמיהאי: 'Flow = אתגר מותאם + יעד ברור + פידבק מיידי. זה מצב האושר האמיתי.'",
   },
   {
     id: "stoic-wisdom",
     title: "חוכמה סטואית",
     icon: "🏛️",
-    content: "מרקוס אורליוס: 'שלוט במה שבידיך, קבל את מה שלא.' The Obstacle Is the Way (הולידיי): 'המכשול הוא הדרך. כל קושי מלמד משהו שאי אפשר ללמוד אחרת.' סנקה: 'אנחנו סובלים יותר בדמיון מאשר במציאות.' The Daily Stoic: 'בכל יום: מה בשליטתי? איפה כדאי לשחרר?'",
+    content: "מרקוס אורליוס: 'שלוט במה שבידיך, קבל את מה שלא.' סנקה: 'אנחנו סובלים יותר בדמיון מאשר במציאות.'",
   },
   {
     id: "meaning-purpose",
     title: "משמעות ומטרה",
     icon: "🎯",
-    content: "ויקטור פרנקל (Man's Search for Meaning): 'מי שיש לו למה לחיות, יכול לשאת כמעט כל איך.' Start with Why (סינק): 'אנשים לא קונים מה שאתה עושה, אלא למה.' Drive (פינק): 'מוטיבציה פנימית = אוטונומיה + שליטה + משמעות.'",
+    content: "ויקטור פרנקל: 'מי שיש לו למה לחיות, יכול לשאת כמעט כל איך.' Drive (פינק): 'מוטיבציה = אוטונומיה + שליטה + משמעות.'",
   },
   {
     id: "self-compassion",
-    title: "קבלה עצמית וחמלה",
+    title: "קבלה עצמית",
     icon: "💚",
-    content: "ברנה בראון (Daring Greatly): 'פגיעות = אומץ. להראות שאתה לא מושלם זה הדבר החזק ביותר.' Radical Acceptance (טארה ברך): 'אני בסדר עכשיו, גם אם לא מושלם.' The Gifts of Imperfection: 'שחרר פרפקציוניזם — הוא שריון שמונע חיבור.' The Subtle Art (מנסון): 'תבחר על מה אכפת לך. הכאב הוא חלק מהדרך.'",
+    content: "ברנה בראון: 'פגיעות = אומץ. להראות שאתה לא מושלם זה הדבר החזק ביותר.'",
   },
   {
     id: "mindset-grit",
     title: "מיינדסט והתמדה",
     icon: "💎",
-    content: "קרול דווק (Mindset): 'מיינדסט מתפתח: אני עדיין לא יודע — במקום אני לא מסוגל. טעויות = הזדמנויות.' Grit (דאקוורת'): 'התמדה + תשוקה לאורך זמן > כישרון.' The Confidence Gap (האריס): 'ביטחון לא בא לפני פעולה — הוא מגיע אחריה. תפעל למרות הפחד.'",
+    content: "קרול דווק: 'מיינדסט מתפתח: אני עדיין לא יודע — במקום אני לא מסוגל.' Grit: 'התמדה + תשוקה > כישרון.'",
   },
   {
     id: "willpower-energy",
     title: "כוח רצון ואנרגיה",
     icon: "⚡",
-    content: "The Willpower Instinct (מקגוניגל): 'כוח רצון הוא שריר — הוא מתעייף אבל אפשר לאמן אותו. שינה, תזונה ומדיטציה מחזקים אותו.' The 5 AM Club (שארמה): 'שגרת בוקר מוקדמת = יציבות ומשמעת.' Miracle Morning (אלרוד): '6 פעולות בוקר: שקט, אישורים, ויזואליזציה, ספורט, קריאה, כתיבה.'",
+    content: "כוח רצון הוא שריר — הוא מתעייף אבל אפשר לאמן אותו. שינה, תזונה ומדיטציה מחזקים אותו.",
   },
   {
     id: "antifragile",
     title: "להתחזק מלחץ",
     icon: "🔥",
-    content: "נסים טאלב (Antifragile): 'תבנה את עצמך כך שלחץ מחזק אותך במקום לשבור.' The Upside of Stress (מקגוניגל): 'סטרס לא הורס אותך — האמונה שסטרס הורס אותך היא מה שמזיק.' The Happiness Advantage (אקור): 'אושר מוביל להצלחה, לא להיפך. 3 דברים טובים ביום = שינוי מוחי.'",
+    content: "טאלב: 'תבנה את עצמך כך שלחץ מחזק אותך במקום לשבור.' סטרס לא הורס אותך — האמונה שסטרס הורס אותך היא מה שמזיק.",
   },
   {
     id: "ownership",
     title: "אחריות מלאה",
     icon: "🎖️",
-    content: "Extreme Ownership (ג'וקו): 'קח אחריות מלאה. אין תירוצים. המצב שלך = ההחלטות שלך.' The Courage to Be Disliked (קישימי): 'חופש אמיתי = לקבל שלא כולם יאהבו אותך. זו הבחירה שלך.' Principles (דליו): 'כאב + השתקפות = התקדמות.'",
-  },
-  {
-    id: "communication",
-    title: "תקשורת ויחסים",
-    icon: "🗣️",
-    content: "NVC (רוזנברג): 'תצפית → רגש → צורך → בקשה.' Crucial Conversations: 'עובדות → רגשות → צרכים. שיחות קשות בלי להתפוצץ.' How to Win Friends (קארנגי): 'תתעניין באנשים. תקשיב. תזכור שמות.' Never Split the Difference (ווס): 'הקשב קודם. אמפתיה פותחת דלתות.'",
-  },
-  {
-    id: "wealth-mindset",
-    title: "חשיבה פיננסית",
-    icon: "💰",
-    content: "The Psychology of Money (האוסל): 'עושר = סבלנות. לא מה שאתה מרוויח, אלא מה שאתה חוסך.' Rich Dad Poor Dad (קיוסאקי): 'עשירים קונים נכסים, עניים קונים התחייבויות.' Naval Ravikant: 'עושר = מינוף + מיומנות + זמן. חפש הכנסה שלא תלויה בשעות.'",
+    content: "Extreme Ownership (ג'וקו): 'קח אחריות מלאה. אין תירוצים. המצב שלך = ההחלטות שלך.'",
   },
   {
     id: "two-minute",
     title: "כלל שתי הדקות",
     icon: "⏱️",
-    content: "GTD (דייוויד אלן): 'אם משימה לוקחת פחות משתי דקות — עשה אותה עכשיו. זה מנקה את הראש ויוצר מומנטום.' The Procrastination Equation (סטיל): 'מוטיבציה = (ציפייה × ערך) / (דחפים × עיכוב). הגדל ציפייה וערך, הקטן הסחות.'",
+    content: "GTD (דייוויד אלן): 'אם משימה לוקחת פחות משתי דקות — עשה אותה עכשיו. זה מנקה את הראש ויוצר מומנטום.'",
   },
 ];
