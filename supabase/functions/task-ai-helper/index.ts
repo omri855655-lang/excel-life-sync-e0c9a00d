@@ -223,16 +223,50 @@ ${taskDescription}
       aiMessages.push({ role: "user", content: userPrompt });
     }
 
+    const requestBody: Record<string, unknown> = {
+      model: "google/gemini-2.5-pro",
+      messages: aiMessages,
+    };
+
+    if (taskCategory === 'course_breakdown') {
+      requestBody.tools = [
+        {
+          type: "function",
+          function: {
+            name: "extract_lessons",
+            description: "Extracts lesson list from syllabus text.",
+            parameters: {
+              type: "object",
+              properties: {
+                lessons: {
+                  type: "array",
+                  items: {
+                    type: "object",
+                    properties: {
+                      title: { type: "string" },
+                      duration_minutes: { type: "integer", minimum: 5, maximum: 300 },
+                    },
+                    required: ["title", "duration_minutes"],
+                    additionalProperties: false,
+                  },
+                },
+              },
+              required: ["lessons"],
+              additionalProperties: false,
+            },
+          },
+        },
+      ];
+      requestBody.tool_choice = { type: "function", function: { name: "extract_lessons" } };
+    }
+
     const response = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
       method: "POST",
       headers: {
         Authorization: `Bearer ${LOVABLE_API_KEY}`,
         "Content-Type": "application/json",
       },
-      body: JSON.stringify({
-        model: "google/gemini-2.5-pro",
-        messages: aiMessages,
-      }),
+      body: JSON.stringify(requestBody),
     });
 
     if (!response.ok) {
@@ -257,9 +291,49 @@ ${taskDescription}
     }
 
     const data = await response.json();
-    const suggestion = data.choices?.[0]?.message?.content;
+    const choice = data?.choices?.[0]?.message;
+    const suggestion = choice?.content ?? null;
 
-    return new Response(JSON.stringify({ suggestion }), {
+    let lessons: { title: string; duration_minutes: number }[] = [];
+
+    if (taskCategory === 'course_breakdown') {
+      const toolCall = choice?.tool_calls?.find((call: any) => call?.function?.name === "extract_lessons");
+      const toolArgs = toolCall?.function?.arguments;
+
+      if (typeof toolArgs === "string") {
+        try {
+          const parsedArgs = JSON.parse(toolArgs);
+          if (Array.isArray(parsedArgs?.lessons)) {
+            lessons = parsedArgs.lessons;
+          }
+        } catch (parseError) {
+          console.error("Failed to parse extract_lessons tool arguments:", parseError);
+        }
+      }
+
+      if (lessons.length === 0 && typeof suggestion === "string") {
+        try {
+          const parsedSuggestion = JSON.parse(suggestion);
+          if (Array.isArray(parsedSuggestion)) {
+            lessons = parsedSuggestion;
+          } else if (Array.isArray(parsedSuggestion?.lessons)) {
+            lessons = parsedSuggestion.lessons;
+          }
+        } catch {
+          // ignore and return raw suggestion for client-side fallback parsing
+        }
+      }
+
+      lessons = lessons
+        .map((lesson: any) => ({
+          title: typeof lesson?.title === "string" ? lesson.title.trim() : "",
+          duration_minutes: Number(lesson?.duration_minutes) || 30,
+        }))
+        .filter((lesson: { title: string }) => lesson.title.length > 0)
+        .slice(0, 60);
+    }
+
+    return new Response(JSON.stringify({ suggestion, lessons }), {
       headers: { ...corsHeaders, "Content-Type": "application/json" },
     });
   } catch (error) {
