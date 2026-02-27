@@ -1,5 +1,6 @@
 import { useState, useCallback, useRef, useEffect } from "react";
 import { AudioPreset } from "./audioPresets";
+import { startSilentAudio, stopSilentAudio } from "./iosSilentAudio";
 
 // Generate a noise buffer (white noise source that we filter)
 function createNoiseBuffer(ctx: AudioContext, durationSec = 4): AudioBuffer {
@@ -72,6 +73,7 @@ export function useAudioEngine() {
       audioContextRef.current.close();
       audioContextRef.current = null;
     }
+    stopSilentAudio();
     setIsPlaying(false);
   }, []);
 
@@ -290,6 +292,8 @@ export function useAudioEngine() {
 
     nodesRef.current = allNodes;
     sourceNodesRef.current = sourceNodes;
+    // Start silent audio trick for iOS Safari background playback
+    startSilentAudio();
     setActivePresetId(preset.id);
     setIsPlaying(true);
   }, [stopAudio]);
