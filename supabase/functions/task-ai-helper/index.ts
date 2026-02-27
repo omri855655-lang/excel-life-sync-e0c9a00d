@@ -178,6 +178,17 @@ ${taskDescription}
 
       userPrompt = taskDescription;
 
+    } else if (taskCategory === 'course_breakdown') {
+      systemPrompt = `אתה עוזר ליצור רשימת שיעורים מסילבוס קורס. 
+חובה להחזיר JSON בלבד, בלי טקסט נוסף, בלי markdown, בלי backticks.
+הפורמט: [{"title": "שם השיעור", "duration_minutes": 30}]
+כל שיעור צריך כותרת קצרה ומשך זמן משוער בדקות.`;
+      userPrompt = taskDescription;
+
+    } else if (taskCategory === 'learning_recommendations') {
+      systemPrompt = `אתה יועץ למידה מקצועי. תן המלצות מפורטות ומעשיות בעברית. השתמש באימוג'ים.`;
+      userPrompt = taskDescription;
+
     } else {
       systemPrompt = `אתה עוזר אישי מומחה בניהול משימות. המשתמש יתן לך תיאור של משימה, ואתה צריך לספק:
 1. הצעה קצרה וברורה איך הכי כדאי לבצע את המשימה (2-3 משפטים)
