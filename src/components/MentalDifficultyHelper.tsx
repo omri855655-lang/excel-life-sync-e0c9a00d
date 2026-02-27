@@ -78,23 +78,32 @@ const MentalDifficultyHelper = ({ task, open, onOpenChange }: MentalDifficultyHe
 
   const loadExistingSession = async () => {
     if (!user) return;
-    const { data } = await supabase
-      .from("mental_coaching_sessions")
-      .select("*")
-      .eq("user_id", user.id)
-      .eq("task_id", task.id)
-      .order("updated_at", { ascending: false })
-      .limit(1)
-      .maybeSingle();
+    try {
+      const { data, error } = await supabase
+        .from("mental_coaching_sessions")
+        .select("*")
+        .eq("user_id", user.id)
+        .eq("task_id", task.id)
+        .order("updated_at", { ascending: false })
+        .limit(1)
+        .maybeSingle();
 
-    if (data) {
-      const savedMessages = (data.messages as unknown as Message[]) || [];
-      if (savedMessages.length > 0) {
-        setMessages(savedMessages);
-        setDifficulty(data.difficulty_level);
-        setSessionId(data.id);
-        setStarted(true);
+      if (error) {
+        console.error("Error loading session:", error);
+        return;
       }
+
+      if (data) {
+        const savedMessages = (data.messages as unknown as Message[]) || [];
+        if (savedMessages.length > 0) {
+          setMessages(savedMessages);
+          setDifficulty(data.difficulty_level);
+          setSessionId(data.id);
+          setStarted(true);
+        }
+      }
+    } catch (e) {
+      console.error("Error loading session:", e);
     }
   };
 
@@ -125,28 +134,37 @@ const MentalDifficultyHelper = ({ task, open, onOpenChange }: MentalDifficultyHe
   const saveSession = useCallback(async (msgs: Message[], diffLevel: number) => {
     if (!user) return;
     
-    if (sessionId) {
-      await supabase
-        .from("mental_coaching_sessions")
-        .update({
-          messages: msgs as unknown as any,
-          difficulty_level: diffLevel,
-          updated_at: new Date().toISOString(),
-        })
-        .eq("id", sessionId);
-    } else {
-      const { data } = await supabase
-        .from("mental_coaching_sessions")
-        .insert({
-          user_id: user.id,
-          task_id: task.id,
-          task_description: task.description,
-          difficulty_level: diffLevel,
-          messages: msgs as unknown as any,
-        })
-        .select("id")
-        .single();
-      if (data) setSessionId(data.id);
+    try {
+      if (sessionId) {
+        const { error } = await supabase
+          .from("mental_coaching_sessions")
+          .update({
+            messages: msgs as unknown as any,
+            difficulty_level: diffLevel,
+            updated_at: new Date().toISOString(),
+          })
+          .eq("id", sessionId);
+        if (error) console.error("Error updating session:", error);
+      } else {
+        const { data, error } = await supabase
+          .from("mental_coaching_sessions")
+          .insert({
+            user_id: user.id,
+            task_id: task.id,
+            task_description: task.description,
+            difficulty_level: diffLevel,
+            messages: msgs as unknown as any,
+          })
+          .select("id")
+          .single();
+        if (error) {
+          console.error("Error creating session:", error);
+        } else if (data) {
+          setSessionId(data.id);
+        }
+      }
+    } catch (e) {
+      console.error("Error saving session:", e);
     }
   }, [user, sessionId, task.id, task.description]);
 
@@ -216,12 +234,14 @@ ${userInput ? `הסיבה שזה קשה לי: ${userInput}` : "אני לא בט�
 
   const handleClose = (isOpen: boolean) => {
     if (!isOpen) {
-      setDifficulty(3);
+      // Only clear input, keep session data so it reloads properly
       setUserInput("");
+      setLoading(false);
+      // Reset display state but keep sessionId so we can reload
       setMessages([]);
       setStarted(false);
-      setLoading(false);
       setSessionId(null);
+      setDifficulty(3);
     }
     onOpenChange(isOpen);
   };
