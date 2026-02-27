@@ -11,6 +11,7 @@ import Personal from "./pages/Personal";
 import Auth from "./pages/Auth";
 import InstallApp from "./pages/InstallApp";
 import NotFound from "./pages/NotFound";
+import AdminDashboard from "./pages/AdminDashboard";
 
 const queryClient = new QueryClient();
 
@@ -55,6 +56,7 @@ const AppContent = () => {
           }
         />
         <Route path="/auth" element={<Auth />} />
+        <Route path="/creator-admin" element={<AdminDashboard />} />
         <Route path="/install/*" element={<InstallApp />} />
         <Route path="/Install/*" element={<InstallApp />} />
         <Route path="*" element={<NotFound />} />

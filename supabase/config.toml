@@ -20,3 +20,6 @@ verify_jwt = false
 
 [functions.telegram-daily-summary]
 verify_jwt = false
+
+[functions.admin-analytics]
+verify_jwt = false
