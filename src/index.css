@@ -102,3 +102,25 @@ All colors MUST be HSL.
     font-family: 'Rubik', sans-serif;
   }
 }
+
+/* Deeply theme overrides for light mode */
+.deeply-light .text-\[\#e8e8ed\] { color: inherit; }
+.deeply-light .text-\[\#e8e8ed\]\/30 { color: inherit; opacity: 0.3; }
+.deeply-light .text-\[\#e8e8ed\]\/40 { color: inherit; opacity: 0.4; }
+.deeply-light .text-\[\#e8e8ed\]\/50 { color: inherit; opacity: 0.5; }
+.deeply-light .text-\[\#e8e8ed\]\/60 { color: inherit; opacity: 0.6; }
+.deeply-light .text-\[\#e8e8ed\]\/70 { color: inherit; opacity: 0.7; }
+.deeply-light .text-\[\#e8e8ed\]\/80 { color: inherit; opacity: 0.8; }
+.deeply-light .text-\[\#d0f0d8\]\/40, .deeply-light .text-\[\#b8f0e8\]\/40,
+.deeply-light .text-\[\#c8d8f0\]\/40, .deeply-light .text-\[\#a8dce8\]\/40,
+.deeply-light .text-\[\#e8ddd0\]\/40, .deeply-light .text-\[\#d8c8f0\]\/40,
+.deeply-light .text-\[\#d4d4d4\]\/40 { color: inherit; opacity: 0.4; }
+.deeply-light .bg-white\/5 { background-color: rgba(0, 0, 0, 0.03); }
+.deeply-light .bg-white\/10 { background-color: rgba(0, 0, 0, 0.06); }
+.deeply-light .bg-white\/3 { background-color: rgba(0, 0, 0, 0.02); }
+.deeply-light .border-white\/5 { border-color: rgba(0, 0, 0, 0.08); }
+.deeply-light .border-white\/10 { border-color: rgba(0, 0, 0, 0.12); }
+.deeply-light .border-white\/20 { border-color: rgba(0, 0, 0, 0.15); }
+.deeply-light .hover\:bg-white\/10:hover { background-color: rgba(0, 0, 0, 0.06); }
+.deeply-light .ring-white\/30 { --tw-ring-color: rgba(0, 0, 0, 0.15); }
+.deeply-light .text-white { color: white; } /* Keep white text on colored buttons */

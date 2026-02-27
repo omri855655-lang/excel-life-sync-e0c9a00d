@@ -11,14 +11,22 @@ import { useAuth } from "@/hooks/useAuth";
 
 // Background themes
 const BG_THEMES = [
-  { id: "dark", name: "חשוך", bg: "bg-[#0a0a0f]", text: "text-[#e8e8ed]" },
-  { id: "bottle-green", name: "ירוק בקבוק", bg: "bg-[#0a2818]", text: "text-[#d0f0d8]" },
-  { id: "mint-green", name: "ירוק מנטה", bg: "bg-[#0d2b2a]", text: "text-[#b8f0e8]" },
-  { id: "deep-blue", name: "כחול עמוק", bg: "bg-[#0a1628]", text: "text-[#c8d8f0]" },
-  { id: "ocean-teal", name: "אוקיינוס", bg: "bg-[#0a1f2e]", text: "text-[#a8dce8]" },
-  { id: "warm-brown", name: "חום חם", bg: "bg-[#1a1410]", text: "text-[#e8ddd0]" },
-  { id: "midnight-purple", name: "סגול לילה", bg: "bg-[#140a20]", text: "text-[#d8c8f0]" },
-  { id: "charcoal", name: "פחם", bg: "bg-[#1a1a1a]", text: "text-[#d4d4d4]" },
+  // Dark themes
+  { id: "dark", name: "חשוך", bg: "bg-[#0a0a0f]", text: "text-[#e8e8ed]", isLight: false, cardBg: "bg-white/5", cardBorder: "border-white/5", mutedText: "text-[#e8e8ed]/40", subtleText: "text-[#e8e8ed]/60", inputBg: "bg-white/5", inputBorder: "border-white/10", hoverBg: "hover:bg-white/10", ringColor: "ring-white/30", activeBg: "bg-white/10" },
+  { id: "bottle-green", name: "ירוק בקבוק", bg: "bg-[#0a2818]", text: "text-[#d0f0d8]", isLight: false, cardBg: "bg-white/5", cardBorder: "border-white/5", mutedText: "text-[#d0f0d8]/40", subtleText: "text-[#d0f0d8]/60", inputBg: "bg-white/5", inputBorder: "border-white/10", hoverBg: "hover:bg-white/10", ringColor: "ring-white/30", activeBg: "bg-white/10" },
+  { id: "mint-green", name: "ירוק מנטה", bg: "bg-[#0d2b2a]", text: "text-[#b8f0e8]", isLight: false, cardBg: "bg-white/5", cardBorder: "border-white/5", mutedText: "text-[#b8f0e8]/40", subtleText: "text-[#b8f0e8]/60", inputBg: "bg-white/5", inputBorder: "border-white/10", hoverBg: "hover:bg-white/10", ringColor: "ring-white/30", activeBg: "bg-white/10" },
+  { id: "deep-blue", name: "כחול עמוק", bg: "bg-[#0a1628]", text: "text-[#c8d8f0]", isLight: false, cardBg: "bg-white/5", cardBorder: "border-white/5", mutedText: "text-[#c8d8f0]/40", subtleText: "text-[#c8d8f0]/60", inputBg: "bg-white/5", inputBorder: "border-white/10", hoverBg: "hover:bg-white/10", ringColor: "ring-white/30", activeBg: "bg-white/10" },
+  { id: "ocean-teal", name: "אוקיינוס", bg: "bg-[#0a1f2e]", text: "text-[#a8dce8]", isLight: false, cardBg: "bg-white/5", cardBorder: "border-white/5", mutedText: "text-[#a8dce8]/40", subtleText: "text-[#a8dce8]/60", inputBg: "bg-white/5", inputBorder: "border-white/10", hoverBg: "hover:bg-white/10", ringColor: "ring-white/30", activeBg: "bg-white/10" },
+  { id: "warm-brown", name: "חום חם", bg: "bg-[#1a1410]", text: "text-[#e8ddd0]", isLight: false, cardBg: "bg-white/5", cardBorder: "border-white/5", mutedText: "text-[#e8ddd0]/40", subtleText: "text-[#e8ddd0]/60", inputBg: "bg-white/5", inputBorder: "border-white/10", hoverBg: "hover:bg-white/10", ringColor: "ring-white/30", activeBg: "bg-white/10" },
+  { id: "midnight-purple", name: "סגול לילה", bg: "bg-[#140a20]", text: "text-[#d8c8f0]", isLight: false, cardBg: "bg-white/5", cardBorder: "border-white/5", mutedText: "text-[#d8c8f0]/40", subtleText: "text-[#d8c8f0]/60", inputBg: "bg-white/5", inputBorder: "border-white/10", hoverBg: "hover:bg-white/10", ringColor: "ring-white/30", activeBg: "bg-white/10" },
+  { id: "charcoal", name: "פחם", bg: "bg-[#1a1a1a]", text: "text-[#d4d4d4]", isLight: false, cardBg: "bg-white/5", cardBorder: "border-white/5", mutedText: "text-[#d4d4d4]/40", subtleText: "text-[#d4d4d4]/60", inputBg: "bg-white/5", inputBorder: "border-white/10", hoverBg: "hover:bg-white/10", ringColor: "ring-white/30", activeBg: "bg-white/10" },
+  // Light themes
+  { id: "light-cream", name: "קרם בהיר", bg: "bg-[#faf8f5]", text: "text-[#2a2520]", isLight: true, cardBg: "bg-white", cardBorder: "border-[#e8e0d8]", mutedText: "text-[#2a2520]/50", subtleText: "text-[#2a2520]/70", inputBg: "bg-[#f0ece8]", inputBorder: "border-[#d8d0c8]", hoverBg: "hover:bg-[#f0ece8]", ringColor: "ring-[#2a2520]/20", activeBg: "bg-[#e8e0d8]" },
+  { id: "light-sky", name: "שמיים", bg: "bg-[#f0f6ff]", text: "text-[#1a2a40]", isLight: true, cardBg: "bg-white", cardBorder: "border-[#d0e0f0]", mutedText: "text-[#1a2a40]/50", subtleText: "text-[#1a2a40]/70", inputBg: "bg-[#e8f0fa]", inputBorder: "border-[#c8d8e8]", hoverBg: "hover:bg-[#e0ecf8]", ringColor: "ring-[#1a2a40]/20", activeBg: "bg-[#d0e0f0]" },
+  { id: "light-mint", name: "מנטה בהיר", bg: "bg-[#f0faf5]", text: "text-[#1a3028]", isLight: true, cardBg: "bg-white", cardBorder: "border-[#c8e8d8]", mutedText: "text-[#1a3028]/50", subtleText: "text-[#1a3028]/70", inputBg: "bg-[#e8f5f0]", inputBorder: "border-[#b8d8c8]", hoverBg: "hover:bg-[#e0f0e8]", ringColor: "ring-[#1a3028]/20", activeBg: "bg-[#c8e8d8]" },
+  { id: "light-lavender", name: "לבנדר", bg: "bg-[#f5f0ff]", text: "text-[#28203a]", isLight: true, cardBg: "bg-white", cardBorder: "border-[#d8c8f0]", mutedText: "text-[#28203a]/50", subtleText: "text-[#28203a]/70", inputBg: "bg-[#efe8fa]", inputBorder: "border-[#d0c0e8]", hoverBg: "hover:bg-[#e8e0f5]", ringColor: "ring-[#28203a]/20", activeBg: "bg-[#d8c8f0]" },
+  { id: "light-peach", name: "אפרסק", bg: "bg-[#fff8f0]", text: "text-[#3a2820]", isLight: true, cardBg: "bg-white", cardBorder: "border-[#f0d8c0]", mutedText: "text-[#3a2820]/50", subtleText: "text-[#3a2820]/70", inputBg: "bg-[#faf0e8]", inputBorder: "border-[#e8d0b8]", hoverBg: "hover:bg-[#f5ece0]", ringColor: "ring-[#3a2820]/20", activeBg: "bg-[#f0d8c0]" },
+  { id: "light-white", name: "לבן נקי", bg: "bg-white", text: "text-[#1a1a2e]", isLight: true, cardBg: "bg-[#f8f8fc]", cardBorder: "border-[#e0e0e8]", mutedText: "text-[#1a1a2e]/50", subtleText: "text-[#1a1a2e]/70", inputBg: "bg-[#f0f0f5]", inputBorder: "border-[#d8d8e0]", hoverBg: "hover:bg-[#f0f0f5]", ringColor: "ring-[#1a1a2e]/20", activeBg: "bg-[#e0e0e8]" },
 ];
 
 // Timer presets
@@ -296,26 +304,44 @@ const DeeplyDashboard = () => {
   const now = new Date();
   const upcomingTask = calendarTasks.find(t => new Date(t.start_time) >= now) || calendarTasks[calendarTasks.length - 1];
   const currentTheme = BG_THEMES.find(t => t.id === bgTheme) || BG_THEMES[0];
+  const isLight = currentTheme.isLight;
+  const themeCard = currentTheme.cardBg + " " + currentTheme.cardBorder;
+  const themeMuted = currentTheme.mutedText;
+  const themeSubtle = currentTheme.subtleText;
+  const themeInput = currentTheme.inputBg + " " + currentTheme.inputBorder;
 
   return (
-    <div className={`h-full ${currentTheme.bg} ${currentTheme.text} overflow-auto`} dir="rtl">
+    <div className={`h-full ${currentTheme.bg} ${currentTheme.text} overflow-auto ${isLight ? "deeply-light" : ""}`} dir="rtl">
       <div className="max-w-7xl mx-auto p-4 space-y-4">
 
         {/* Background selector + AI Chat button */}
         <div className="flex items-center gap-2 flex-wrap">
-          <span className="text-xs opacity-50">רקע:</span>
-          {BG_THEMES.map(theme => (
-            <button
-              key={theme.id}
-              onClick={() => setBgTheme(theme.id)}
-              className={`px-3 py-1 rounded-full text-xs transition-all ${bgTheme === theme.id ? "ring-2 ring-white/30 bg-white/10" : "bg-white/5 hover:bg-white/10"}`}
-            >
-              {theme.name}
-            </button>
-          ))}
+          <span className={`text-xs ${themeMuted}`}>רקע:</span>
+          <div className="flex gap-1 flex-wrap">
+            <span className={`text-[10px] ${themeMuted} self-center ml-1`}>🌙</span>
+            {BG_THEMES.filter(t => !t.isLight).map(theme => (
+              <button
+                key={theme.id}
+                onClick={() => setBgTheme(theme.id)}
+                className={`px-2.5 py-1 rounded-full text-xs transition-all ${bgTheme === theme.id ? `ring-2 ${currentTheme.ringColor} ${currentTheme.activeBg}` : `${currentTheme.inputBg} ${currentTheme.hoverBg}`}`}
+              >
+                {theme.name}
+              </button>
+            ))}
+            <span className={`text-[10px] ${themeMuted} self-center ml-2 mr-1`}>☀️</span>
+            {BG_THEMES.filter(t => t.isLight).map(theme => (
+              <button
+                key={theme.id}
+                onClick={() => setBgTheme(theme.id)}
+                className={`px-2.5 py-1 rounded-full text-xs transition-all ${bgTheme === theme.id ? `ring-2 ${currentTheme.ringColor} ${currentTheme.activeBg}` : `${currentTheme.inputBg} ${currentTheme.hoverBg}`}`}
+              >
+                {theme.name}
+              </button>
+            ))}
+          </div>
           <button
             onClick={() => setShowAiChat(!showAiChat)}
-            className="mr-auto px-3 py-1.5 rounded-full text-xs bg-violet-500/20 text-violet-300 hover:bg-violet-500/30 flex items-center gap-1.5 transition-all"
+            className={`mr-auto px-3 py-1.5 rounded-full text-xs ${isLight ? "bg-violet-100 text-violet-700 hover:bg-violet-200" : "bg-violet-500/20 text-violet-300 hover:bg-violet-500/30"} flex items-center gap-1.5 transition-all`}
           >
             <MessageCircle className="h-3.5 w-3.5" />
             AI מאמן
@@ -324,7 +350,7 @@ const DeeplyDashboard = () => {
 
         {/* AI Chat panel */}
         {showAiChat && (
-          <Card className="bg-white/5 border-violet-500/20">
+          <Card className={`${isLight ? "bg-violet-50 border-violet-200" : "bg-white/5 border-violet-500/20"}`}>
             <CardContent className="p-4 space-y-3">
               <div className="max-h-[300px] overflow-y-auto space-y-2">
                 {aiMessages.length === 0 && (
@@ -343,7 +369,7 @@ const DeeplyDashboard = () => {
                   onChange={e => setAiInput(e.target.value)}
                   onKeyDown={e => e.key === "Enter" && sendAiMessage()}
                   placeholder="שאל על ריכוז, מוטיבציה, שיטות..."
-                  className="flex-1 px-3 py-2 rounded-lg bg-white/5 border border-white/10 text-sm placeholder:opacity-30 focus:outline-none focus:ring-1 focus:ring-violet-500/50"
+                  className={`flex-1 px-3 py-2 rounded-lg ${themeInput} border text-sm placeholder:opacity-30 focus:outline-none focus:ring-1 focus:ring-violet-500/50`}
                 />
                 <Button size="icon" variant="ghost" onClick={sendAiMessage} disabled={aiLoading} className="text-violet-400">
                   <MessageCircle className="h-4 w-4" />
@@ -359,8 +385,8 @@ const DeeplyDashboard = () => {
             <CardContent className="p-4 flex items-center gap-4">
               <CalendarClock className="h-8 w-8 text-violet-400 flex-shrink-0" />
               <div className="flex-1 min-w-0">
-                <p className="text-sm text-[#e8e8ed]/60">המשימה הבאה מהלו״ז שלך:</p>
-                <p className="text-lg font-bold text-[#e8e8ed] truncate">{upcomingTask.title}</p>
+                <p className={`text-sm ${themeSubtle}`}>המשימה הבאה מהלו״ז שלך:</p>
+                <p className="text-lg font-bold truncate">{upcomingTask.title}</p>
                 <p className="text-xs text-violet-300">{formatHour(upcomingTask.start_time)} — {formatHour(upcomingTask.end_time)}</p>
               </div>
               <Button
@@ -386,22 +412,22 @@ const DeeplyDashboard = () => {
 
         {/* Top row: Stats */}
         <div className="grid grid-cols-3 gap-3">
-          <Card className="bg-white/5 border-white/5">
+          <Card className={`${themeCard} border`}>
             <CardContent className="p-4 text-center">
-              <p className="text-2xl font-bold text-violet-300">{todayMinutes}</p>
-              <p className="text-xs text-[#e8e8ed]/40">דקות עבודה</p>
+              <p className={`text-2xl font-bold ${isLight ? "text-violet-600" : "text-violet-300"}`}>{todayMinutes}</p>
+              <p className={`text-xs ${themeMuted}`}>דקות עבודה</p>
             </CardContent>
           </Card>
-          <Card className="bg-white/5 border-white/5">
+          <Card className={`${themeCard} border`}>
             <CardContent className="p-4 text-center">
-              <p className="text-2xl font-bold text-cyan-300">{todaySessions.length}</p>
-              <p className="text-xs text-[#e8e8ed]/40">סשנים</p>
+              <p className={`text-2xl font-bold ${isLight ? "text-cyan-600" : "text-cyan-300"}`}>{todaySessions.length}</p>
+              <p className={`text-xs ${themeMuted}`}>סשנים</p>
             </CardContent>
           </Card>
-          <Card className="bg-white/5 border-white/5">
+          <Card className={`${themeCard} border`}>
             <CardContent className="p-4 text-center">
-              <p className="text-2xl font-bold text-emerald-300">{todayCompleted}</p>
-              <p className="text-xs text-[#e8e8ed]/40">משימות</p>
+              <p className={`text-2xl font-bold ${isLight ? "text-emerald-600" : "text-emerald-300"}`}>{todayCompleted}</p>
+              <p className={`text-xs ${themeMuted}`}>משימות</p>
             </CardContent>
           </Card>
         </div>

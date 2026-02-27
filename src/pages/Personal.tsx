@@ -20,7 +20,8 @@ import PushNotificationToggle from "@/components/PushNotificationToggle";
 import NotificationBell from "@/components/NotificationBell";
 import SettingsPanel from "@/components/SettingsPanel";
 import CustomBoardManager from "@/components/CustomBoardManager";
-import { FileSpreadsheet, Moon, Sun, LogOut, BookOpen, Tv, LayoutDashboard, ListTodo, Briefcase, Download, Headphones, CalendarCheck, FolderKanban, GraduationCap, CalendarDays, Focus, Settings, LayoutGrid } from "lucide-react";
+import ChallengesManager from "@/components/ChallengesManager";
+import { FileSpreadsheet, Moon, Sun, LogOut, BookOpen, Tv, LayoutDashboard, ListTodo, Briefcase, Download, Headphones, CalendarCheck, FolderKanban, GraduationCap, CalendarDays, Focus, Settings, LayoutGrid, Trophy } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { toast } from "sonner";
@@ -234,6 +235,10 @@ const Personal = () => {
                 Deeply
               </TabsTrigger>
             )}
+            <TabsTrigger value="challenges" className="gap-2">
+              <Trophy className="h-4 w-4" />
+              אתגרים
+            </TabsTrigger>
             <TabsTrigger value="settings" className="gap-2">
               <Settings className="h-4 w-4" />
               {t("settings")}
@@ -312,6 +317,10 @@ const Personal = () => {
 
         <TabsContent value="settings" className="flex-1 min-h-0 overflow-auto m-0 p-0">
           <SettingsPanel />
+        </TabsContent>
+
+        <TabsContent value="challenges" className="flex-1 min-h-0 overflow-auto m-0 p-0">
+          <ChallengesManager />
         </TabsContent>
 
         {customBoards.map((board) => (
