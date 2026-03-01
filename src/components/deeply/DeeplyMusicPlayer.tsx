@@ -68,7 +68,19 @@ export function DeeplyMusicPlayer({ onPlayingChange, themeCard, themeMuted, them
     setIsPlaying(false);
     setActiveFile(null);
     onPlayingChange?.(false);
+    if (window._deeplyMusicState) {
+      window._deeplyMusicState.playing = false;
+    }
   }, [onPlayingChange]);
+
+  // Sync global state for floating mini-player
+  useEffect(() => {
+    window._deeplyMusicState = {
+      playing: isPlaying,
+      name: activeFile ? files.find(f => f.path === activeFile)?.name || "" : "",
+      stop: () => stopMusic(),
+    };
+  }, [isPlaying, activeFile, files, stopMusic]);
 
   const playFile = useCallback(async (file: AudioFile) => {
     stopMusic();
@@ -98,6 +110,7 @@ export function DeeplyMusicPlayer({ onPlayingChange, themeCard, themeMuted, them
       setIsPlaying(true);
       setActiveFile(file.path);
       onPlayingChange?.(true);
+      
 
       // MediaSession for lock screen
       if ("mediaSession" in navigator) {
