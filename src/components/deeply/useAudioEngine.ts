@@ -294,6 +294,28 @@ export function useAudioEngine() {
     sourceNodesRef.current = sourceNodes;
     // Start silent audio trick for iOS Safari background playback
     startSilentAudio();
+
+    // Update MediaSession with preset info
+    if ("mediaSession" in navigator) {
+      navigator.mediaSession.metadata = new MediaMetadata({
+        title: `ExcelTime - ${preset.name || "מוזיקת רקע"}`,
+        artist: "ExcelTime",
+        album: "Deeply",
+        artwork: [
+          { src: "/pwa-192x192.png", sizes: "192x192", type: "image/png" },
+          { src: "/pwa-512x512.png", sizes: "512x512", type: "image/png" },
+        ],
+      });
+      navigator.mediaSession.setActionHandler("play", () => {
+        if (audioContextRef.current?.state === "suspended") {
+          audioContextRef.current.resume();
+        }
+      });
+      navigator.mediaSession.setActionHandler("pause", () => {
+        stopAudio();
+      });
+    }
+
     setActivePresetId(preset.id);
     setIsPlaying(true);
   }, [stopAudio]);
