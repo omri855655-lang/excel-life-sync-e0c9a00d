@@ -63,6 +63,7 @@ export function useAudioEngine() {
   const sourceNodesRef = useRef<(AudioBufferSourceNode | OscillatorNode)[]>([]);
   const [activePresetId, setActivePresetId] = useState<string | null>(null);
   const [isPlaying, setIsPlaying] = useState(false);
+  const isPlayingRef = useRef(false);
 
   const stopAudio = useCallback(() => {
     sourceNodesRef.current.forEach(node => {
@@ -74,6 +75,7 @@ export function useAudioEngine() {
     audioContextRef.current = null;
     stopSilentAudio();
     setIsPlaying(false);
+    isPlayingRef.current = false;
   }, []);
 
   const playPreset = useCallback((preset: AudioPreset) => {
@@ -318,6 +320,7 @@ export function useAudioEngine() {
 
     setActivePresetId(preset.id);
     setIsPlaying(true);
+    isPlayingRef.current = true;
   }, [stopAudio]);
 
   const toggle = useCallback((preset: AudioPreset) => {
@@ -332,22 +335,25 @@ export function useAudioEngine() {
   // Resume audio context AND silent audio when returning from background
   useEffect(() => {
     const handleVisibilityChange = async () => {
-      if (!document.hidden && audioContextRef.current) {
-        if (audioContextRef.current.state === 'suspended') {
-          await audioContextRef.current.resume().catch(() => {});
+      const ctx = audioContextRef.current;
+      if (!document.hidden && ctx) {
+        if (ctx.state === "suspended") {
+          await ctx.resume().catch(() => {});
         }
         // Restart silent audio to keep the shared AudioContext alive
-        if (isPlaying) {
+        if (isPlayingRef.current) {
           startSilentAudio();
         }
       }
     };
-    document.addEventListener('visibilitychange', handleVisibilityChange);
+
+    document.addEventListener("visibilitychange", handleVisibilityChange);
+
     return () => {
-      document.removeEventListener('visibilitychange', handleVisibilityChange);
-      stopAudio();
+      document.removeEventListener("visibilitychange", handleVisibilityChange);
+      // Do not stop audio here — this effect should only manage listeners
     };
-  }, [stopAudio, isPlaying]);
+  }, []);
 
   return { activePresetId, isPlaying, toggle, stopAudio };
 }
