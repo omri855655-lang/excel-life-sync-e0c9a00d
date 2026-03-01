@@ -84,7 +84,7 @@ const ACTIVE_COLOR_MAP: Record<string, string> = {
 };
 
 const DeeplyDashboard = () => {
-  const { activePresetId, isPlaying, toggle } = useAudioEngine();
+  const { activePresetId, isPlaying, isRendering, toggle } = useAudioEngine();
   const { user } = useAuth();
 
   // Sound category
@@ -515,23 +515,31 @@ const DeeplyDashboard = () => {
             <div className="grid sm:grid-cols-2 gap-2">
               {filteredPresets.map(preset => {
                 const isActive = activePresetId === preset.id && isPlaying;
+                const isLoading = activePresetId === preset.id && isRendering;
                 const catColor = activeCat?.color || "violet";
                 return (
                   <button
                     key={preset.id}
                     onClick={() => toggle(preset)}
+                    disabled={isRendering}
                     className={`flex items-center gap-3 p-3 rounded-xl transition-all text-right ${
                       isActive
                         ? `${ACTIVE_COLOR_MAP[catColor]} border`
+                        : isLoading
+                        ? "bg-white/5 border border-white/20 animate-pulse"
                         : "bg-white/5 border border-transparent hover:bg-white/10"
-                    }`}
+                    } ${isRendering ? "opacity-70 cursor-wait" : ""}`}
                   >
                     <div className={`w-9 h-9 rounded-lg bg-gradient-to-br ${COLOR_MAP[catColor]} flex items-center justify-center flex-shrink-0`}>
-                      {isActive ? <Pause className="h-4 w-4 text-white" /> : <Play className="h-4 w-4 text-white" />}
+                      {isLoading ? (
+                        <div className="h-4 w-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
+                      ) : isActive ? <Pause className="h-4 w-4 text-white" /> : <Play className="h-4 w-4 text-white" />}
                     </div>
                     <div className="min-w-0">
                       <p className="text-sm font-medium text-[#e8e8ed] truncate">{preset.name}</p>
-                      <p className="text-xs text-[#e8e8ed]/40 truncate">{preset.nameHe}</p>
+                      <p className="text-xs text-[#e8e8ed]/40 truncate">
+                        {isLoading ? "מרנדר אודיו..." : preset.nameHe}
+                      </p>
                     </div>
                   </button>
                 );
