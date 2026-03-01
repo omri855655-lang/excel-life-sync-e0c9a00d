@@ -75,9 +75,9 @@ export function DeeplyMusicPlayer({ onPlayingChange, themeCard, themeMuted, them
 
     // Unlock audio context on user gesture
     unlockAudioContext();
-    startSilentAudio();
 
-    const audio = new Audio(file.url);
+    // Create and unlock audio element SYNCHRONOUSLY in user gesture
+    const audio = new Audio();
     audio.loop = true;
     audio.volume = 1;
     audio.setAttribute("playsinline", "true");
@@ -85,6 +85,13 @@ export function DeeplyMusicPlayer({ onPlayingChange, themeCard, themeMuted, them
     audio.style.display = "none";
     document.body.appendChild(audio);
     audioRef.current = audio;
+
+    // Unlock for iOS — must happen synchronously in gesture
+    audio.play().catch(() => {});
+
+    // Now start silent audio and set source
+    startSilentAudio();
+    audio.src = file.url;
 
     try {
       await audio.play();
