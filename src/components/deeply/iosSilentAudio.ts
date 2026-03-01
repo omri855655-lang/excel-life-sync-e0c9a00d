@@ -1,6 +1,9 @@
 /**
  * iOS Safari Background Audio — uses a real hosted MP3 file
  * connected to the shared AudioContext so oscillators stay alive.
+ * 
+ * IMPORTANT: The silent audio element and its MediaElementSourceNode
+ * are created ONCE and reused. We only pause/play — never destroy.
  */
 
 import { unlockAudioContext } from "./iosAudioUnlock";
@@ -9,30 +12,42 @@ const SILENT_MP3_URL = "/silence.mp3";
 
 let silentAudio: HTMLAudioElement | null = null;
 let silentSource: MediaElementAudioSourceNode | null = null;
+let isInitialized = false;
+
+function ensureInitialized() {
+  if (isInitialized) return;
+
+  const ctx = unlockAudioContext();
+
+  silentAudio = new Audio(SILENT_MP3_URL);
+  silentAudio.loop = true;
+  silentAudio.volume = 0.001;
+  silentAudio.setAttribute("playsinline", "true");
+  (silentAudio as any).playsInline = true;
+
+  // Attach to DOM so iOS treats it as a real media element
+  silentAudio.style.display = "none";
+  document.body.appendChild(silentAudio);
+
+  // Connect to the SHARED AudioContext ONCE — this is the key!
+  // createMediaElementSource can only be called once per element
+  silentSource = ctx.createMediaElementSource(silentAudio);
+  silentSource.connect(ctx.destination);
+
+  isInitialized = true;
+}
 
 export function startSilentAudio() {
   if (silentAudio && !silentAudio.paused) return;
 
-  const ctx = unlockAudioContext();
-
-  if (!silentAudio) {
-    silentAudio = new Audio(SILENT_MP3_URL);
-    silentAudio.loop = true;
-    silentAudio.volume = 0.001;
-    silentAudio.setAttribute("playsinline", "true");
-    (silentAudio as any).playsInline = true;
-
-    // Attach to DOM so iOS treats it as a real media element
-    silentAudio.style.display = "none";
-    document.body.appendChild(silentAudio);
-
-    // Connect to the SHARED AudioContext — this is the key!
-    // Forces iOS to keep the entire AudioContext alive (including oscillators)
-    silentSource = ctx.createMediaElementSource(silentAudio);
-    silentSource.connect(ctx.destination);
+  try {
+    ensureInitialized();
+  } catch (e) {
+    console.warn("Silent audio init failed:", e);
+    return;
   }
 
-  silentAudio.play().catch(() => {});
+  silentAudio!.play().catch(() => {});
 
   // Register MediaSession so iOS treats this as real media
   if ("mediaSession" in navigator) {
@@ -60,13 +75,9 @@ export function startSilentAudio() {
 }
 
 export function stopSilentAudio() {
+  // Only pause — do NOT destroy the element or the MediaElementSourceNode
   if (silentAudio) {
     silentAudio.pause();
-    if (silentAudio.parentNode) {
-      silentAudio.parentNode.removeChild(silentAudio);
-    }
-    silentAudio = null;
-    silentSource = null;
   }
   if ("mediaSession" in navigator) {
     navigator.mediaSession.metadata = null;
