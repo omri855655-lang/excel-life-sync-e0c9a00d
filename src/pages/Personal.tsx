@@ -311,7 +311,7 @@ const Personal = () => {
           <CoursesManager />
         </TabsContent>
 
-        <TabsContent value="deeply" className="flex-1 min-h-0 overflow-hidden m-0 p-0">
+        <TabsContent value="deeply" forceMount className="flex-1 min-h-0 overflow-hidden m-0 p-0">
           <DeeplyDashboard />
         </TabsContent>
 
