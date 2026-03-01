@@ -6,6 +6,7 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { Play, Pause, RotateCcw, Timer, Map, Plus, Trash2, BookOpen, ChevronDown, ChevronUp, Flame, CalendarClock, Music, StopCircle, MessageCircle } from "lucide-react";
 import { AUDIO_PRESETS, CATEGORIES, GUIDES, MOTIVATION_TIPS, type AudioPreset } from "./audioPresets";
 import { useAudioEngine } from "./useAudioEngine";
+import { unlockAudioContext } from "./iosAudioUnlock";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
 
@@ -178,7 +179,7 @@ const DeeplyDashboard = () => {
   // Play completion sound
   const playCompletionSound = () => {
     try {
-      const ctx = new AudioContext();
+      const ctx = unlockAudioContext();
       const osc = ctx.createOscillator();
       const gain = ctx.createGain();
       osc.connect(gain);
