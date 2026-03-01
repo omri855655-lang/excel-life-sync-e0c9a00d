@@ -16,6 +16,7 @@ import DailyRoutine from "@/components/DailyRoutine";
 import AiDailyPlanner from "@/components/AiDailyPlanner";
 import PersonalPlanner from "@/components/PersonalPlanner";
 import DeeplyDashboard from "@/components/deeply/DeeplyDashboard";
+import { FloatingMusicMini } from "@/components/deeply/FloatingMusicMini";
 import PushNotificationToggle from "@/components/PushNotificationToggle";
 import NotificationBell from "@/components/NotificationBell";
 import SettingsPanel from "@/components/SettingsPanel";
@@ -311,7 +312,7 @@ const Personal = () => {
           <CoursesManager />
         </TabsContent>
 
-        <TabsContent value="deeply" forceMount className="flex-1 min-h-0 overflow-hidden m-0 p-0">
+        <TabsContent value="deeply" forceMount className="flex-1 min-h-0 overflow-hidden m-0 p-0 data-[state=inactive]:hidden">
           <DeeplyDashboard />
         </TabsContent>
 
@@ -333,6 +334,12 @@ const Personal = () => {
           </TabsContent>
         ))}
       </Tabs>
+
+      {/* Floating mini music player */}
+      <FloatingMusicMini
+        visible={activeTab !== "deeply"}
+        onGoToDeeply={() => setActiveTab("deeply")}
+      />
 
       {/* AI Daily Planner floating button */}
       <AiDailyPlanner />
