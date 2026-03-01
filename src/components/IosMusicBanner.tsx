@@ -1,51 +1,25 @@
-import { useState, useEffect, useRef } from "react";
+import { useState, useEffect } from "react";
 import { Play, X } from "lucide-react";
 import { startSilentAudio } from "./deeply/iosSilentAudio";
-import { unlockAudioContext, getSharedAudioContext } from "./deeply/iosAudioUnlock";
-
-const STORAGE_KEY = "ios-music-banner-dismissed";
+import { unlockAudioContext } from "./deeply/iosAudioUnlock";
 
 export default function IosMusicBanner() {
   const [visible, setVisible] = useState(false);
-  const audioRef = useRef<HTMLAudioElement | null>(null);
 
   useEffect(() => {
     const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent) ||
       (navigator.platform === "MacIntel" && navigator.maxTouchPoints > 1);
     if (!isIOS) return;
-    if (localStorage.getItem(STORAGE_KEY) === "true") return;
     setVisible(true);
   }, []);
 
   const handlePlay = () => {
-    // 1. Unlock/create AudioContext on user gesture — forces media channel (bypasses silent mode)
     unlockAudioContext();
-
-    // 2. Play a silent <audio> element so iOS keeps the page alive in background
-    if (!audioRef.current) {
-      const audio = new Audio();
-      audio.src = "data:audio/wav;base64,UklGRiQAAABXQVZFZm10IBAAAAABAAEARKwAAIhYAQACABAAZGF0YQAAAAA=";
-      audio.loop = true;
-      audio.volume = 0.01;
-      (audio as any).playsInline = true;
-      (audio as any).webkitPlaysInline = true;
-      audio.preload = "auto";
-      audio.setAttribute("playsinline", "true");
-      audio.setAttribute("webkit-playsinline", "true");
-      audio.setAttribute("x-webkit-airplay", "allow");
-      audioRef.current = audio;
-    }
-    audioRef.current.play().catch(() => {});
-
-    // 3. Also start the shared silent audio helper
     startSilentAudio();
-
-    localStorage.setItem(STORAGE_KEY, "true");
     setVisible(false);
   };
 
   const handleDismiss = () => {
-    localStorage.setItem(STORAGE_KEY, "true");
     setVisible(false);
   };
 
