@@ -1,14 +1,19 @@
 /**
  * iOS Safari Background Audio — uses a real hosted MP3 file
- * attached to the DOM so iOS AVFoundation registers the audio session.
+ * connected to the shared AudioContext so oscillators stay alive.
  */
+
+import { unlockAudioContext } from "./iosAudioUnlock";
 
 const SILENT_MP3_URL = "/silence.mp3";
 
 let silentAudio: HTMLAudioElement | null = null;
+let silentSource: MediaElementAudioSourceNode | null = null;
 
 export function startSilentAudio() {
   if (silentAudio && !silentAudio.paused) return;
+
+  const ctx = unlockAudioContext();
 
   if (!silentAudio) {
     silentAudio = new Audio(SILENT_MP3_URL);
@@ -20,6 +25,11 @@ export function startSilentAudio() {
     // Attach to DOM so iOS treats it as a real media element
     silentAudio.style.display = "none";
     document.body.appendChild(silentAudio);
+
+    // Connect to the SHARED AudioContext — this is the key!
+    // Forces iOS to keep the entire AudioContext alive (including oscillators)
+    silentSource = ctx.createMediaElementSource(silentAudio);
+    silentSource.connect(ctx.destination);
   }
 
   silentAudio.play().catch(() => {});
@@ -56,6 +66,7 @@ export function stopSilentAudio() {
       silentAudio.parentNode.removeChild(silentAudio);
     }
     silentAudio = null;
+    silentSource = null;
   }
   if ("mediaSession" in navigator) {
     navigator.mediaSession.metadata = null;

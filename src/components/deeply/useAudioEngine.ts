@@ -329,11 +329,17 @@ export function useAudioEngine() {
     }
   }, [activePresetId, isPlaying, playPreset, stopAudio]);
 
-  // Resume audio context when returning from background
+  // Resume audio context AND silent audio when returning from background
   useEffect(() => {
-    const handleVisibilityChange = () => {
-      if (!document.hidden && audioContextRef.current && audioContextRef.current.state === 'suspended') {
-        audioContextRef.current.resume();
+    const handleVisibilityChange = async () => {
+      if (!document.hidden && audioContextRef.current) {
+        if (audioContextRef.current.state === 'suspended') {
+          await audioContextRef.current.resume().catch(() => {});
+        }
+        // Restart silent audio to keep the shared AudioContext alive
+        if (isPlaying) {
+          startSilentAudio();
+        }
       }
     };
     document.addEventListener('visibilitychange', handleVisibilityChange);
@@ -341,7 +347,7 @@ export function useAudioEngine() {
       document.removeEventListener('visibilitychange', handleVisibilityChange);
       stopAudio();
     };
-  }, [stopAudio]);
+  }, [stopAudio, isPlaying]);
 
   return { activePresetId, isPlaying, toggle, stopAudio };
 }
