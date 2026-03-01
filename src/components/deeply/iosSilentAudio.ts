@@ -1,11 +1,9 @@
 /**
- * iOS Safari Background Audio — MediaSession Integration
- * 
- * Uses a real (but near-silent) tone WAV so iOS registers it as actual media.
- * Sets MediaSession metadata so the OS shows playback controls and keeps audio alive.
+ * iOS Safari Background Audio — uses a real hosted MP3 file
+ * attached to the DOM so iOS AVFoundation registers the audio session.
  */
 
-const SILENT_WAV = "data:audio/wav;base64,UklGRiQAAABXQVZFZm10IBAAAAABAAEARKwAAIhYAQACABAAZGF0YQAAAAA=";
+const SILENT_MP3_URL = "/silence.mp3";
 
 let silentAudio: HTMLAudioElement | null = null;
 
@@ -13,17 +11,20 @@ export function startSilentAudio() {
   if (silentAudio && !silentAudio.paused) return;
 
   if (!silentAudio) {
-    silentAudio = new Audio(SILENT_WAV);
+    silentAudio = new Audio(SILENT_MP3_URL);
     silentAudio.loop = true;
     silentAudio.volume = 0.001;
     silentAudio.setAttribute("playsinline", "true");
     (silentAudio as any).playsInline = true;
+
+    // Attach to DOM so iOS treats it as a real media element
+    silentAudio.style.display = "none";
+    document.body.appendChild(silentAudio);
   }
 
   silentAudio.play().catch(() => {});
 
   // Register MediaSession so iOS treats this as real media
-  // This is what makes audio continue in background (like YouTube)
   if ("mediaSession" in navigator) {
     navigator.mediaSession.metadata = new MediaMetadata({
       title: "Deeply — מוזיקת רקע",
@@ -51,6 +52,9 @@ export function startSilentAudio() {
 export function stopSilentAudio() {
   if (silentAudio) {
     silentAudio.pause();
+    if (silentAudio.parentNode) {
+      silentAudio.parentNode.removeChild(silentAudio);
+    }
     silentAudio = null;
   }
   if ("mediaSession" in navigator) {
