@@ -7,6 +7,7 @@ import { Play, Pause, RotateCcw, Timer, Map, Plus, Trash2, BookOpen, ChevronDown
 import { AUDIO_PRESETS, CATEGORIES, GUIDES, MOTIVATION_TIPS, type AudioPreset } from "./audioPresets";
 import { useAudioEngine } from "./useAudioEngine";
 import { unlockAudioContext } from "./iosAudioUnlock";
+import { startSilentAudio } from "./iosSilentAudio";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
 
@@ -240,6 +241,18 @@ const DeeplyDashboard = () => {
     const sec = s % 60;
     if (h > 0) return `${String(h).padStart(2, "0")}:${String(m).padStart(2, "0")}:${String(sec).padStart(2, "0")}`;
     return `${String(m).padStart(2, "0")}:${String(sec).padStart(2, "0")}`;
+  };
+
+  const handleYouTubeToggle = (videoId: string) => {
+    // Keep iOS media session alive before opening YouTube iframe
+    unlockAudioContext();
+    startSilentAudio();
+
+    setActiveYouTube(activeYouTube === videoId ? null : videoId);
+    setTimeout(() => {
+      const el = document.getElementById("yt-player-container");
+      if (el) el.scrollIntoView({ behavior: "smooth", block: "center" });
+    }, 100);
   };
 
   // AI Chat
@@ -663,13 +676,7 @@ const DeeplyDashboard = () => {
                       {activeCatData.videos.map(v => (
                         <button
                           key={v.id}
-                          onClick={() => {
-                            setActiveYouTube(activeYouTube === v.id ? null : v.id);
-                            setTimeout(() => {
-                              const el = document.getElementById(`yt-player-container`);
-                              if (el) el.scrollIntoView({ behavior: "smooth", block: "center" });
-                            }, 100);
-                          }}
+                          onClick={() => handleYouTubeToggle(v.id)}
                           className={`flex items-center gap-3 p-3 rounded-xl transition-all text-right ${
                             activeYouTube === v.id
                               ? `${catColorMap[activeCatData.color]} border`
@@ -729,13 +736,7 @@ const DeeplyDashboard = () => {
                   {studyVideos.map(v => (
                     <button
                       key={v.id}
-                      onClick={() => {
-                        setActiveYouTube(activeYouTube === v.id ? null : v.id);
-                        setTimeout(() => {
-                          const el = document.getElementById(`yt-player-container`);
-                          if (el) el.scrollIntoView({ behavior: "smooth", block: "center" });
-                        }, 100);
-                      }}
+                      onClick={() => handleYouTubeToggle(v.id)}
                       className={`flex items-center gap-3 p-3 rounded-xl transition-all text-right ${
                         activeYouTube === v.id
                           ? "bg-amber-500/20 border border-amber-500/30"
@@ -780,13 +781,7 @@ const DeeplyDashboard = () => {
                   {readVideos.map(v => (
                     <button
                       key={v.id}
-                      onClick={() => {
-                        setActiveYouTube(activeYouTube === v.id ? null : v.id);
-                        setTimeout(() => {
-                          const el = document.getElementById(`yt-player-container`);
-                          if (el) el.scrollIntoView({ behavior: "smooth", block: "center" });
-                        }, 100);
-                      }}
+                      onClick={() => handleYouTubeToggle(v.id)}
                       className={`flex items-center gap-3 p-3 rounded-xl transition-all text-right ${
                         activeYouTube === v.id
                           ? "bg-emerald-500/20 border border-emerald-500/30"
