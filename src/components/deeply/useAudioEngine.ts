@@ -1,6 +1,7 @@
 import { useState, useCallback, useRef, useEffect } from "react";
 import { AudioPreset } from "./audioPresets";
 import { startSilentAudio, stopSilentAudio } from "./iosSilentAudio";
+import { unlockAudioContext } from "./iosAudioUnlock";
 
 // Generate a noise buffer (white noise source that we filter)
 function createNoiseBuffer(ctx: AudioContext, durationSec = 4): AudioBuffer {
@@ -69,10 +70,8 @@ export function useAudioEngine() {
     });
     sourceNodesRef.current = [];
     nodesRef.current = [];
-    if (audioContextRef.current) {
-      audioContextRef.current.close();
-      audioContextRef.current = null;
-    }
+    // Do NOT close the shared AudioContext — just clear refs
+    audioContextRef.current = null;
     stopSilentAudio();
     setIsPlaying(false);
   }, []);
@@ -80,7 +79,8 @@ export function useAudioEngine() {
   const playPreset = useCallback((preset: AudioPreset) => {
     stopAudio();
 
-    const ctx = new AudioContext();
+    // Reuse the shared unlocked AudioContext (media channel on iOS)
+    const ctx = unlockAudioContext();
     audioContextRef.current = ctx;
     const allNodes: AudioNode[] = [];
     const sourceNodes: (AudioBufferSourceNode | OscillatorNode)[] = [];

@@ -1,6 +1,7 @@
 import { useState, useEffect, useRef } from "react";
 import { Play, X } from "lucide-react";
 import { startSilentAudio } from "./deeply/iosSilentAudio";
+import { unlockAudioContext, getSharedAudioContext } from "./deeply/iosAudioUnlock";
 
 const STORAGE_KEY = "ios-music-banner-dismissed";
 
@@ -9,7 +10,6 @@ export default function IosMusicBanner() {
   const audioRef = useRef<HTMLAudioElement | null>(null);
 
   useEffect(() => {
-    // Only show on iOS Safari-like UAs when not previously dismissed
     const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent) ||
       (navigator.platform === "MacIntel" && navigator.maxTouchPoints > 1);
     if (!isIOS) return;
@@ -18,10 +18,12 @@ export default function IosMusicBanner() {
   }, []);
 
   const handlePlay = () => {
-    // Create & unlock a persistent audio element on user gesture
+    // 1. Unlock/create AudioContext on user gesture — forces media channel (bypasses silent mode)
+    unlockAudioContext();
+
+    // 2. Play a silent <audio> element so iOS keeps the page alive in background
     if (!audioRef.current) {
       const audio = new Audio();
-      // Tiny silent WAV so iOS treats the page as "playing media"
       audio.src = "data:audio/wav;base64,UklGRiQAAABXQVZFZm10IBAAAAABAAEARKwAAIhYAQACABAAZGF0YQAAAAA=";
       audio.loop = true;
       audio.volume = 0.01;
@@ -30,16 +32,13 @@ export default function IosMusicBanner() {
       audio.preload = "auto";
       audio.setAttribute("playsinline", "true");
       audio.setAttribute("webkit-playsinline", "true");
+      audio.setAttribute("x-webkit-airplay", "allow");
       audioRef.current = audio;
     }
-
     audioRef.current.play().catch(() => {});
-    // Also unlock the shared silent-audio helper used by Deeply
+
+    // 3. Also start the shared silent audio helper
     startSilentAudio();
-    // Resume any suspended AudioContext globally
-    if ((window as any).__globalAudioContext) {
-      (window as any).__globalAudioContext.resume();
-    }
 
     localStorage.setItem(STORAGE_KEY, "true");
     setVisible(false);
