@@ -3,13 +3,14 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Checkbox } from "@/components/ui/checkbox";
-import { Play, Pause, RotateCcw, Timer, Map, Plus, Trash2, BookOpen, ChevronDown, ChevronUp, Flame, CalendarClock, Music, StopCircle, MessageCircle } from "lucide-react";
+import { Play, Pause, RotateCcw, Timer, Map, Plus, Trash2, BookOpen, ChevronDown, ChevronUp, Flame, CalendarClock, Music, StopCircle, MessageCircle, ExternalLink } from "lucide-react";
 import { AUDIO_PRESETS, CATEGORIES, GUIDES, MOTIVATION_TIPS, type AudioPreset } from "./audioPresets";
 import { useAudioEngine } from "./useAudioEngine";
 import { unlockAudioContext } from "./iosAudioUnlock";
 import { startSilentAudio } from "./iosSilentAudio";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
+import { DeeplyMusicPlayer } from "./DeeplyMusicPlayer";
 
 // Background themes
 const BG_THEMES = [
@@ -682,23 +683,32 @@ const DeeplyDashboard = () => {
                   {activeCatData && (
                     <div className="grid sm:grid-cols-2 gap-2">
                       {activeCatData.videos.map(v => (
-                        <button
-                          key={v.id}
-                          onClick={() => handleYouTubeToggle(v.id)}
-                          className={`flex items-center gap-3 p-3 rounded-xl transition-all text-right ${
+                        <div key={v.id} className={`flex items-center gap-3 p-3 rounded-xl transition-all text-right ${
                             activeYouTube === v.id
                               ? `${catColorMap[activeCatData.color]} border`
                               : "bg-white/5 border border-transparent hover:bg-white/10"
-                          }`}
-                        >
-                          <div className={`w-9 h-9 rounded-lg bg-gradient-to-br ${catGradMap[activeCatData.color]} flex items-center justify-center flex-shrink-0`}>
+                          }`}>
+                          <button
+                            onClick={() => handleYouTubeToggle(v.id)}
+                            className={`w-9 h-9 rounded-lg bg-gradient-to-br ${catGradMap[activeCatData.color]} flex items-center justify-center flex-shrink-0`}
+                          >
                             {activeYouTube === v.id ? <Pause className="h-4 w-4 text-white" /> : <Play className="h-4 w-4 text-white" />}
-                          </div>
-                          <div className="min-w-0">
+                          </button>
+                          <div className="min-w-0 flex-1 cursor-pointer" onClick={() => handleYouTubeToggle(v.id)}>
                             <p className="text-sm font-medium text-[#e8e8ed] truncate">{v.title}</p>
                             <p className="text-xs text-[#e8e8ed]/40 truncate">{v.desc}</p>
                           </div>
-                        </button>
+                          <a
+                            href={`https://www.youtube.com/watch?v=${v.id}`}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            onClick={(e) => e.stopPropagation()}
+                            className="text-[#e8e8ed]/30 hover:text-[#e8e8ed]/70 transition-colors flex-shrink-0"
+                            title="פתח ב-YouTube (עובד ברקע עם Premium)"
+                          >
+                            <ExternalLink className="h-3.5 w-3.5" />
+                          </a>
+                        </div>
                       ))}
                     </div>
                   )}
@@ -742,23 +752,22 @@ const DeeplyDashboard = () => {
               return (
                 <div className="grid sm:grid-cols-2 gap-2">
                   {studyVideos.map(v => (
-                    <button
-                      key={v.id}
-                      onClick={() => handleYouTubeToggle(v.id)}
-                      className={`flex items-center gap-3 p-3 rounded-xl transition-all text-right ${
+                    <div key={v.id} className={`flex items-center gap-3 p-3 rounded-xl transition-all text-right ${
                         activeYouTube === v.id
                           ? "bg-amber-500/20 border border-amber-500/30"
                           : "bg-white/5 border border-transparent hover:bg-white/10"
-                      }`}
-                    >
-                      <div className="w-9 h-9 rounded-lg bg-gradient-to-br from-amber-500 to-amber-700 flex items-center justify-center flex-shrink-0">
+                      }`}>
+                      <button onClick={() => handleYouTubeToggle(v.id)} className="w-9 h-9 rounded-lg bg-gradient-to-br from-amber-500 to-amber-700 flex items-center justify-center flex-shrink-0">
                         {activeYouTube === v.id ? <Pause className="h-4 w-4 text-white" /> : <Play className="h-4 w-4 text-white" />}
-                      </div>
-                      <div className="min-w-0">
+                      </button>
+                      <div className="min-w-0 flex-1 cursor-pointer" onClick={() => handleYouTubeToggle(v.id)}>
                         <p className="text-sm font-medium text-[#e8e8ed] truncate">{v.title}</p>
                         <p className="text-xs text-[#e8e8ed]/40 truncate">{v.desc}</p>
                       </div>
-                    </button>
+                      <a href={`https://www.youtube.com/watch?v=${v.id}`} target="_blank" rel="noopener noreferrer" onClick={(e) => e.stopPropagation()} className="text-[#e8e8ed]/30 hover:text-[#e8e8ed]/70 transition-colors flex-shrink-0" title="פתח ב-YouTube">
+                        <ExternalLink className="h-3.5 w-3.5" />
+                      </a>
+                    </div>
                   ))}
                 </div>
               );
@@ -787,29 +796,36 @@ const DeeplyDashboard = () => {
               return (
                 <div className="grid sm:grid-cols-2 gap-2">
                   {readVideos.map(v => (
-                    <button
-                      key={v.id}
-                      onClick={() => handleYouTubeToggle(v.id)}
-                      className={`flex items-center gap-3 p-3 rounded-xl transition-all text-right ${
+                    <div key={v.id} className={`flex items-center gap-3 p-3 rounded-xl transition-all text-right ${
                         activeYouTube === v.id
                           ? "bg-emerald-500/20 border border-emerald-500/30"
                           : "bg-white/5 border border-transparent hover:bg-white/10"
-                      }`}
-                    >
-                      <div className="w-9 h-9 rounded-lg bg-gradient-to-br from-emerald-500 to-emerald-700 flex items-center justify-center flex-shrink-0">
+                      }`}>
+                      <button onClick={() => handleYouTubeToggle(v.id)} className="w-9 h-9 rounded-lg bg-gradient-to-br from-emerald-500 to-emerald-700 flex items-center justify-center flex-shrink-0">
                         {activeYouTube === v.id ? <Pause className="h-4 w-4 text-white" /> : <Play className="h-4 w-4 text-white" />}
-                      </div>
-                      <div className="min-w-0">
+                      </button>
+                      <div className="min-w-0 flex-1 cursor-pointer" onClick={() => handleYouTubeToggle(v.id)}>
                         <p className="text-sm font-medium text-[#e8e8ed] truncate">{v.title}</p>
                         <p className="text-xs text-[#e8e8ed]/40 truncate">{v.desc}</p>
                       </div>
-                    </button>
+                      <a href={`https://www.youtube.com/watch?v=${v.id}`} target="_blank" rel="noopener noreferrer" onClick={(e) => e.stopPropagation()} className="text-[#e8e8ed]/30 hover:text-[#e8e8ed]/70 transition-colors flex-shrink-0" title="פתח ב-YouTube">
+                        <ExternalLink className="h-3.5 w-3.5" />
+                      </a>
+                    </div>
                   ))}
                 </div>
               );
             })()}
           </CardContent>
         </Card>
+
+        {/* Personal Music Player — background playback */}
+        <DeeplyMusicPlayer
+          themeCard={themeCard}
+          themeMuted={themeMuted}
+          themeSubtle={themeSubtle}
+          themeInput={themeInput}
+        />
 
         {/* Main grid: Timer + Stopwatch + Tasks + Roadmap */}
         <div className="grid lg:grid-cols-4 gap-4">
