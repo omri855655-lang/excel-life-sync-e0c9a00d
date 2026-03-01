@@ -200,6 +200,8 @@ const SettingsPanel = () => {
                 <Select value={boardTemplate} onValueChange={(v) => {
                   setBoardTemplate(v);
                   if (v === "tasks") { setNewBoardStatuses("טרם החל,בטיפול,בוצע"); setNewBoardDashboard(true); }
+                  else if (v === "todo") { setNewBoardStatuses("לביצוע,הושלם"); setNewBoardDashboard(true); }
+                  else if (v === "shopping") { setNewBoardStatuses("לקנות,נקנה"); setNewBoardDashboard(false); }
                   else if (v === "tracking") { setNewBoardStatuses("לצפות,צופה,נצפה"); setNewBoardDashboard(false); }
                   else if (v === "kanban") { setNewBoardStatuses("לביצוע,בתהליך,בבדיקה,הושלם"); setNewBoardDashboard(true); }
                   else { setNewBoardStatuses("לביצוע,בתהליך,הושלם"); setNewBoardDashboard(false); }
@@ -207,6 +209,8 @@ const SettingsPanel = () => {
                   <SelectTrigger><SelectValue /></SelectTrigger>
                   <SelectContent>
                     <SelectItem value="tasks">📋 רשימת משימות (כולל דשבורד)</SelectItem>
+                    <SelectItem value="todo">✅ רשימת To-Do (צ'קבוקסים)</SelectItem>
+                    <SelectItem value="shopping">🛒 רשימת קניות</SelectItem>
                     <SelectItem value="tracking">📚 רשימת מעקב (כמו ספרים/פודקאסטים)</SelectItem>
                     <SelectItem value="kanban">📊 קנבן (לביצוע → בבדיקה → הושלם)</SelectItem>
                     <SelectItem value="custom">⚙️ מותאם אישית</SelectItem>
