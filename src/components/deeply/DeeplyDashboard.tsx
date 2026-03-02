@@ -903,10 +903,24 @@ const DeeplyDashboard = () => {
                   >
                     {isStopwatchRunning ? <><Pause className="h-4 w-4 ml-1" /> עצור</> : <><Play className="h-4 w-4 ml-1" /> התחל</>}
                   </Button>
-                  <Button
+                   <Button
                     variant="ghost"
                     size="icon"
-                    onClick={() => { setIsStopwatchRunning(false); setStopwatchTime(0); }}
+                    onClick={() => {
+                      // Log stopwatch session if time > 60 seconds
+                      if (stopwatchTime > 60) {
+                        const log: SessionLog = {
+                          id: Date.now().toString(),
+                          type: "stopwatch",
+                          duration: Math.round(stopwatchTime / 60),
+                          frequency: activePresetId || "none",
+                          timestamp: new Date(),
+                        };
+                        setSessions(prev => [log, ...prev]);
+                      }
+                      setIsStopwatchRunning(false);
+                      setStopwatchTime(0);
+                    }}
                     className="opacity-40 hover:opacity-100"
                   >
                     <RotateCcw className="h-4 w-4" />
