@@ -6,6 +6,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
 import { Trophy, Target, Flame, Star, Zap, TrendingUp, Award, CheckCircle2, Clock, BookOpen, Briefcase, CalendarCheck, RotateCcw } from "lucide-react";
 import { toast } from "sonner";
+import SessionHistory from "./challenges/SessionHistory";
 
 interface DailyStats {
   tasksCompleted: number;
@@ -374,6 +375,9 @@ const ChallengesManager = () => {
           </div>
         </CardContent>
       </Card>
+
+      {/* Session History - Pomodoro & Stopwatch */}
+      <SessionHistory />
 
       {/* Achievements */}
       <Card>
