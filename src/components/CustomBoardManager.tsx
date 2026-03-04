@@ -261,24 +261,24 @@ const CustomBoardManager = ({ boardId, boardName, statuses, theme = "default", o
               </PopoverContent>
             </Popover>
           )}
-          <div className="flex gap-1 border rounded-lg p-0.5">
-          <Button
-            size="sm"
-            variant={viewMode === "table" ? "default" : "ghost"}
-            className="h-7 gap-1 text-xs"
-            onClick={() => setViewMode("table")}
-          >
-            <List className="h-3.5 w-3.5" />
-            טבלה
+          <div className="flex gap-1 border rounded-lg p-0.5 flex-wrap">
+          <Button size="sm" variant={viewMode === "table" ? "default" : "ghost"} className="h-7 gap-1 text-xs" onClick={() => setViewMode("table")}>
+            <List className="h-3.5 w-3.5" />טבלה
           </Button>
-          <Button
-            size="sm"
-            variant={viewMode === "kanban" ? "default" : "ghost"}
-            className="h-7 gap-1 text-xs"
-            onClick={() => setViewMode("kanban")}
-          >
-            <LayoutGrid className="h-3.5 w-3.5" />
-            קנבן
+          <Button size="sm" variant={viewMode === "kanban" ? "default" : "ghost"} className="h-7 gap-1 text-xs" onClick={() => setViewMode("kanban")}>
+            <LayoutGrid className="h-3.5 w-3.5" />קנבן
+          </Button>
+          <Button size="sm" variant={viewMode === "list" ? "default" : "ghost"} className="h-7 gap-1 text-xs" onClick={() => setViewMode("list")}>
+            <AlignJustify className="h-3.5 w-3.5" />רשימה
+          </Button>
+          <Button size="sm" variant={viewMode === "cards" ? "default" : "ghost"} className="h-7 gap-1 text-xs" onClick={() => setViewMode("cards")}>
+            <CreditCard className="h-3.5 w-3.5" />כרטיסים
+          </Button>
+          <Button size="sm" variant={viewMode === "timeline" ? "default" : "ghost"} className="h-7 gap-1 text-xs" onClick={() => setViewMode("timeline")}>
+            <Clock className="h-3.5 w-3.5" />ציר זמן
+          </Button>
+          <Button size="sm" variant={viewMode === "compact" ? "default" : "ghost"} className="h-7 gap-1 text-xs" onClick={() => setViewMode("compact")}>
+            <Grid3X3 className="h-3.5 w-3.5" />קומפקט
           </Button>
           </div>
           </div>
