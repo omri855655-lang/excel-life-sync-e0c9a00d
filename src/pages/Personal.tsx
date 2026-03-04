@@ -40,7 +40,7 @@ const Personal = () => {
   const [isDark, setIsDark] = useState(false);
   const [activeTab, setActiveTab] = useState("dashboard");
   const [sharedSheets, setSharedSheets] = useState<SharedSheet[]>([]);
-  const { boards: customBoards } = useCustomBoards();
+  const { boards: customBoards, updateBoard } = useCustomBoards();
   const { isTabVisible } = useUserPreferences();
   const { t, dir } = useLanguage();
 
@@ -330,6 +330,8 @@ const Personal = () => {
               boardId={board.id}
               boardName={board.name}
               statuses={board.statuses}
+              theme={board.theme}
+              onThemeChange={(newTheme) => updateBoard(board.id, { theme: newTheme } as any)}
             />
           </TabsContent>
         ))}

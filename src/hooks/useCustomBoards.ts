@@ -2,6 +2,17 @@ import { useState, useEffect, useCallback } from "react";
 import { useAuth } from "@/hooks/useAuth";
 import { supabase } from "@/integrations/supabase/client";
 
+export type BoardTheme = "default" | "colorful" | "minimal" | "gradient" | "dark" | "pastel";
+
+export const BOARD_THEMES: { value: BoardTheme; label: string; description: string }[] = [
+  { value: "default", label: "קלאסי", description: "עיצוב רגיל" },
+  { value: "colorful", label: "צבעוני", description: "גבולות וכותרות צבעוניים" },
+  { value: "minimal", label: "מינימלי", description: "נקי ופשוט" },
+  { value: "gradient", label: "גרדיאנט", description: "רקע עם מעברי צבע" },
+  { value: "dark", label: "כהה", description: "גוונים כהים" },
+  { value: "pastel", label: "פסטל", description: "צבעי פסטל רכים" },
+];
+
 export interface CustomBoard {
   id: string;
   name: string;
@@ -9,6 +20,7 @@ export interface CustomBoard {
   statuses: string[];
   show_in_dashboard: boolean;
   sort_order: number;
+  theme: BoardTheme;
 }
 
 export function useCustomBoards() {
@@ -27,6 +39,7 @@ export function useCustomBoards() {
       setBoards(data.map((b: any) => ({
         ...b,
         statuses: Array.isArray(b.statuses) ? b.statuses : JSON.parse(b.statuses || "[]"),
+        theme: b.theme || "default",
       })));
     }
     setLoading(false);
