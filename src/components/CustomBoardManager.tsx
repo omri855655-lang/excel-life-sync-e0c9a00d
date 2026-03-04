@@ -6,7 +6,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { Plus, Trash2, Edit2, Check, X, LayoutGrid, List, Palette } from "lucide-react";
+import { Plus, Trash2, Edit2, Check, X, LayoutGrid, List, Palette, Grid3X3, Clock, AlignJustify, CreditCard } from "lucide-react";
 import { toast } from "sonner";
 import { Textarea } from "@/components/ui/textarea";
 import { type BoardTheme, BOARD_THEMES } from "@/hooks/useCustomBoards";
