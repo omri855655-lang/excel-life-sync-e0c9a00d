@@ -97,6 +97,7 @@ const KanbanColumn = ({
   onEditNotes,
   draggedId,
   setDraggedId,
+  themeStyles,
 }: {
   status: string;
   items: BoardItem[];
@@ -105,13 +106,14 @@ const KanbanColumn = ({
   onEditNotes: (item: BoardItem) => void;
   draggedId: string | null;
   setDraggedId: (id: string | null) => void;
+  themeStyles: ReturnType<typeof getThemeStyles>;
 }) => {
   const [over, setOver] = useState(false);
 
   return (
     <div
-      className={`flex-1 min-w-[200px] rounded-lg border-2 transition-colors ${
-        over ? "border-primary bg-primary/5" : "border-border bg-muted/20"
+      className={`flex-1 min-w-[200px] rounded-lg transition-colors ${
+        over ? themeStyles.columnBorderOver : themeStyles.columnBorder
       }`}
       onDragOver={(e) => { e.preventDefault(); setOver(true); }}
       onDragLeave={() => setOver(false)}
@@ -122,9 +124,9 @@ const KanbanColumn = ({
         if (id) onDrop(id, status);
       }}
     >
-      <div className="p-3 border-b font-semibold text-sm text-center bg-muted/40 rounded-t-lg">
+      <div className={`p-3 border-b font-semibold text-sm text-center rounded-t-lg ${themeStyles.columnHeader}`}>
         {status}
-        <span className="text-xs text-muted-foreground mr-1">({items.length})</span>
+        <span className="text-xs opacity-60 mr-1">({items.length})</span>
       </div>
       <div className="p-2 space-y-2 min-h-[120px]">
         {items.map((item) => (
@@ -137,7 +139,7 @@ const KanbanColumn = ({
               e.dataTransfer.effectAllowed = "move";
             }}
             onDragEnd={() => setDraggedId(null)}
-            className={`p-3 rounded-md border bg-card shadow-sm cursor-grab active:cursor-grabbing transition-opacity ${
+            className={`p-3 rounded-md cursor-grab active:cursor-grabbing transition-opacity ${themeStyles.card} ${
               draggedId === item.id ? "opacity-40" : "opacity-100"
             }`}
           >
