@@ -329,7 +329,7 @@ const CustomBoardManager = ({ boardId, boardName, statuses, theme = "default", o
 
       {/* Kanban View */}
       {viewMode === "kanban" ? (
-        <div className="flex gap-3 overflow-x-auto pb-2">
+        <div className={`flex gap-3 overflow-x-auto pb-2 ${themeStyles.wrapper}`}>
           {statuses.map((status) => (
             <KanbanColumn
               key={status}
@@ -340,6 +340,7 @@ const CustomBoardManager = ({ boardId, boardName, statuses, theme = "default", o
               onEditNotes={startEdit}
               draggedId={draggedId}
               setDraggedId={setDraggedId}
+              themeStyles={themeStyles}
             />
           ))}
         </div>
