@@ -280,8 +280,9 @@ const CustomBoardManager = ({ boardId, boardName, statuses, theme = "default", o
             <LayoutGrid className="h-3.5 w-3.5" />
             קנבן
           </Button>
+          </div>
+          </div>
         </div>
-      </div>
 
       {/* Add new item */}
       <Card>
