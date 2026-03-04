@@ -230,9 +230,38 @@ const CustomBoardManager = ({ boardId, boardName, statuses, theme = "default", o
 
   return (
     <div className="p-4 space-y-4" dir="rtl">
-      <div className="flex items-center justify-between mb-4">
+       <div className="flex items-center justify-between mb-4 flex-wrap gap-2">
         <h2 className="text-xl font-bold">{boardName}</h2>
-        <div className="flex gap-1 border rounded-lg p-0.5">
+        <div className="flex items-center gap-2">
+          {/* Theme Picker */}
+          {onThemeChange && (
+            <Popover>
+              <PopoverTrigger asChild>
+                <Button size="sm" variant="outline" className="h-7 gap-1 text-xs">
+                  <Palette className="h-3.5 w-3.5" />
+                  עיצוב
+                </Button>
+              </PopoverTrigger>
+              <PopoverContent className="w-56 p-2" align="end">
+                <div className="space-y-1">
+                  <p className="text-xs font-semibold text-muted-foreground px-2 pb-1">בחר עיצוב</p>
+                  {BOARD_THEMES.map((t) => (
+                    <button
+                      key={t.value}
+                      onClick={() => onThemeChange(t.value)}
+                      className={`w-full text-right px-3 py-2 rounded-md text-sm transition-colors flex items-center justify-between ${
+                        theme === t.value ? "bg-primary/10 text-primary font-medium" : "hover:bg-muted"
+                      }`}
+                    >
+                      <span>{t.label}</span>
+                      <span className="text-xs text-muted-foreground">{t.description}</span>
+                    </button>
+                  ))}
+                </div>
+              </PopoverContent>
+            </Popover>
+          )}
+          <div className="flex gap-1 border rounded-lg p-0.5">
           <Button
             size="sm"
             variant={viewMode === "table" ? "default" : "ghost"}
