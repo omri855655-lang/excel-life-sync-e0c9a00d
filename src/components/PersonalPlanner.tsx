@@ -912,6 +912,7 @@ const PersonalPlanner = () => {
       case "project": return "פרויקט";
       case "recurring": return "יומי";
       case "show": return "צפייה";
+      case "course": return "קורס";
       default: return source;
     }
   };
