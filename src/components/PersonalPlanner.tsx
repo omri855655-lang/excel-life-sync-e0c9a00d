@@ -924,6 +924,7 @@ const PersonalPlanner = () => {
       case "project": return "bg-cyan-100 dark:bg-cyan-900/30 border-cyan-300";
       case "recurring": return "bg-green-100 dark:bg-green-900/30 border-green-300";
       case "show": return "bg-pink-100 dark:bg-pink-900/30 border-pink-300";
+      case "course": return "bg-indigo-100 dark:bg-indigo-900/30 border-indigo-300";
       default: return "bg-muted border-border";
     }
   };
