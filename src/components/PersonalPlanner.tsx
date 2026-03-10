@@ -59,6 +59,11 @@ const PersonalPlanner = () => {
   const [newCatColor, setNewCatColor] = useState("#3b82f6");
 
   const [projectTasks, setProjectTasks] = useState<any[]>([]);
+  const [shows, setShows] = useState<any[]>([]);
+  const [showShowsInPlanner, setShowShowsInPlanner] = useState(false);
+  const [activeFilters, setActiveFilters] = useState<Set<TaskFilter>>(new Set(["all"]));
+  const [customBoardItems, setCustomBoardItems] = useState<any[]>([]);
+  const [selectedBoardIds, setSelectedBoardIds] = useState<Set<string>>(new Set());
   const [viewMode, setViewMode] = useState<ViewMode>("week");
   const [currentDate, setCurrentDate] = useState(new Date());
   const [hourHeight, setHourHeight] = useState(DEFAULT_HOUR_HEIGHT);
