@@ -305,6 +305,7 @@ const PersonalPlanner = () => {
       if (activeFilters.has("recurring") && task.source === "recurring") return true;
       if (activeFilters.has("shows_series") && task.source === "show" && task.showType === "סדרה") return true;
       if (activeFilters.has("shows_movies") && task.source === "show" && task.showType === "סרט") return true;
+      if (activeFilters.has("courses") && task.source === "course") return true;
 
       // Status filters
       if (activeFilters.has("overdue") && task.overdue) return true;
