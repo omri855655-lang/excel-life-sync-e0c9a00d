@@ -24,14 +24,18 @@ import { getHolidaysForDate } from "@/data/holidays";
 interface AggregatedTask {
   id: string;
   title: string;
-  source: "work" | "personal" | "project" | "recurring";
+  source: "work" | "personal" | "project" | "recurring" | "show";
   overdue: boolean;
   urgent: boolean;
   status: string;
   plannedEnd: string;
   createdAt: string;
   category: string;
+  showType?: string;
 }
+
+type TaskFilter = "all" | "work" | "personal" | "project" | "recurring" | "overdue" | "today" | "week" | "urgent" | "shows_series" | "shows_movies";
+
 
 type ViewMode = "day" | "week" | "month" | "year";
 
