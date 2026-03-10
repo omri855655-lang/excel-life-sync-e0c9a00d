@@ -873,6 +873,7 @@ const PersonalPlanner = () => {
       case "personal": return "אישי";
       case "project": return "פרויקט";
       case "recurring": return "יומי";
+      case "show": return "צפייה";
       default: return source;
     }
   };
@@ -883,6 +884,7 @@ const PersonalPlanner = () => {
       case "personal": return "bg-purple-100 dark:bg-purple-900/30 border-purple-300";
       case "project": return "bg-cyan-100 dark:bg-cyan-900/30 border-cyan-300";
       case "recurring": return "bg-green-100 dark:bg-green-900/30 border-green-300";
+      case "show": return "bg-pink-100 dark:bg-pink-900/30 border-pink-300";
       default: return "bg-muted border-border";
     }
   };
