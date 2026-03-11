@@ -91,7 +91,7 @@ const DailyRoutine = () => {
       title: "",
       description: "",
       frequency: "daily",
-      dayOfWeek: 0,
+      dayOfWeek: -1,
       dayOfMonth: 1,
     });
     setAddDialogOpen(false);
