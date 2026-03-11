@@ -263,12 +263,29 @@ export function useRecurringTasks() {
 
   const isTaskCompletedToday = useCallback(
     (taskId: string): boolean => {
-      const today = new Date().toISOString().split("T")[0];
-      return completions.some(
-        (c) => c.recurringTaskId === taskId && c.completedDate === today
+      const today = new Date();
+      const todayStr = today.toISOString().split("T")[0];
+      
+      // Check if completed today
+      const completedToday = completions.some(
+        (c) => c.recurringTaskId === taskId && c.completedDate === todayStr
       );
+      if (completedToday) return true;
+
+      // For flexible weekly tasks (no fixed day), check if completed any day this week
+      const task = tasks.find(t => t.id === taskId);
+      if (task?.frequency === "weekly" && task.dayOfWeek === null) {
+        const weekStart = new Date(today);
+        weekStart.setDate(today.getDate() - today.getDay()); // Sunday
+        const weekStartStr = weekStart.toISOString().split("T")[0];
+        return completions.some(
+          (c) => c.recurringTaskId === taskId && c.completedDate >= weekStartStr && c.completedDate <= todayStr
+        );
+      }
+
+      return false;
     },
-    [completions]
+    [completions, tasks]
   );
 
   const getCompletionHistory = useCallback(
