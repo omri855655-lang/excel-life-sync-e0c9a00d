@@ -282,7 +282,6 @@ const PersonalPlanner = () => {
 
     // Courses - show next uncompleted lesson per active course
     if (showCoursesInPlanner) {
-      // Group by course, pick first uncompleted lesson per course
       const courseMap = new Map<string, any>();
       courseLessons.forEach((lesson: any) => {
         if (!lesson.courses || lesson.courses.status === 'הושלם') return;
@@ -305,12 +304,46 @@ const PersonalPlanner = () => {
       });
     }
 
+    // Podcasts
+    if (showPodcastsInPlanner) {
+      podcasts.forEach((p: any) =>
+        tasks.push({
+          id: p.id,
+          title: `🎧 ${p.title}${p.host ? ` - ${p.host}` : ""}`,
+          source: "podcast",
+          overdue: false,
+          urgent: false,
+          status: p.status || "להאזין",
+          plannedEnd: "",
+          createdAt: p.created_at,
+          category: "פודקאסט",
+        })
+      );
+    }
+
+    // Books
+    if (showBooksInPlanner) {
+      books.forEach((b: any) =>
+        tasks.push({
+          id: b.id,
+          title: `📖 ${b.title}${b.author ? ` - ${b.author}` : ""}`,
+          source: "book",
+          overdue: false,
+          urgent: false,
+          status: b.status || "לקרוא",
+          plannedEnd: "",
+          createdAt: b.created_at,
+          category: "ספר",
+        })
+      );
+    }
+
     return tasks.sort((a, b) => {
       if (a.overdue !== b.overdue) return a.overdue ? -1 : 1;
       if (a.urgent !== b.urgent) return a.urgent ? -1 : 1;
       return new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime();
     });
-  }, [personalTasks, workTasks, projectTasks, recurringTasks, isTaskDueToday, isTaskCompletedToday, shows, showShowsInPlanner, customBoardItems, selectedBoardIds, courseLessons, showCoursesInPlanner]);
+  }, [personalTasks, workTasks, projectTasks, recurringTasks, isTaskDueToday, isTaskCompletedToday, shows, showShowsInPlanner, customBoardItems, selectedBoardIds, courseLessons, showCoursesInPlanner, podcasts, showPodcastsInPlanner, books, showBooksInPlanner]);
 
   // Filtered tasks based on active filters
   const filteredTasks = useMemo(() => {
