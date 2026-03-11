@@ -494,6 +494,7 @@ const DailyRoutine = () => {
                   <SelectItem value="daily">יומי - כל יום</SelectItem>
                   <SelectItem value="weekly">שבועי - פעם בשבוע</SelectItem>
                   <SelectItem value="monthly">חודשי - פעם בחודש</SelectItem>
+                  <SelectItem value="yearly">שנתי - פעם בשנה</SelectItem>
                 </SelectContent>
               </Select>
             </div>
@@ -529,6 +530,7 @@ const DailyRoutine = () => {
                     <SelectValue />
                   </SelectTrigger>
                   <SelectContent>
+                    <SelectItem value="-1">גמיש - בכל יום עד שמושלם</SelectItem>
                     {Array.from({ length: 28 }, (_, i) => (
                       <SelectItem key={i + 1} value={String(i + 1)}>
                         {i + 1}
@@ -536,6 +538,71 @@ const DailyRoutine = () => {
                     ))}
                   </SelectContent>
                 </Select>
+              </div>
+            )}
+            {newTask.frequency === "yearly" && (
+              <div className="space-y-3">
+                <div>
+                  <label className="text-sm font-medium">גמיש או תאריך קבוע?</label>
+                  <Select
+                    value={newTask.dayOfMonth === -1 ? "flexible" : "fixed"}
+                    onValueChange={(v) => {
+                      if (v === "flexible") {
+                        setNewTask({ ...newTask, dayOfMonth: -1, yearMonth: 0 });
+                      } else {
+                        setNewTask({ ...newTask, dayOfMonth: 1, yearMonth: 0 });
+                      }
+                    }}
+                  >
+                    <SelectTrigger>
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="flexible">גמיש - בכל יום עד שמושלם</SelectItem>
+                      <SelectItem value="fixed">תאריך קבוע</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+                {newTask.dayOfMonth !== -1 && (
+                  <>
+                    <div>
+                      <label className="text-sm font-medium">באיזה חודש?</label>
+                      <Select
+                        value={String(newTask.yearMonth)}
+                        onValueChange={(v) => setNewTask({ ...newTask, yearMonth: Number(v) })}
+                      >
+                        <SelectTrigger>
+                          <SelectValue />
+                        </SelectTrigger>
+                        <SelectContent>
+                          {MONTHS.map((m) => (
+                            <SelectItem key={m.value} value={String(m.value)}>
+                              {m.label}
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                    </div>
+                    <div>
+                      <label className="text-sm font-medium">באיזה יום?</label>
+                      <Select
+                        value={String(newTask.dayOfMonth)}
+                        onValueChange={(v) => setNewTask({ ...newTask, dayOfMonth: Number(v) })}
+                      >
+                        <SelectTrigger>
+                          <SelectValue />
+                        </SelectTrigger>
+                        <SelectContent>
+                          {Array.from({ length: 28 }, (_, i) => (
+                            <SelectItem key={i + 1} value={String(i + 1)}>
+                              {i + 1}
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                    </div>
+                  </>
+                )}
               </div>
             )}
           </div>
