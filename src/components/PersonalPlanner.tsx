@@ -1500,7 +1500,58 @@ const PersonalPlanner = () => {
                 </div>
               )}
             </div>
-          </CollapsibleContent>
+
+            {/* Podcasts toggle */}
+            <div className="space-y-1">
+              <div className="flex items-center gap-2">
+                <Checkbox
+                  id="showPodcasts"
+                  checked={showPodcastsInPlanner}
+                  onCheckedChange={(c) => setShowPodcastsInPlanner(!!c)}
+                />
+                <label htmlFor="showPodcasts" className="text-[10px] font-bold text-muted-foreground cursor-pointer">
+                  🎧 הצג פודקאסטים
+                </label>
+              </div>
+              {showPodcastsInPlanner && (
+                <div className="flex gap-1 mr-5">
+                  <Button
+                    variant={activeFilters.has("podcasts") ? "default" : "outline"}
+                    size="sm"
+                    className="h-6 text-[10px] px-2 gap-0.5"
+                    onClick={() => toggleFilter("podcasts")}
+                  >
+                    🎧 רק פודקאסטים
+                  </Button>
+                </div>
+              )}
+            </div>
+
+            {/* Books toggle */}
+            <div className="space-y-1">
+              <div className="flex items-center gap-2">
+                <Checkbox
+                  id="showBooks"
+                  checked={showBooksInPlanner}
+                  onCheckedChange={(c) => setShowBooksInPlanner(!!c)}
+                />
+                <label htmlFor="showBooks" className="text-[10px] font-bold text-muted-foreground cursor-pointer">
+                  📖 הצג ספרים
+                </label>
+              </div>
+              {showBooksInPlanner && (
+                <div className="flex gap-1 mr-5">
+                  <Button
+                    variant={activeFilters.has("books") ? "default" : "outline"}
+                    size="sm"
+                    className="h-6 text-[10px] px-2 gap-0.5"
+                    onClick={() => toggleFilter("books")}
+                  >
+                    📖 רק ספרים
+                  </Button>
+                </div>
+              )}
+            </div>
         </Collapsible>
 
         <ScrollArea className="flex-1">
