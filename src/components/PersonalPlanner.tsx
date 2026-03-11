@@ -1552,6 +1552,7 @@ const PersonalPlanner = () => {
                 </div>
               )}
             </div>
+          </CollapsibleContent>
         </Collapsible>
 
         <ScrollArea className="flex-1">
