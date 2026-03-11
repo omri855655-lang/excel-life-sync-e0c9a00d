@@ -7,9 +7,9 @@ export interface RecurringTask {
   id: string;
   title: string;
   description: string | null;
-  frequency: "daily" | "weekly" | "monthly";
+  frequency: "daily" | "weekly" | "monthly" | "yearly";
   dayOfWeek: number | null; // 0-6 for weekly tasks
-  dayOfMonth: number | null; // 1-31 for monthly tasks
+  dayOfMonth: number | null; // 1-31 for monthly/yearly tasks (for yearly, also used as month via dayOfWeek as month index 0-11)
   createdAt: string;
 }
 
