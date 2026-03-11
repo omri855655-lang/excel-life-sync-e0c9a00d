@@ -480,6 +480,7 @@ const DailyRoutine = () => {
                     <SelectValue />
                   </SelectTrigger>
                   <SelectContent>
+                    <SelectItem value="-1">גמיש - בכל יום עד שמושלם</SelectItem>
                     {DAYS_OF_WEEK.map((day) => (
                       <SelectItem key={day.value} value={String(day.value)}>
                         {day.label}
