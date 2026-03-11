@@ -252,6 +252,8 @@ const DailyRoutine = () => {
                       <TableCell>
                         {task.frequency === "weekly" && task.dayOfWeek !== null
                           ? DAYS_OF_WEEK.find((d) => d.value === task.dayOfWeek)?.label
+                          : task.frequency === "weekly" && task.dayOfWeek === null
+                          ? "גמיש"
                           : task.frequency === "monthly" && task.dayOfMonth !== null
                           ? `${task.dayOfMonth} בחודש`
                           : "-"}
