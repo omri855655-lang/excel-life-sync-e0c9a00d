@@ -367,10 +367,28 @@ export function useRecurringTasks() {
             isDue = true;
             break;
           case "weekly":
-            isDue = task.dayOfWeek === dayOfWeek;
+            if (task.dayOfWeek === null) {
+              // Flexible: count once per week (check Sunday)
+              isDue = dayOfWeek === 0;
+            } else {
+              isDue = task.dayOfWeek === dayOfWeek;
+            }
             break;
           case "monthly":
-            isDue = task.dayOfMonth === dayOfMonth;
+            if (task.dayOfMonth === null) {
+              // Flexible: count once per month (check 1st)
+              isDue = dayOfMonth === 1;
+            } else {
+              isDue = task.dayOfMonth === dayOfMonth;
+            }
+            break;
+          case "yearly":
+            if (task.dayOfMonth === null && task.dayOfWeek === null) {
+              // Flexible: count once per year (check Jan 1)
+              isDue = date.getMonth() === 0 && dayOfMonth === 1;
+            } else {
+              isDue = task.dayOfWeek === date.getMonth() && task.dayOfMonth === dayOfMonth;
+            }
             break;
         }
 
@@ -380,7 +398,32 @@ export function useRecurringTasks() {
             (c) => c.recurringTaskId === task.id && c.completedDate === dateStr
           );
 
-          if (wasCompleted) {
+          // For flexible tasks, check broader range
+          let flexCompleted = wasCompleted;
+          if (!wasCompleted && task.frequency === "weekly" && task.dayOfWeek === null) {
+            const wkEnd = new Date(date);
+            wkEnd.setDate(date.getDate() + 6);
+            const wkEndStr = wkEnd.toISOString().split("T")[0];
+            flexCompleted = completions.some(
+              (c) => c.recurringTaskId === task.id && c.completedDate >= dateStr && c.completedDate <= wkEndStr
+            );
+          }
+          if (!wasCompleted && task.frequency === "monthly" && task.dayOfMonth === null) {
+            const mEnd = new Date(date.getFullYear(), date.getMonth() + 1, 0);
+            const mEndStr = mEnd.toISOString().split("T")[0];
+            flexCompleted = completions.some(
+              (c) => c.recurringTaskId === task.id && c.completedDate >= dateStr && c.completedDate <= mEndStr
+            );
+          }
+          if (!wasCompleted && task.frequency === "yearly" && task.dayOfMonth === null && task.dayOfWeek === null) {
+            const yEnd = new Date(date.getFullYear(), 11, 31);
+            const yEndStr = yEnd.toISOString().split("T")[0];
+            flexCompleted = completions.some(
+              (c) => c.recurringTaskId === task.id && c.completedDate >= dateStr && c.completedDate <= yEndStr
+            );
+          }
+
+          if (flexCompleted) {
             completedCount++;
             tempStreak++;
             if (!streakBroken) {
