@@ -251,6 +251,8 @@ export function useRecurringTasks() {
       case "daily":
         return true;
       case "weekly":
+        // If no fixed day, it's flexible - due every day until completed this week
+        if (task.dayOfWeek === null) return true;
         return task.dayOfWeek === dayOfWeek;
       case "monthly":
         return task.dayOfMonth === dayOfMonth;
