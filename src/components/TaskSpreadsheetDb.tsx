@@ -858,7 +858,7 @@ const TaskSpreadsheetDb = ({ title, taskType, readOnly = false, showYearSelector
           }
           
           return (
-            <div className="min-h-0">
+            <div className="min-h-0 pb-32">
               <table className="w-full border-collapse min-w-[1200px]">
             <thead className="sticky top-0 z-10">
               <tr className="bg-muted">

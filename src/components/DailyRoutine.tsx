@@ -505,6 +505,7 @@ const DailyRoutine = () => {
                 </SelectTrigger>
                 <SelectContent>
                   <SelectItem value="daily">יומי - כל יום</SelectItem>
+                  <SelectItem value="thrice_weekly">3 פעמים בשבוע</SelectItem>
                   <SelectItem value="weekly">שבועי - פעם בשבוע</SelectItem>
                   <SelectItem value="monthly">חודשי - פעם בחודש</SelectItem>
                   <SelectItem value="yearly">שנתי - פעם בשנה</SelectItem>
