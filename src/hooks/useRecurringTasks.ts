@@ -251,6 +251,10 @@ export function useRecurringTasks() {
     switch (task.frequency) {
       case "daily":
         return true;
+      case "thrice_weekly":
+        if (task.dayOfWeek === null) return true;
+        // dayOfWeek is a bitmask: bit 0=Sun, bit 1=Mon, etc.
+        return (task.dayOfWeek & (1 << dayOfWeek)) !== 0;
       case "weekly":
         if (task.dayOfWeek === null) return true; // flexible
         return task.dayOfWeek === dayOfWeek;
