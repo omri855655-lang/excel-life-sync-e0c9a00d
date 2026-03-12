@@ -43,6 +43,7 @@ const DAYS_OF_WEEK = [
 
 const FREQUENCY_LABELS: Record<string, string> = {
   daily: "יומי",
+  thrice_weekly: "3 פעמים בשבוע",
   weekly: "שבועי",
   monthly: "חודשי",
   yearly: "שנתי",
