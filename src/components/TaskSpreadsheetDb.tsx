@@ -503,7 +503,11 @@ const TaskSpreadsheetDb = ({ title, taskType, readOnly = false, showYearSelector
       if (field !== "category" && field !== "responsible") return [];
       const list = field === "category" ? existingCategories : existingResponsibles;
       if (!editValue.trim()) return list;
-      return list.filter(item => item.toLowerCase().includes(editValue.toLowerCase()));
+      const lower = editValue.toLowerCase();
+      // Show startsWith matches first, then includes matches
+      const startsWith = list.filter(item => item.toLowerCase().startsWith(lower));
+      const includes = list.filter(item => !item.toLowerCase().startsWith(lower) && item.toLowerCase().includes(lower));
+      return [...startsWith, ...includes];
     }, [editValue, field]);
 
     // For date fields, use input type date
