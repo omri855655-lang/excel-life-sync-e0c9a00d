@@ -287,7 +287,9 @@ const DailyRoutine = () => {
                         </span>
                       </TableCell>
                       <TableCell>
-                        {task.frequency === "weekly" && task.dayOfWeek !== null
+                        {task.frequency === "thrice_weekly" && task.dayOfWeek !== null
+                          ? DAYS_OF_WEEK.filter(d => (task.dayOfWeek! & (1 << d.value)) !== 0).map(d => d.label).join(", ")
+                          : task.frequency === "weekly" && task.dayOfWeek !== null
                           ? DAYS_OF_WEEK.find((d) => d.value === task.dayOfWeek)?.label
                           : task.frequency === "weekly" && task.dayOfWeek === null
                           ? "גמיש"
