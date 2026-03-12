@@ -111,7 +111,7 @@ export function useRecurringTasks() {
     async (task: {
       title: string;
       description?: string;
-      frequency: "daily" | "weekly" | "monthly" | "yearly";
+      frequency: "daily" | "weekly" | "monthly" | "yearly" | "thrice_weekly";
       dayOfWeek?: number;
       dayOfMonth?: number;
     }) => {
