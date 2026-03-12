@@ -138,6 +138,15 @@ const DeeplyDashboard = () => {
   const [expandedMotivation, setExpandedMotivation] = useState<string | null>(null);
   const [activeYouTube, setActiveYouTube] = useState<string | null>(null);
   const [activeYtCat, setActiveYtCat] = useState("yt-classical");
+  
+  // Custom YouTube videos per category
+  const [customYtVideos, setCustomYtVideos] = useState<Record<string, { id: string; title: string }[]>>(() => {
+    const saved = localStorage.getItem("deeply-custom-yt");
+    return saved ? JSON.parse(saved) : {};
+  });
+  const [addYtUrl, setAddYtUrl] = useState("");
+  const [addYtTitle, setAddYtTitle] = useState("");
+  const [addYtTarget, setAddYtTarget] = useState<string | null>(null);
 
   // Sessions
   const [sessions, setSessions] = useState<SessionLog[]>(() => {
