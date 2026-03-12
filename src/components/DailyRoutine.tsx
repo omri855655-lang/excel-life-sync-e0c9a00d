@@ -507,7 +507,7 @@ const DailyRoutine = () => {
               <Select
                 value={newTask.frequency}
                 onValueChange={(v) =>
-                  setNewTask({ ...newTask, frequency: v as any })
+                  setNewTask({ ...newTask, frequency: v as any, dayOfWeek: v === "thrice_weekly" ? 0 : -1, dayOfMonth: -1 })
                 }
               >
                 <SelectTrigger>
