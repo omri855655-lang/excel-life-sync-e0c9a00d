@@ -56,7 +56,18 @@ const STATIC_TABS: TabDef[] = [
   { id: "challenges", icon: Trophy, label: "challenges" },
   { id: "settings", icon: Settings, label: "settings" },
 ];
+
+const Personal = () => {
+  const { user, loading, signOut } = useAuth();
+  const navigate = useNavigate();
+  const [isDark, setIsDark] = useState(false);
+  const [activeTab, setActiveTab] = useState("dashboard");
   const [sharedSheets, setSharedSheets] = useState<SharedSheet[]>([]);
+  const [tabOrder, setTabOrder] = useState<string[]>(() => {
+    const saved = localStorage.getItem("tab-order");
+    return saved ? JSON.parse(saved) : [];
+  });
+  const [draggedTab, setDraggedTab] = useState<string | null>(null);
   const { boards: customBoards, updateBoard } = useCustomBoards();
   const { isTabVisible } = useUserPreferences();
   const { t, dir } = useLanguage();
