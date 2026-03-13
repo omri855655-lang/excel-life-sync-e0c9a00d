@@ -1211,11 +1211,20 @@ const PersonalPlanner = () => {
                             </div>
                           )}
 
-                          {/* Resize handle */}
+                          {/* Top resize handle */}
+                          <div
+                            draggable={false}
+                            className="absolute top-0 left-0 right-0 h-3 cursor-n-resize flex items-center justify-center hover:bg-black/10 dark:hover:bg-white/10 rounded-t-md transition-colors group/resizetop"
+                            onMouseDown={(e) => handleResizeStart(e, event, "top")}
+                          >
+                            <div className="w-8 h-1 rounded-full bg-current opacity-0 group-hover/resizetop:opacity-40 transition-opacity" style={{ color: event.color }} />
+                          </div>
+
+                          {/* Bottom resize handle */}
                           <div
                             draggable={false}
                             className="absolute bottom-0 left-0 right-0 h-3 cursor-s-resize flex items-center justify-center hover:bg-black/10 dark:hover:bg-white/10 rounded-b-md transition-colors group/resize"
-                            onMouseDown={(e) => handleResizeStart(e, event)}
+                            onMouseDown={(e) => handleResizeStart(e, event, "bottom")}
                           >
                             <div className="w-8 h-1 rounded-full bg-current opacity-0 group-hover/resize:opacity-40 transition-opacity" style={{ color: event.color }} />
                           </div>
