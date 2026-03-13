@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback, useMemo } from "react";
 import { useNavigate } from "react-router-dom";
 import { useAuth } from "@/hooks/useAuth";
 import { supabase } from "@/integrations/supabase/client";
@@ -22,7 +22,7 @@ import NotificationBell from "@/components/NotificationBell";
 import SettingsPanel from "@/components/SettingsPanel";
 import CustomBoardManager from "@/components/CustomBoardManager";
 import ChallengesManager from "@/components/ChallengesManager";
-import { FileSpreadsheet, Moon, Sun, LogOut, BookOpen, Tv, LayoutDashboard, ListTodo, Briefcase, Download, Headphones, CalendarCheck, FolderKanban, GraduationCap, CalendarDays, Focus, Settings, LayoutGrid, Trophy } from "lucide-react";
+import { FileSpreadsheet, Moon, Sun, LogOut, BookOpen, Tv, LayoutDashboard, ListTodo, Briefcase, Download, Headphones, CalendarCheck, FolderKanban, GraduationCap, CalendarDays, Focus, Settings, LayoutGrid, Trophy, GripVertical } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { toast } from "sonner";
@@ -34,12 +34,40 @@ interface SharedSheet {
   permission: string;
 }
 
+interface TabDef {
+  id: string;
+  icon: React.ComponentType<{ className?: string }>;
+  label: string;
+  visibilityKey?: string;
+}
+
+const STATIC_TABS: TabDef[] = [
+  { id: "dashboard", icon: LayoutDashboard, label: "dashboard" },
+  { id: "tasks", icon: ListTodo, label: "personalTasks", visibilityKey: "tasks" },
+  { id: "work", icon: Briefcase, label: "workTasks", visibilityKey: "work" },
+  { id: "books", icon: BookOpen, label: "books", visibilityKey: "books" },
+  { id: "shows", icon: Tv, label: "shows", visibilityKey: "shows" },
+  { id: "podcasts", icon: Headphones, label: "podcasts", visibilityKey: "podcasts" },
+  { id: "routine", icon: CalendarCheck, label: "dailyRoutine", visibilityKey: "routine" },
+  { id: "projects", icon: FolderKanban, label: "projects", visibilityKey: "projects" },
+  { id: "courses", icon: GraduationCap, label: "courses", visibilityKey: "courses" },
+  { id: "planner", icon: CalendarDays, label: "planner", visibilityKey: "planner" },
+  { id: "deeply", icon: Focus, label: "deeply", visibilityKey: "deeply" },
+  { id: "challenges", icon: Trophy, label: "challenges" },
+  { id: "settings", icon: Settings, label: "settings" },
+];
+
 const Personal = () => {
   const { user, loading, signOut } = useAuth();
   const navigate = useNavigate();
   const [isDark, setIsDark] = useState(false);
   const [activeTab, setActiveTab] = useState("dashboard");
   const [sharedSheets, setSharedSheets] = useState<SharedSheet[]>([]);
+  const [tabOrder, setTabOrder] = useState<string[]>(() => {
+    const saved = localStorage.getItem("tab-order");
+    return saved ? JSON.parse(saved) : [];
+  });
+  const [draggedTab, setDraggedTab] = useState<string | null>(null);
   const { boards: customBoards, updateBoard } = useCustomBoards();
   const { isTabVisible } = useUserPreferences();
   const { t, dir } = useLanguage();
@@ -113,6 +141,21 @@ const Personal = () => {
     navigate("/");
   };
 
+  // Compute ordered tabs based on saved order
+  const orderedTabs = useMemo(() => {
+    if (tabOrder.length === 0) return STATIC_TABS;
+    const ordered: TabDef[] = [];
+    for (const id of tabOrder) {
+      const tab = STATIC_TABS.find(t => t.id === id);
+      if (tab) ordered.push(tab);
+    }
+    // Add any new tabs not in saved order
+    for (const tab of STATIC_TABS) {
+      if (!ordered.find(t => t.id === tab.id)) ordered.push(tab);
+    }
+    return ordered;
+  }, [tabOrder]);
+
   if (loading) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-background">
@@ -164,86 +207,53 @@ const Personal = () => {
 
       {/* Main Tabs */}
       <Tabs value={activeTab} onValueChange={setActiveTab} className="flex-1 flex flex-col min-h-0">
-        <div className="border-b border-border bg-card px-4 flex-shrink-0 overflow-x-auto">
+        <div className="border-b border-border bg-card px-4 flex-shrink-0 overflow-x-auto scrollbar-thin">
           <TabsList className="h-12 bg-transparent w-max min-w-full">
-            <TabsTrigger value="dashboard" className="gap-2">
-              <LayoutDashboard className="h-4 w-4" />
-              {t("dashboard")}
-            </TabsTrigger>
-            {isTabVisible("tasks") && (
-              <TabsTrigger value="tasks" className="gap-2">
-                <ListTodo className="h-4 w-4" />
-                {t("personalTasks")}
-              </TabsTrigger>
-            )}
-            {isTabVisible("work") && (
-              <TabsTrigger value="work" className="gap-2">
-                <Briefcase className="h-4 w-4" />
-                {t("workTasks")}
-              </TabsTrigger>
-            )}
+            {orderedTabs.map((tab) => {
+              if (tab.visibilityKey && !isTabVisible(tab.visibilityKey)) return null;
+              const Icon = tab.icon;
+              const label = t(tab.label as any);
+              return (
+                <TabsTrigger
+                  key={tab.id}
+                  value={tab.id}
+                  className="gap-2 cursor-grab active:cursor-grabbing"
+                  draggable
+                  onDragStart={(e) => {
+                    setDraggedTab(tab.id);
+                    e.dataTransfer.effectAllowed = "move";
+                  }}
+                  onDragOver={(e) => {
+                    e.preventDefault();
+                    e.dataTransfer.dropEffect = "move";
+                  }}
+                  onDrop={(e) => {
+                    e.preventDefault();
+                    if (!draggedTab || draggedTab === tab.id) return;
+                    const currentIds = orderedTabs.map(t => t.id);
+                    const fromIdx = currentIds.indexOf(draggedTab);
+                    const toIdx = currentIds.indexOf(tab.id);
+                    if (fromIdx === -1 || toIdx === -1) return;
+                    const newOrder = [...currentIds];
+                    newOrder.splice(fromIdx, 1);
+                    newOrder.splice(toIdx, 0, draggedTab);
+                    setTabOrder(newOrder);
+                    localStorage.setItem("tab-order", JSON.stringify(newOrder));
+                    setDraggedTab(null);
+                  }}
+                  onDragEnd={() => setDraggedTab(null)}
+                >
+                  <Icon className="h-4 w-4" />
+                  {label}
+                </TabsTrigger>
+              );
+            })}
             {sharedSheets.map((shared) => (
               <TabsTrigger key={`shared-${shared.sheet_id}`} value={`shared-${shared.sheet_id}`} className="gap-2">
                 <Briefcase className="h-4 w-4" />
                 <span className="max-w-[120px] truncate">עבודה ({shared.owner_email})</span>
               </TabsTrigger>
             ))}
-            {isTabVisible("books") && (
-              <TabsTrigger value="books" className="gap-2">
-                <BookOpen className="h-4 w-4" />
-                {t("books")}
-              </TabsTrigger>
-            )}
-            {isTabVisible("shows") && (
-              <TabsTrigger value="shows" className="gap-2">
-                <Tv className="h-4 w-4" />
-                {t("shows")}
-              </TabsTrigger>
-            )}
-            {isTabVisible("podcasts") && (
-              <TabsTrigger value="podcasts" className="gap-2">
-                <Headphones className="h-4 w-4" />
-                {t("podcasts")}
-              </TabsTrigger>
-            )}
-            {isTabVisible("routine") && (
-              <TabsTrigger value="routine" className="gap-2">
-                <CalendarCheck className="h-4 w-4" />
-                {t("dailyRoutine")}
-              </TabsTrigger>
-            )}
-            {isTabVisible("projects") && (
-              <TabsTrigger value="projects" className="gap-2">
-                <FolderKanban className="h-4 w-4" />
-                {t("projects")}
-              </TabsTrigger>
-            )}
-            {isTabVisible("courses") && (
-              <TabsTrigger value="courses" className="gap-2">
-                <GraduationCap className="h-4 w-4" />
-                {t("courses")}
-              </TabsTrigger>
-            )}
-            {isTabVisible("planner") && (
-              <TabsTrigger value="planner" className="gap-2">
-                <CalendarDays className="h-4 w-4" />
-                {t("planner")}
-              </TabsTrigger>
-            )}
-            {isTabVisible("deeply") && (
-              <TabsTrigger value="deeply" className="gap-2">
-                <Focus className="h-4 w-4" />
-                Deeply
-              </TabsTrigger>
-            )}
-            <TabsTrigger value="challenges" className="gap-2">
-              <Trophy className="h-4 w-4" />
-              אתגרים
-            </TabsTrigger>
-            <TabsTrigger value="settings" className="gap-2">
-              <Settings className="h-4 w-4" />
-              {t("settings")}
-            </TabsTrigger>
             {customBoards.map((board) => (
               <TabsTrigger key={`board-${board.id}`} value={`board-${board.id}`} className="gap-2">
                 <LayoutGrid className="h-4 w-4" />
@@ -279,7 +289,8 @@ const Personal = () => {
               title={`משימות עבודה (${shared.owner_email})`}
               taskType="work"
               readOnly={shared.permission === "view"}
-              showYearSelector={true}
+              showYearSelector={false}
+              fixedSheetName={shared.sheet_name}
             />
           </TabsContent>
         ))}

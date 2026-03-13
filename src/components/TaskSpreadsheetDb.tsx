@@ -31,6 +31,7 @@ interface TaskSpreadsheetDbProps {
   taskType: "personal" | "work";
   readOnly?: boolean;
   showYearSelector?: boolean;
+  fixedSheetName?: string;
 }
 
 const statusColors: Record<string, string> = {
@@ -53,14 +54,15 @@ const statusOrder: Record<string, number> = {
 
 type SortOption = "none" | "status" | "plannedEnd" | "overdue" | "createdAt" | "urgent";
 
-const TaskSpreadsheetDb = ({ title, taskType, readOnly = false, showYearSelector = false }: TaskSpreadsheetDbProps) => {
+const TaskSpreadsheetDb = ({ title, taskType, readOnly = false, showYearSelector = false, fixedSheetName }: TaskSpreadsheetDbProps) => {
   const { user } = useAuth();
   const currentYear = String(new Date().getFullYear());
   const [availableSheets, setAvailableSheets] = useState<string[]>([]);
   const [sheetsLoading, setSheetsLoading] = useState(true);
   // null means "all sheets", a string means specific sheet
-  const [selectedSheet, setSelectedSheet] = useState<string | null>(null);
-  const { tasks, loading, addTask, updateTask, deleteTask, refetch } = useTasks(taskType, selectedSheet);
+  const [selectedSheet, setSelectedSheet] = useState<string | null>(fixedSheetName ?? null);
+  const effectiveSheet = fixedSheetName ?? selectedSheet;
+  const { tasks, loading, addTask, updateTask, deleteTask, refetch } = useTasks(taskType, effectiveSheet);
   const [selectedRow, setSelectedRow] = useState<string | null>(null);
   const [editingCell, setEditingCell] = useState<{ row: string; field: keyof Task } | null>(null);
   const [aiDialogOpen, setAiDialogOpen] = useState(false);
@@ -472,16 +474,46 @@ const TaskSpreadsheetDb = ({ title, taskType, readOnly = false, showYearSelector
     );
   };
 
-  // Get unique values for category and responsible fields for autocomplete
-  const existingCategories = useMemo(() => {
-    const cats = tasks.map(t => t.category).filter(Boolean);
-    return [...new Set(cats)];
-  }, [tasks]);
+  // Fetch ALL unique values for category and responsible across ALL tasks (not just current sheet)
+  // sorted by most recent usage
+  const [allCategories, setAllCategories] = useState<string[]>([]);
+  const [allResponsibles, setAllResponsibles] = useState<string[]>([]);
 
-  const existingResponsibles = useMemo(() => {
-    const resps = tasks.map(t => t.responsible).filter(Boolean);
-    return [...new Set(resps)];
-  }, [tasks]);
+  useEffect(() => {
+    if (!user) return;
+    const fetchAllValues = async () => {
+      // Fetch all tasks for this user, ordered by updated_at desc
+      const { data } = await supabase
+        .from("tasks")
+        .select("category, responsible, updated_at")
+        .eq("user_id", user.id)
+        .order("updated_at", { ascending: false });
+
+      if (data) {
+        // Build unique lists preserving most-recent-first order
+        const catsSeen = new Set<string>();
+        const respsSeen = new Set<string>();
+        const cats: string[] = [];
+        const resps: string[] = [];
+        for (const row of data) {
+          if (row.category && !catsSeen.has(row.category)) {
+            catsSeen.add(row.category);
+            cats.push(row.category);
+          }
+          if (row.responsible && !respsSeen.has(row.responsible)) {
+            respsSeen.add(row.responsible);
+            resps.push(row.responsible);
+          }
+        }
+        setAllCategories(cats);
+        setAllResponsibles(resps);
+      }
+    };
+    fetchAllValues();
+  }, [user, tasks]); // re-fetch when tasks change too
+
+  const existingCategories = allCategories;
+  const existingResponsibles = allResponsibles;
 
   const EditableCellInput = ({
     value,
@@ -861,8 +893,8 @@ const TaskSpreadsheetDb = ({ title, taskType, readOnly = false, showYearSelector
             );
           }
           
-          return (
-            <div className="min-h-0 pb-32">
+           return (
+            <div className="min-h-0">
               <table className="w-full border-collapse min-w-[1200px]">
             <thead className="sticky top-0 z-10">
               <tr className="bg-muted">
@@ -1048,6 +1080,7 @@ const TaskSpreadsheetDb = ({ title, taskType, readOnly = false, showYearSelector
               })}
             </tbody>
           </table>
+              <div className="h-48 shrink-0" aria-hidden="true" />
             </div>
           );
         }}
