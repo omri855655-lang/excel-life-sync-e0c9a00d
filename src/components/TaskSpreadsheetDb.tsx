@@ -31,6 +31,7 @@ interface TaskSpreadsheetDbProps {
   taskType: "personal" | "work";
   readOnly?: boolean;
   showYearSelector?: boolean;
+  fixedSheetName?: string;
 }
 
 const statusColors: Record<string, string> = {
