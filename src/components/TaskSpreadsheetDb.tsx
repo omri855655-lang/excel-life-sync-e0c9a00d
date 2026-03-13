@@ -1048,6 +1048,7 @@ const TaskSpreadsheetDb = ({ title, taskType, readOnly = false, showYearSelector
               })}
             </tbody>
           </table>
+              <div className="h-48 shrink-0" aria-hidden="true" />
             </div>
           );
         }}
