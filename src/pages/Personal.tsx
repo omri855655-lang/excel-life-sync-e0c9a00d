@@ -212,9 +212,7 @@ const Personal = () => {
             {orderedTabs.map((tab) => {
               if (tab.visibilityKey && !isTabVisible(tab.visibilityKey)) return null;
               const Icon = tab.icon;
-              const label = tab.label === "deeply" ? "Deeply" 
-                : tab.label === "challenges" ? (dir === "rtl" ? "אתגרים" : "Challenges")
-                : t(tab.label as any);
+              const label = t(tab.label as any);
               return (
                 <TabsTrigger
                   key={tab.id}
