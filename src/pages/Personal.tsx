@@ -34,11 +34,28 @@ interface SharedSheet {
   permission: string;
 }
 
-const Personal = () => {
-  const { user, loading, signOut } = useAuth();
-  const navigate = useNavigate();
-  const [isDark, setIsDark] = useState(false);
-  const [activeTab, setActiveTab] = useState("dashboard");
+interface TabDef {
+  id: string;
+  icon: React.ComponentType<{ className?: string }>;
+  label: string;
+  visibilityKey?: string;
+}
+
+const STATIC_TABS: TabDef[] = [
+  { id: "dashboard", icon: LayoutDashboard, label: "dashboard" },
+  { id: "tasks", icon: ListTodo, label: "personalTasks", visibilityKey: "tasks" },
+  { id: "work", icon: Briefcase, label: "workTasks", visibilityKey: "work" },
+  { id: "books", icon: BookOpen, label: "books", visibilityKey: "books" },
+  { id: "shows", icon: Tv, label: "shows", visibilityKey: "shows" },
+  { id: "podcasts", icon: Headphones, label: "podcasts", visibilityKey: "podcasts" },
+  { id: "routine", icon: CalendarCheck, label: "dailyRoutine", visibilityKey: "routine" },
+  { id: "projects", icon: FolderKanban, label: "projects", visibilityKey: "projects" },
+  { id: "courses", icon: GraduationCap, label: "courses", visibilityKey: "courses" },
+  { id: "planner", icon: CalendarDays, label: "planner", visibilityKey: "planner" },
+  { id: "deeply", icon: Focus, label: "deeply", visibilityKey: "deeply" },
+  { id: "challenges", icon: Trophy, label: "challenges" },
+  { id: "settings", icon: Settings, label: "settings" },
+];
   const [sharedSheets, setSharedSheets] = useState<SharedSheet[]>([]);
   const { boards: customBoards, updateBoard } = useCustomBoards();
   const { isTabVisible } = useUserPreferences();
