@@ -32,6 +32,7 @@ interface TaskSpreadsheetDbProps {
   readOnly?: boolean;
   showYearSelector?: boolean;
   fixedSheetName?: string;
+  fixedSheetOwnerId?: string;
 }
 
 const statusColors: Record<string, string> = {
