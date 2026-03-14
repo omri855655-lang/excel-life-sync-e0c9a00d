@@ -30,6 +30,7 @@ import { toast } from "sonner";
 interface SharedSheet {
   sheet_id: string;
   sheet_name: string;
+  owner_id: string;
   owner_email: string;
   permission: string;
 }
