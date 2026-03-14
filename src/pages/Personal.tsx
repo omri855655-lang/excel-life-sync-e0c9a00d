@@ -113,6 +113,7 @@ const Personal = () => {
         sharedResults.push({
           sheet_id: sheet.id,
           sheet_name: sheet.sheet_name,
+          owner_id: sheet.user_id,
           owner_email: ownerProfile?.display_name || sheet.user_id.slice(0, 8),
           permission: collab?.permission || "view",
         });
