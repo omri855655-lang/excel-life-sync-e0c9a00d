@@ -77,10 +77,11 @@ const Personal = () => {
   const fetchSharedSheets = useCallback(async () => {
     if (!user) return;
     try {
+      const normalizedEmail = (user.email || "").trim().toLowerCase();
       const { data, error } = await supabase
         .from("task_sheet_collaborators")
         .select("sheet_id, permission, invited_email")
-        .or(`user_id.eq.${user.id},invited_email.eq.${user.email}`);
+        .or(`user_id.eq.${user.id},invited_email.ilike.${normalizedEmail}`);
 
       if (error) throw error;
       if (!data || data.length === 0) return;
