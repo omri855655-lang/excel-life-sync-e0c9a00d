@@ -270,7 +270,8 @@ const TaskSpreadsheetDb = ({ title, taskType, readOnly = false, showYearSelector
 
   const handleAddTask = async () => {
     // When adding a task, use selected sheet or current year if showing all
-    await addTask(selectedSheet ?? currentYear);
+    const defaultResponsible = taskType === "work" && user?.email ? user.email : "";
+    await addTask(selectedSheet ?? currentYear, { responsible: defaultResponsible });
   };
 
   const handleDeleteTask = async () => {
