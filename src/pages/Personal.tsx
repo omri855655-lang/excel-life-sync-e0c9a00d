@@ -294,6 +294,7 @@ const Personal = () => {
               readOnly={shared.permission === "view"}
               showYearSelector={false}
               fixedSheetName={shared.sheet_name}
+              fixedSheetOwnerId={shared.owner_id}
             />
           </TabsContent>
         ))}
