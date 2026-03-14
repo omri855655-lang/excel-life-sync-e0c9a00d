@@ -489,7 +489,6 @@ const TaskSpreadsheetDb = ({ title, taskType, readOnly = false, showYearSelector
       const { data } = await supabase
         .from("tasks")
         .select("category, responsible, updated_at")
-        .eq("user_id", user.id)
         .order("updated_at", { ascending: false });
 
       if (data) {
