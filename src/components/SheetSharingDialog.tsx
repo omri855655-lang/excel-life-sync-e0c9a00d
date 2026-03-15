@@ -247,7 +247,10 @@ const SheetSharingDialog = ({ open, onOpenChange, sheetName, taskType, available
         throw new Error("לא הצלחנו להוסיף שותף לאף גליון");
       }
 
-      await logActivity("added_collaborator", normalizedEmail, targetSheets.map(s => s.name));
+      const succeededSheetNames = targetSheets
+        .filter((s) => !failedSheets.includes(s.name))
+        .map((s) => s.name);
+      await logActivity("added_collaborator", normalizedEmail, succeededSheetNames);
       await fetchSheetAndCollaborators();
 
       toast.success(
