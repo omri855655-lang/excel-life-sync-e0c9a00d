@@ -252,10 +252,13 @@ const SheetSharingDialog = ({ open, onOpenChange, sheetName, taskType, available
   };
 
   const updatePermission = async (id: string, newPermission: string) => {
+    if (!user) return;
+
     const { error } = await supabase
       .from("task_sheet_collaborators")
       .update({ permission: newPermission })
-      .eq("id", id);
+      .eq("id", id)
+      .eq("invited_by", user.id);
 
     if (error) {
       toast.error("שגיאה בעדכון הרשאה");
