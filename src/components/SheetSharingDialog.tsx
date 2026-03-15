@@ -108,27 +108,43 @@ const SheetSharingDialog = ({ open, onOpenChange, sheetName, taskType }: SheetSh
       return;
     }
 
-    if (collaborators.some(c => c.invited_email === parsed.data)) {
+    if (collaborators.some((c) => c.invited_email.toLowerCase() === parsed.data.toLowerCase())) {
       toast.error("המשתמש כבר משותף");
       return;
     }
 
-    const { error } = await supabase.from("task_sheet_collaborators").insert({
-      sheet_id: sheetId,
-      invited_email: parsed.data,
-      permission,
-      invited_by: user.id,
-    });
+    const { data: upserted, error } = await supabase
+      .from("task_sheet_collaborators")
+      .upsert(
+        {
+          sheet_id: sheetId,
+          invited_email: parsed.data.toLowerCase(),
+          permission,
+          invited_by: user.id,
+        },
+        { onConflict: "sheet_id,invited_email" }
+      )
+      .select("id, invited_email, invited_display_name, invited_username, permission, created_at")
+      .single();
 
-    if (error) {
+    if (error || !upserted) {
       toast.error("שגיאה בהוספת שותף");
       console.error(error);
       return;
     }
 
+    setCollaborators((prev) => {
+      const existingIndex = prev.findIndex((c) => c.id === upserted.id);
+      if (existingIndex >= 0) {
+        const next = [...prev];
+        next[existingIndex] = upserted as Collaborator;
+        return next;
+      }
+      return [...prev, upserted as Collaborator];
+    });
+
     toast.success(`${parsed.data} נוסף כשותף`);
     setNewEmail("");
-    fetchSheetAndCollaborators();
   };
 
   const updatePermission = async (id: string, newPermission: string) => {
