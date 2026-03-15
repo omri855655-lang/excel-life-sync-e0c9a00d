@@ -1017,6 +1017,20 @@ const TaskSpreadsheetDb = ({ title, taskType, readOnly = false, showYearSelector
                       )}
                     </td>
                     <td className="px-3 py-2 text-xs text-muted-foreground whitespace-nowrap">
+                      {task.creatorName ? (
+                        <div className="flex flex-col leading-tight">
+                          <span className="text-foreground">{task.creatorName}</span>
+                          <span dir="ltr" className="text-[11px] text-muted-foreground">
+                            @{task.creatorUsername || task.creatorEmail.split("@")[0] || "-"}
+                          </span>
+                        </div>
+                      ) : task.creatorEmail ? (
+                        <span dir="ltr">{task.creatorEmail}</span>
+                      ) : (
+                        "-"
+                      )}
+                    </td>
+                    <td className="px-3 py-2 text-xs text-muted-foreground whitespace-nowrap">
                       {task.createdAt ? new Date(task.createdAt).toLocaleDateString('he-IL') + ' ' + new Date(task.createdAt).toLocaleTimeString('he-IL', { hour: '2-digit', minute: '2-digit' }) : '-'}
                     </td>
                     <td className="px-3 py-2 text-xs text-muted-foreground whitespace-nowrap">
