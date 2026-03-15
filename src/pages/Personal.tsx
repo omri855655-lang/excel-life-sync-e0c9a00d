@@ -418,7 +418,7 @@ const Personal = () => {
               </TabsList>
             </div>
 
-            {(activeTabIndex >= 0 || activeCustomBoardIndex >= 0) && (
+            {allTabIds.includes(activeTab) && (
               <div className="flex items-center gap-1 shrink-0">
                 <Button
                   variant="outline"
