@@ -167,6 +167,7 @@ const Auth = () => {
         <CardContent>
           <form onSubmit={handleSubmit} className="space-y-4">
             {mode === "signup" && (
+              <>
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                 <div className="space-y-2">
                   <Label htmlFor="firstName">שם פרטי</Label>
@@ -189,6 +190,30 @@ const Auth = () => {
                   />
                 </div>
               </div>
+              <div className="space-y-2">
+                <Label>שפה מועדפת / Preferred Language</Label>
+                <div className="flex gap-2">
+                  <Button
+                    type="button"
+                    variant={preferredLanguage === "he" ? "default" : "outline"}
+                    size="sm"
+                    className="flex-1"
+                    onClick={() => setPreferredLanguage("he")}
+                  >
+                    🇮🇱 עברית
+                  </Button>
+                  <Button
+                    type="button"
+                    variant={preferredLanguage === "en" ? "default" : "outline"}
+                    size="sm"
+                    className="flex-1"
+                    onClick={() => setPreferredLanguage("en")}
+                  >
+                    🇺🇸 English
+                  </Button>
+                </div>
+              </div>
+              </>
             )}
 
             <div className="space-y-2">
