@@ -1,0 +1,1 @@
+DROP FUNCTION IF EXISTS public.share_sheet_with_email(uuid, text, text);

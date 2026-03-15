@@ -86,13 +86,28 @@ const Personal = () => {
 
     try {
       const normalizedEmail = (user.email || "").trim().toLowerCase();
-      const { data, error } = await supabase
+
+      const byUserPromise = supabase
         .from("task_sheet_collaborators")
         .select("sheet_id, permission")
-        .or(`user_id.eq.${user.id},invited_email.eq.${normalizedEmail}`);
+        .eq("user_id", user.id);
 
-      if (error) throw error;
-      if (!data || data.length === 0) {
+      const byEmailPromise = normalizedEmail
+        ? supabase
+            .from("task_sheet_collaborators")
+            .select("sheet_id, permission")
+            .eq("invited_email", normalizedEmail)
+        : Promise.resolve({ data: [], error: null } as any);
+
+      const [byUserRes, byEmailRes] = await Promise.all([byUserPromise, byEmailPromise]);
+
+      if (byUserRes.error) throw byUserRes.error;
+      if (byEmailRes.error) throw byEmailRes.error;
+
+      const mergedCollabs = [...(byUserRes.data || []), ...(byEmailRes.data || [])];
+      const data = Array.from(new Map(mergedCollabs.map((row) => [row.sheet_id, row])).values());
+
+      if (data.length === 0) {
         setSharedSheets([]);
         return;
       }
@@ -212,7 +227,14 @@ const Personal = () => {
     const step = dir === "rtl"
       ? (direction === "left" ? 1 : -1)
       : (direction === "left" ? -1 : 1);
-    const toIdx = fromIdx + step;
+
+    let toIdx = fromIdx + step;
+    while (toIdx >= 0 && toIdx < currentIds.length) {
+      const candidateTab = orderedTabs[toIdx];
+      if (!candidateTab) break;
+      if (!candidateTab.visibilityKey || isTabVisible(candidateTab.visibilityKey)) break;
+      toIdx += step;
+    }
 
     if (toIdx < 0 || toIdx >= currentIds.length) return;
 
@@ -222,7 +244,28 @@ const Personal = () => {
 
     setTabOrder(newOrder);
     localStorage.setItem("tab-order", JSON.stringify(newOrder));
-  }, [orderedTabs, dir]);
+  }, [orderedTabs, dir, isTabVisible]);
+
+  const canMoveStaticTab = useCallback((tabId: string, direction: "left" | "right") => {
+    const currentIds = orderedTabs.map((t) => t.id);
+    const fromIdx = currentIds.indexOf(tabId);
+    if (fromIdx === -1) return false;
+
+    const step = dir === "rtl"
+      ? (direction === "left" ? 1 : -1)
+      : (direction === "left" ? -1 : 1);
+
+    let idx = fromIdx + step;
+    while (idx >= 0 && idx < currentIds.length) {
+      const candidateTab = orderedTabs[idx];
+      if (candidateTab && (!candidateTab.visibilityKey || isTabVisible(candidateTab.visibilityKey))) {
+        return true;
+      }
+      idx += step;
+    }
+
+    return false;
+  }, [orderedTabs, dir, isTabVisible]);
 
   const activeTabIndex = orderedTabs.findIndex((tab) => tab.id === activeTab);
   const activeCustomBoardId = activeTab.startsWith("board-") ? activeTab.replace("board-", "") : null;
@@ -257,13 +300,13 @@ const Personal = () => {
   }, [activeCustomBoardIndex, activeTabIndex, customBoards, reorderBoards, dir, moveTabInOrder, activeTab]);
 
   const canMoveActiveLeft = activeTabIndex >= 0
-    ? (dir === "rtl" ? activeTabIndex < orderedTabs.length - 1 : activeTabIndex > 0)
+    ? canMoveStaticTab(activeTab, "left")
     : activeCustomBoardIndex >= 0
       ? (dir === "rtl" ? activeCustomBoardIndex < customBoards.length - 1 : activeCustomBoardIndex > 0)
       : false;
 
   const canMoveActiveRight = activeTabIndex >= 0
-    ? (dir === "rtl" ? activeTabIndex > 0 : activeTabIndex < orderedTabs.length - 1)
+    ? canMoveStaticTab(activeTab, "right")
     : activeCustomBoardIndex >= 0
       ? (dir === "rtl" ? activeCustomBoardIndex > 0 : activeCustomBoardIndex < customBoards.length - 1)
       : false;
