@@ -33,6 +33,7 @@ interface SharedSheet {
   owner_id: string;
   owner_email: string;
   permission: string;
+  task_type: string;
 }
 
 interface TabDef {
