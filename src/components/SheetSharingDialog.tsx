@@ -253,6 +253,10 @@ const SheetSharingDialog = ({ open, onOpenChange, sheetName, taskType, available
       await logActivity("added_collaborator", normalizedEmail, succeededSheetNames);
       await fetchSheetAndCollaborators();
 
+      if (failedSheets.length > 0) {
+        toast.warning(`נשמר חלקית. נכשל בגליונות: ${failedSheets.join(", ")}`);
+      }
+
       toast.success(
         shareToAllSheets
           ? `${normalizedEmail} נוסף לשיתוף ב-${successCount} גליונות`
