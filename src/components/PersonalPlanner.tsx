@@ -41,7 +41,7 @@ type ViewMode = "day" | "week" | "month" | "year";
 
 const HOURS = Array.from({ length: 24 }, (_, i) => i);
 const DEFAULT_HOUR_HEIGHT = 60; // px per hour
-const SNAP_MINUTES = 15; // snap to 15-min intervals
+const SNAP_MINUTES = 5; // snap to 5-min intervals for fine control
 const MIN_HOUR_HEIGHT = 30;
 const MAX_HOUR_HEIGHT = 120;
 
