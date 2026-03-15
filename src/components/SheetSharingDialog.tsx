@@ -25,6 +25,8 @@ import { z } from "zod";
 interface Collaborator {
   id: string;
   invited_email: string;
+  invited_display_name: string | null;
+  invited_username: string | null;
   permission: string;
   created_at: string;
 }
