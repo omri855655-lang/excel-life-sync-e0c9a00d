@@ -91,14 +91,11 @@ const Personal = () => {
       const sheetIds = data.map(d => d.sheet_id);
       const { data: sheets, error: sheetsError } = await supabase
         .from("task_sheets")
-        .select("id, sheet_name, user_id")
+        .select("id, sheet_name, user_id, task_type")
         .in("id", sheetIds);
 
       if (sheetsError) throw sheetsError;
 
-      // Get owner emails from profiles or just use user_id for now
-      const ownerIds = [...new Set(sheets?.map(s => s.user_id).filter(id => id !== user.id) || [])];
-      
       // We'll show sheets that are NOT owned by the current user
       const sharedResults: SharedSheet[] = [];
       for (const sheet of sheets || []) {
@@ -117,6 +114,7 @@ const Personal = () => {
           owner_id: sheet.user_id,
           owner_email: ownerProfile?.display_name || sheet.user_id.slice(0, 8),
           permission: collab?.permission || "view",
+          task_type: sheet.task_type,
         });
       }
       setSharedSheets(sharedResults);
