@@ -117,7 +117,7 @@ const SheetSharingDialog = ({ open, onOpenChange, sheetName, taskType, available
     return created.id;
   };
 
-  const fetchSheetAndCollaborators = async () => {
+  const fetchSheetAndCollaborators = async (options?: { silent?: boolean }) => {
     if (!user) return;
     setLoading(true);
 
@@ -126,7 +126,7 @@ const SheetSharingDialog = ({ open, onOpenChange, sheetName, taskType, available
       setCollaborators([]);
       setSheetId(null);
       setLoading(false);
-      toast.error("שגיאה בפתיחת גליון לשיתוף");
+      if (!options?.silent) toast.error("שגיאה בפתיחת גליון לשיתוף");
       return;
     }
 
@@ -142,7 +142,7 @@ const SheetSharingDialog = ({ open, onOpenChange, sheetName, taskType, available
     if (collabError) {
       console.error("Error fetching collaborators:", collabError);
       setLoading(false);
-      toast.error("שגיאה בטעינת שותפים");
+      if (!options?.silent) toast.error("שגיאה בטעינת שותפים");
       return;
     }
 
