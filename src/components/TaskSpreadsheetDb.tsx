@@ -764,6 +764,8 @@ const TaskSpreadsheetDb = ({ title, taskType, readOnly = false, showYearSelector
       )}
       {isSharedSheet && sharedCollapsed ? null : (
         <>
+      {/* Sheet Selector */}
+      {showYearSelector && (
         <div className="flex items-center gap-2">
           <div className="flex-1">
             <YearSelector 
@@ -779,7 +781,6 @@ const TaskSpreadsheetDb = ({ title, taskType, readOnly = false, showYearSelector
               variant="outline"
               size="sm"
               onClick={async () => {
-                // Ensure the sheet exists in task_sheets before sharing
                 const sheetToShare = selectedSheet ?? currentYear;
                 if (!user) return;
 
