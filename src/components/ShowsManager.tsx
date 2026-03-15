@@ -348,6 +348,7 @@ const ShowsManager = () => {
                 <TableHead className="text-right">פרק</TableHead>
                 <TableHead className="text-right">הערות</TableHead>
                 <SortHeader field="created_at" label="נוצר" />
+                <TableHead className="text-right">שינוי סטטוס</TableHead>
                 <SortHeader field="updated_at" label="עודכן" />
                 <TableHead className="w-[50px]"></TableHead>
               </TableRow>
