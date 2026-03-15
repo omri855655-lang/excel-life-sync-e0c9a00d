@@ -740,7 +740,7 @@ const TaskSpreadsheetDb = ({ title, taskType, readOnly = false, showYearSelector
               onDeleteYear={handleDeleteSheet}
             />
           </div>
-          {taskType === "work" && !readOnly && (
+          {!readOnly && (
             <Button
               variant="outline"
               size="sm"
