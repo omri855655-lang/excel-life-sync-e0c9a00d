@@ -1227,7 +1227,10 @@ const TaskSpreadsheetDb = ({ title, taskType, readOnly = false, showYearSelector
         onOpenChange={setSharingDialogOpen}
         sheetName={selectedSheet ?? currentYear}
         taskType={taskType}
+        availableSheets={availableSheets}
       />
+      </>
+      )}
     </div>
   );
 };
