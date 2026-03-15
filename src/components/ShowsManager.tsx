@@ -457,6 +457,9 @@ const ShowsManager = () => {
                       {formatDateTime(show.created_at)}
                     </TableCell>
                     <TableCell className="text-muted-foreground text-xs whitespace-nowrap">
+                      {show.status_changed_at ? formatDateTime(show.status_changed_at) : '-'}
+                    </TableCell>
+                    <TableCell className="text-muted-foreground text-xs whitespace-nowrap">
                       {formatDateTime(show.updated_at)}
                     </TableCell>
                     <TableCell>
