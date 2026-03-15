@@ -271,11 +271,14 @@ const SheetSharingDialog = ({ open, onOpenChange, sheetName, taskType, available
   };
 
   const removeCollaborator = async (id: string) => {
+    if (!user) return;
+
     const collab = collaborators.find(c => c.id === id);
     const { error } = await supabase
       .from("task_sheet_collaborators")
       .delete()
-      .eq("id", id);
+      .eq("id", id)
+      .eq("invited_by", user.id);
 
     if (error) {
       toast.error("שגיאה בהסרת שותף");

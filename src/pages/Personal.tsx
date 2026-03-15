@@ -379,13 +379,13 @@ const Personal = () => {
               </TabsList>
             </div>
 
-            {activeTabIndex >= 0 && (
+            {(activeTabIndex >= 0 || activeCustomBoardIndex >= 0) && (
               <div className="flex items-center gap-1 shrink-0">
                 <Button
                   variant="outline"
                   size="icon"
                   className="h-8 w-8"
-                  onClick={() => moveTabInOrder(activeTab, "left")}
+                  onClick={() => moveActiveTab("left")}
                   disabled={!canMoveActiveLeft}
                   title="הזז שמאלה"
                 >
@@ -395,7 +395,7 @@ const Personal = () => {
                   variant="outline"
                   size="icon"
                   className="h-8 w-8"
-                  onClick={() => moveTabInOrder(activeTab, "right")}
+                  onClick={() => moveActiveTab("right")}
                   disabled={!canMoveActiveRight}
                   title="הזז ימינה"
                 >
