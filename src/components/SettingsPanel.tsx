@@ -211,7 +211,7 @@ const SettingsPanel = () => {
                     <SelectItem value="tasks">📋 רשימת משימות (כולל דשבורד)</SelectItem>
                     <SelectItem value="todo">✅ רשימת To-Do (צ'קבוקסים)</SelectItem>
                     <SelectItem value="shopping">🛒 רשימת קניות</SelectItem>
-                    <SelectItem value="tracking">📚 רשימת מעקב (כמו ספרים/פודקאסטים)</SelectItem>
+                    <SelectItem value="tracking">📚 קטגוריית רשימות (כמו ספרים/פודקאסטים)</SelectItem>
                     <SelectItem value="kanban">📊 קנבן (לביצוע → בבדיקה → הושלם)</SelectItem>
                     <SelectItem value="custom">⚙️ מותאם אישית</SelectItem>
                   </SelectContent>
