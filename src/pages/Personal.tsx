@@ -73,7 +73,7 @@ const Personal = () => {
     return saved ? JSON.parse(saved) : [];
   });
   const [draggedTab, setDraggedTab] = useState<string | null>(null);
-  const { boards: customBoards, updateBoard } = useCustomBoards();
+  const { boards: customBoards, updateBoard, reorderBoards } = useCustomBoards();
   const { isTabVisible } = useUserPreferences();
   const { t, dir } = useLanguage();
 
@@ -225,8 +225,48 @@ const Personal = () => {
   }, [orderedTabs, dir]);
 
   const activeTabIndex = orderedTabs.findIndex((tab) => tab.id === activeTab);
-  const canMoveActiveLeft = activeTabIndex >= 0 && (dir === "rtl" ? activeTabIndex < orderedTabs.length - 1 : activeTabIndex > 0);
-  const canMoveActiveRight = activeTabIndex >= 0 && (dir === "rtl" ? activeTabIndex > 0 : activeTabIndex < orderedTabs.length - 1);
+  const activeCustomBoardId = activeTab.startsWith("board-") ? activeTab.replace("board-", "") : null;
+  const activeCustomBoardIndex = activeCustomBoardId
+    ? customBoards.findIndex((board) => board.id === activeCustomBoardId)
+    : -1;
+
+  const moveActiveTab = useCallback(async (direction: "left" | "right") => {
+    if (activeCustomBoardIndex >= 0) {
+      const step = dir === "rtl"
+        ? (direction === "left" ? 1 : -1)
+        : (direction === "left" ? -1 : 1);
+      const toIdx = activeCustomBoardIndex + step;
+      if (toIdx < 0 || toIdx >= customBoards.length) return;
+
+      const nextBoards = [...customBoards];
+      const [movedBoard] = nextBoards.splice(activeCustomBoardIndex, 1);
+      nextBoards.splice(toIdx, 0, movedBoard);
+
+      try {
+        await reorderBoards(nextBoards.map((board) => board.id));
+      } catch (error) {
+        console.error("Error reordering custom boards:", error);
+        toast.error("שגיאה בהזזת הרשימה");
+      }
+      return;
+    }
+
+    if (activeTabIndex >= 0) {
+      moveTabInOrder(activeTab, direction);
+    }
+  }, [activeCustomBoardIndex, activeTabIndex, customBoards, reorderBoards, dir, moveTabInOrder, activeTab]);
+
+  const canMoveActiveLeft = activeTabIndex >= 0
+    ? (dir === "rtl" ? activeTabIndex < orderedTabs.length - 1 : activeTabIndex > 0)
+    : activeCustomBoardIndex >= 0
+      ? (dir === "rtl" ? activeCustomBoardIndex < customBoards.length - 1 : activeCustomBoardIndex > 0)
+      : false;
+
+  const canMoveActiveRight = activeTabIndex >= 0
+    ? (dir === "rtl" ? activeTabIndex > 0 : activeTabIndex < orderedTabs.length - 1)
+    : activeCustomBoardIndex >= 0
+      ? (dir === "rtl" ? activeCustomBoardIndex > 0 : activeCustomBoardIndex < customBoards.length - 1)
+      : false;
 
   if (loading) {
     return (
@@ -339,13 +379,13 @@ const Personal = () => {
               </TabsList>
             </div>
 
-            {activeTabIndex >= 0 && (
+            {(activeTabIndex >= 0 || activeCustomBoardIndex >= 0) && (
               <div className="flex items-center gap-1 shrink-0">
                 <Button
                   variant="outline"
                   size="icon"
                   className="h-8 w-8"
-                  onClick={() => moveTabInOrder(activeTab, "left")}
+                  onClick={() => moveActiveTab("left")}
                   disabled={!canMoveActiveLeft}
                   title="הזז שמאלה"
                 >
@@ -355,7 +395,7 @@ const Personal = () => {
                   variant="outline"
                   size="icon"
                   className="h-8 w-8"
-                  onClick={() => moveTabInOrder(activeTab, "right")}
+                  onClick={() => moveActiveTab("right")}
                   disabled={!canMoveActiveRight}
                   title="הזז ימינה"
                 >

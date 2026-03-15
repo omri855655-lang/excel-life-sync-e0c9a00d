@@ -117,7 +117,7 @@ const SheetSharingDialog = ({ open, onOpenChange, sheetName, taskType, available
     return created.id;
   };
 
-  const fetchSheetAndCollaborators = async () => {
+  const fetchSheetAndCollaborators = async (options?: { silent?: boolean }) => {
     if (!user) return;
     setLoading(true);
 
@@ -126,7 +126,7 @@ const SheetSharingDialog = ({ open, onOpenChange, sheetName, taskType, available
       setCollaborators([]);
       setSheetId(null);
       setLoading(false);
-      toast.error("שגיאה בפתיחת גליון לשיתוף");
+      if (!options?.silent) toast.error("שגיאה בפתיחת גליון לשיתוף");
       return;
     }
 
@@ -136,11 +136,13 @@ const SheetSharingDialog = ({ open, onOpenChange, sheetName, taskType, available
       .from("task_sheet_collaborators")
       .select("id, invited_email, invited_display_name, invited_username, permission, created_at")
       .eq("sheet_id", id)
+      .eq("invited_by", user.id)
       .order("created_at", { ascending: true });
 
     if (collabError) {
+      console.error("Error fetching collaborators:", collabError);
       setLoading(false);
-      toast.error("שגיאה בטעינת שותפים");
+      if (!options?.silent) toast.error("שגיאה בטעינת שותפים");
       return;
     }
 
@@ -229,7 +231,7 @@ const SheetSharingDialog = ({ open, onOpenChange, sheetName, taskType, available
       }
 
       await logActivity("added_collaborator", normalizedEmail, succeededSheetNames);
-      await fetchSheetAndCollaborators();
+      await fetchSheetAndCollaborators({ silent: true });
 
       if (failedSheets.length > 0) {
         toast.warning(`נשמר חלקית. נכשל בגליונות: ${failedSheets.join(", ")}`);
@@ -250,10 +252,13 @@ const SheetSharingDialog = ({ open, onOpenChange, sheetName, taskType, available
   };
 
   const updatePermission = async (id: string, newPermission: string) => {
+    if (!user) return;
+
     const { error } = await supabase
       .from("task_sheet_collaborators")
       .update({ permission: newPermission })
-      .eq("id", id);
+      .eq("id", id)
+      .eq("invited_by", user.id);
 
     if (error) {
       toast.error("שגיאה בעדכון הרשאה");
@@ -266,11 +271,14 @@ const SheetSharingDialog = ({ open, onOpenChange, sheetName, taskType, available
   };
 
   const removeCollaborator = async (id: string) => {
+    if (!user) return;
+
     const collab = collaborators.find(c => c.id === id);
     const { error } = await supabase
       .from("task_sheet_collaborators")
       .delete()
-      .eq("id", id);
+      .eq("id", id)
+      .eq("invited_by", user.id);
 
     if (error) {
       toast.error("שגיאה בהסרת שותף");
