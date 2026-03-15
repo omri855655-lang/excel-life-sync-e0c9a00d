@@ -1216,6 +1216,39 @@ const DeeplyDashboard = () => {
           </CardContent>
         </Card>
 
+        {/* Morning Habits Guide */}
+        <Card className="bg-white/5 border-white/5">
+          <CardHeader className="pb-2">
+            <CardTitle className="text-sm flex items-center gap-2 text-[#e8e8ed]">
+              <span className="text-lg">🌅</span>
+              {MORNING_HABITS_GUIDE.title}
+            </CardTitle>
+          </CardHeader>
+          <CardContent className="space-y-2">
+            {MORNING_HABITS_GUIDE.steps.map((step, idx) => (
+              <div key={idx}>
+                <button
+                  onClick={() => setExpandedGuide(expandedGuide === `morning-${idx}` ? null : `morning-${idx}`)}
+                  className={`w-full flex items-center gap-3 p-3 rounded-xl transition-all text-right ${
+                    expandedGuide === `morning-${idx}` ? "bg-amber-500/10 border border-amber-500/20" : "bg-white/5 hover:bg-white/10"
+                  }`}
+                >
+                  <span className="text-lg">{step.icon}</span>
+                  <span className="text-sm font-medium text-[#e8e8ed] flex-1">
+                    <span className="text-amber-400 ml-1">{idx + 1}.</span> {step.title}
+                  </span>
+                  {expandedGuide === `morning-${idx}` ? <ChevronUp className="h-3 w-3 text-[#e8e8ed]/30" /> : <ChevronDown className="h-3 w-3 text-[#e8e8ed]/30" />}
+                </button>
+                {expandedGuide === `morning-${idx}` && (
+                  <div className="p-3 pr-12 text-sm text-[#e8e8ed]/60 leading-relaxed">
+                    {step.content}
+                  </div>
+                )}
+              </div>
+            ))}
+          </CardContent>
+        </Card>
+
         {/* Guides section */}
         <Card className="bg-white/5 border-white/5">
           <CardHeader className="pb-2">
