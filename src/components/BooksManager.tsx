@@ -243,6 +243,9 @@ const BooksManager = () => {
                     />
                   </TableCell>
                   <TableCell className="text-muted-foreground text-xs whitespace-nowrap">
+                    {book.status_changed_at ? formatDateTime(book.status_changed_at) : '-'}
+                  </TableCell>
+                  <TableCell className="text-muted-foreground text-xs whitespace-nowrap">
                     {formatDateTime(book.created_at)}
                   </TableCell>
                   <TableCell className="text-muted-foreground text-xs whitespace-nowrap">
