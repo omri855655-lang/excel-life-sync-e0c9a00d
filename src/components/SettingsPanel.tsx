@@ -168,11 +168,24 @@ const SettingsPanel = () => {
             <div className="space-y-2">
               {boards.map((board) => (
                 <div key={board.id} className="flex items-center justify-between p-3 rounded-lg border bg-muted/30">
-                  <div>
-                    <span className="font-medium">{board.name}</span>
-                    <span className="text-xs text-muted-foreground mr-2">({board.statuses.join(", ")})</span>
+                  <div className="flex items-center gap-2 flex-1">
+                    <Input
+                      defaultValue={board.name}
+                      className="h-8 text-sm font-medium max-w-[200px]"
+                      onBlur={(e) => {
+                        const newName = e.target.value.trim();
+                        if (newName && newName !== board.name) {
+                          updateBoard(board.id, { name: newName });
+                          toast.success(`שם שונה ל"${newName}"`);
+                        }
+                      }}
+                      onKeyDown={(e) => {
+                        if (e.key === "Enter") (e.target as HTMLInputElement).blur();
+                      }}
+                    />
+                    <span className="text-xs text-muted-foreground">({board.statuses.join(", ")})</span>
                     {board.show_in_dashboard && (
-                      <span className="text-xs bg-primary/10 text-primary px-2 py-0.5 rounded mr-2">מוצג בדשבורד</span>
+                      <span className="text-xs bg-primary/10 text-primary px-2 py-0.5 rounded">מוצג בדשבורד</span>
                     )}
                   </div>
                   <div className="flex gap-1">
