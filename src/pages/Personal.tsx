@@ -252,8 +252,10 @@ const Personal = () => {
             })}
             {sharedSheets.map((shared) => (
               <TabsTrigger key={`shared-${shared.sheet_id}`} value={`shared-${shared.sheet_id}`} className="gap-2">
-                <Briefcase className="h-4 w-4" />
-                <span className="max-w-[120px] truncate">עבודה ({shared.owner_email})</span>
+                {shared.task_type === "work" ? <Briefcase className="h-4 w-4" /> : <ListTodo className="h-4 w-4" />}
+                <span className="max-w-[120px] truncate">
+                  {shared.task_type === "work" ? "עבודה" : "אישי"} ({shared.owner_email})
+                </span>
               </TabsTrigger>
             ))}
             {customBoards.map((board) => (
