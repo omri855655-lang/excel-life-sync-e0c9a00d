@@ -17,6 +17,7 @@ interface Podcast {
   notes: string | null;
   updated_at: string;
   created_at: string;
+  status_changed_at: string | null;
 }
 
 const formatDateTime = (dateStr: string) => {
@@ -199,6 +200,7 @@ const PodcastsManager = () => {
               <TableHead className="text-right">מגיש/ה</TableHead>
               <TableHead className="text-right">סטטוס</TableHead>
               <TableHead className="text-right">הערות</TableHead>
+              <TableHead className="text-right">שינוי סטטוס</TableHead>
               <TableHead className="text-right">נוצר</TableHead>
               <TableHead className="text-right">עודכן</TableHead>
               <TableHead className="w-[50px]"></TableHead>
@@ -207,7 +209,7 @@ const PodcastsManager = () => {
           <TableBody>
             {filteredPodcasts.length === 0 ? (
               <TableRow>
-                <TableCell colSpan={7} className="text-center text-muted-foreground">
+                <TableCell colSpan={8} className="text-center text-muted-foreground">
                   {searchTerm ? 'לא נמצאו תוצאות' : 'אין פודקאסטים עדיין'}
                 </TableCell>
               </TableRow>
@@ -239,6 +241,9 @@ const PodcastsManager = () => {
                       className="min-w-[150px] text-right min-h-[60px] w-full resize-y"
                       dir="rtl"
                     />
+                  </TableCell>
+                  <TableCell className="text-muted-foreground text-xs whitespace-nowrap">
+                    {podcast.status_changed_at ? formatDateTime(podcast.status_changed_at) : '-'}
                   </TableCell>
                   <TableCell className="text-muted-foreground text-xs whitespace-nowrap">
                     {formatDateTime(podcast.created_at)}

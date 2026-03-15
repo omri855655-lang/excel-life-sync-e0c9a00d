@@ -24,6 +24,7 @@ interface Show {
   air_date: string | null;
   updated_at: string;
   created_at: string;
+  status_changed_at: string | null;
 }
 
 const formatDateTime = (dateStr: string) => {
@@ -347,6 +348,7 @@ const ShowsManager = () => {
                 <TableHead className="text-right">פרק</TableHead>
                 <TableHead className="text-right">הערות</TableHead>
                 <SortHeader field="created_at" label="נוצר" />
+                <TableHead className="text-right">שינוי סטטוס</TableHead>
                 <SortHeader field="updated_at" label="עודכן" />
                 <TableHead className="w-[50px]"></TableHead>
               </TableRow>
@@ -354,7 +356,7 @@ const ShowsManager = () => {
             <TableBody>
               {filteredAndSorted.length === 0 ? (
                 <TableRow>
-                  <TableCell colSpan={11} className="text-center text-muted-foreground">
+                  <TableCell colSpan={12} className="text-center text-muted-foreground">
                     {searchTerm ? 'לא נמצאו תוצאות' : 'אין סדרות או סרטים עדיין'}
                   </TableCell>
                 </TableRow>
@@ -453,6 +455,9 @@ const ShowsManager = () => {
                     </TableCell>
                     <TableCell className="text-muted-foreground text-xs whitespace-nowrap">
                       {formatDateTime(show.created_at)}
+                    </TableCell>
+                    <TableCell className="text-muted-foreground text-xs whitespace-nowrap">
+                      {show.status_changed_at ? formatDateTime(show.status_changed_at) : '-'}
                     </TableCell>
                     <TableCell className="text-muted-foreground text-xs whitespace-nowrap">
                       {formatDateTime(show.updated_at)}

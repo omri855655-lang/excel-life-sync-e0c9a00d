@@ -33,6 +33,7 @@ interface SharedSheet {
   owner_id: string;
   owner_email: string;
   permission: string;
+  task_type: string;
 }
 
 interface TabDef {
@@ -90,14 +91,11 @@ const Personal = () => {
       const sheetIds = data.map(d => d.sheet_id);
       const { data: sheets, error: sheetsError } = await supabase
         .from("task_sheets")
-        .select("id, sheet_name, user_id")
+        .select("id, sheet_name, user_id, task_type")
         .in("id", sheetIds);
 
       if (sheetsError) throw sheetsError;
 
-      // Get owner emails from profiles or just use user_id for now
-      const ownerIds = [...new Set(sheets?.map(s => s.user_id).filter(id => id !== user.id) || [])];
-      
       // We'll show sheets that are NOT owned by the current user
       const sharedResults: SharedSheet[] = [];
       for (const sheet of sheets || []) {
@@ -116,6 +114,7 @@ const Personal = () => {
           owner_id: sheet.user_id,
           owner_email: ownerProfile?.display_name || sheet.user_id.slice(0, 8),
           permission: collab?.permission || "view",
+          task_type: sheet.task_type,
         });
       }
       setSharedSheets(sharedResults);
@@ -253,8 +252,10 @@ const Personal = () => {
             })}
             {sharedSheets.map((shared) => (
               <TabsTrigger key={`shared-${shared.sheet_id}`} value={`shared-${shared.sheet_id}`} className="gap-2">
-                <Briefcase className="h-4 w-4" />
-                <span className="max-w-[120px] truncate">עבודה ({shared.owner_email})</span>
+                {shared.task_type === "work" ? <Briefcase className="h-4 w-4" /> : <ListTodo className="h-4 w-4" />}
+                <span className="max-w-[120px] truncate">
+                  {shared.task_type === "work" ? "עבודה" : "אישי"} ({shared.owner_email})
+                </span>
               </TabsTrigger>
             ))}
             {customBoards.map((board) => (
@@ -289,8 +290,8 @@ const Personal = () => {
         {sharedSheets.map((shared) => (
           <TabsContent key={`shared-${shared.sheet_id}`} value={`shared-${shared.sheet_id}`} className="flex-1 min-h-0 overflow-hidden m-0 p-0">
             <TaskSpreadsheetDb
-              title={`משימות עבודה (${shared.owner_email})`}
-              taskType="work"
+              title={`${shared.task_type === "work" ? "משימות עבודה" : "משימות אישיות"} (${shared.owner_email})`}
+              taskType={shared.task_type as "work" | "personal"}
               readOnly={shared.permission === "view"}
               showYearSelector={false}
               fixedSheetName={shared.sheet_name}

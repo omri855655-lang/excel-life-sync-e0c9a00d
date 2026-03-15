@@ -41,7 +41,7 @@ type ViewMode = "day" | "week" | "month" | "year";
 
 const HOURS = Array.from({ length: 24 }, (_, i) => i);
 const DEFAULT_HOUR_HEIGHT = 60; // px per hour
-const SNAP_MINUTES = 15; // snap to 15-min intervals
+const SNAP_MINUTES = 5; // snap to 5-min intervals for fine control
 const MIN_HOUR_HEIGHT = 30;
 const MAX_HOUR_HEIGHT = 120;
 
@@ -97,6 +97,7 @@ const PersonalPlanner = () => {
   const [resizingEvent, setResizingEvent] = useState<{ eventId: string; startY: number; originalEndTime: string; edge: "top" | "bottom"; originalStartTime: string } | null>(null);
   const [resizePreviewHeight, setResizePreviewHeight] = useState<number | null>(null);
   const [resizePreviewTop, setResizePreviewTop] = useState<number | null>(null);
+  const [resizeTimeTooltip, setResizeTimeTooltip] = useState<{ startTime: string; endTime: string; x: number; y: number } | null>(null);
 
   // Drag-to-create state (drag from sidebar and stretch across hours)
   const [dragCreateState, setDragCreateState] = useState<{
@@ -710,19 +711,33 @@ const PersonalPlanner = () => {
         new Date(resizingEvent.originalStartTime)
       );
 
+      let newStart = new Date(resizingEvent.originalStartTime);
+      let newEnd = new Date(resizingEvent.originalEndTime);
+
       if (resizingEvent.edge === "bottom") {
-        const newDuration = Math.max(15, originalDuration + deltaMinutes);
+        const newDuration = Math.max(5, originalDuration + deltaMinutes);
+        newEnd = addMinutes(newStart, newDuration);
         setResizePreviewHeight((newDuration / 60) * hourHeight);
         setResizePreviewTop(null);
       } else {
         // Top edge: move start time, keep end fixed
-        const newDuration = Math.max(15, originalDuration - deltaMinutes);
-        setResizePreviewHeight((newDuration / 60) * hourHeight);
-        // Adjust top offset
-        const originalStartMin = new Date(resizingEvent.originalStartTime).getMinutes();
-        const topShift = (deltaMinutes / 60) * hourHeight;
-        setResizePreviewTop((originalStartMin / 60) * hourHeight + topShift);
+        newStart = addMinutes(new Date(resizingEvent.originalStartTime), deltaMinutes);
+        const newDuration = differenceInMinutes(newEnd, newStart);
+        if (newDuration >= 5) {
+          setResizePreviewHeight((newDuration / 60) * hourHeight);
+          const originalStartMin = new Date(resizingEvent.originalStartTime).getMinutes();
+          const topShift = (deltaMinutes / 60) * hourHeight;
+          setResizePreviewTop((originalStartMin / 60) * hourHeight + topShift);
+        }
       }
+
+      // Show live time tooltip near cursor
+      setResizeTimeTooltip({
+        startTime: format(newStart, "HH:mm"),
+        endTime: format(newEnd, "HH:mm"),
+        x: e.clientX,
+        y: e.clientY,
+      });
     };
 
     const handleMouseUp = async (e: MouseEvent) => {
@@ -736,14 +751,13 @@ const PersonalPlanner = () => {
             new Date(resizingEvent.originalEndTime),
             new Date(event.startTime)
           );
-          const newDuration = Math.max(15, originalDuration + deltaMinutes);
+          const newDuration = Math.max(5, originalDuration + deltaMinutes);
           const newEnd = addMinutes(new Date(event.startTime), newDuration);
           await updateEvent(resizingEvent.eventId, { endTime: newEnd.toISOString() });
         } else {
-          // Top edge: adjust start time
           const newStart = addMinutes(new Date(resizingEvent.originalStartTime), deltaMinutes);
           const end = new Date(resizingEvent.originalEndTime);
-          if (newStart < end && differenceInMinutes(end, newStart) >= 15) {
+          if (newStart < end && differenceInMinutes(end, newStart) >= 5) {
             await updateEvent(resizingEvent.eventId, { startTime: newStart.toISOString() });
           }
         }
@@ -752,6 +766,7 @@ const PersonalPlanner = () => {
       setResizingEvent(null);
       setResizePreviewHeight(null);
       setResizePreviewTop(null);
+      setResizeTimeTooltip(null);
     };
 
     document.addEventListener("mousemove", handleMouseMove);
@@ -1953,6 +1968,15 @@ const PersonalPlanner = () => {
           </div>
         </DialogContent>
       </Dialog>
+      {/* Floating resize time tooltip */}
+      {resizeTimeTooltip && (
+        <div
+          className="fixed z-[9999] pointer-events-none bg-popover text-popover-foreground border border-border rounded-lg px-3 py-1.5 shadow-lg text-sm font-mono font-bold"
+          style={{ left: resizeTimeTooltip.x + 16, top: resizeTimeTooltip.y - 20 }}
+        >
+          {resizeTimeTooltip.startTime} - {resizeTimeTooltip.endTime}
+        </div>
+      )}
     </div>
   );
 };
