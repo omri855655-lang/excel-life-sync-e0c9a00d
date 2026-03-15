@@ -162,7 +162,7 @@ const SettingsPanel = () => {
           <CardTitle className="flex items-center gap-2"><LayoutGrid className="h-5 w-5" />רשימות ודשבורדים מותאמים אישית</CardTitle>
         </CardHeader>
         <CardContent className="space-y-4">
-          <p className="text-sm text-muted-foreground">צור דשבורדים מותאמים לעקוב אחר כל דבר שתרצה (למידה, כושר, מתכונים ועוד). הם יופיעו כלשוניות בסרגל העליון.</p>
+          <p className="text-sm text-muted-foreground">צור קטגוריות רשימות ודשבורדים מותאמים לעקוב אחר כל דבר שתרצה (למידה, כושר, מתכונים ועוד). הן יופיעו כלשוניות בסרגל העליון.</p>
 
           {boards.length > 0 && (
             <div className="space-y-2">
