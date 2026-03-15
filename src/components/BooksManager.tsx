@@ -195,11 +195,12 @@ const BooksManager = () => {
         <div className="h-full overflow-auto">
           <Table>
           <TableHeader>
-            <TableRow>
+           <TableRow>
               <TableHead className="text-right">שם הספר</TableHead>
               <TableHead className="text-right">מחבר</TableHead>
               <TableHead className="text-right">סטטוס</TableHead>
               <TableHead className="text-right">הערות</TableHead>
+              <TableHead className="text-right">שינוי סטטוס</TableHead>
               <TableHead className="text-right">נוצר</TableHead>
               <TableHead className="text-right">עודכן</TableHead>
               <TableHead className="w-[50px]"></TableHead>
