@@ -22,7 +22,7 @@ import NotificationBell from "@/components/NotificationBell";
 import SettingsPanel from "@/components/SettingsPanel";
 import CustomBoardManager from "@/components/CustomBoardManager";
 import ChallengesManager from "@/components/ChallengesManager";
-import { FileSpreadsheet, Moon, Sun, LogOut, BookOpen, Tv, LayoutDashboard, ListTodo, Briefcase, Download, Headphones, CalendarCheck, FolderKanban, GraduationCap, CalendarDays, Focus, Settings, LayoutGrid, Trophy, GripVertical } from "lucide-react";
+import { FileSpreadsheet, Moon, Sun, LogOut, BookOpen, Tv, LayoutDashboard, ListTodo, Briefcase, Download, Headphones, CalendarCheck, FolderKanban, GraduationCap, CalendarDays, Focus, Settings, LayoutGrid, Trophy, ChevronLeft, ChevronRight } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { toast } from "sonner";
@@ -192,15 +192,35 @@ const Personal = () => {
     if (tabOrder.length === 0) return STATIC_TABS;
     const ordered: TabDef[] = [];
     for (const id of tabOrder) {
-      const tab = STATIC_TABS.find(t => t.id === id);
+      const tab = STATIC_TABS.find((t) => t.id === id);
       if (tab) ordered.push(tab);
     }
     // Add any new tabs not in saved order
     for (const tab of STATIC_TABS) {
-      if (!ordered.find(t => t.id === tab.id)) ordered.push(tab);
+      if (!ordered.find((t) => t.id === tab.id)) ordered.push(tab);
     }
     return ordered;
   }, [tabOrder]);
+
+  const moveTabInOrder = useCallback((tabId: string, direction: "left" | "right") => {
+    const currentIds = orderedTabs.map((t) => t.id);
+    const fromIdx = currentIds.indexOf(tabId);
+    if (fromIdx === -1) return;
+
+    const toIdx = direction === "left" ? fromIdx - 1 : fromIdx + 1;
+    if (toIdx < 0 || toIdx >= currentIds.length) return;
+
+    const newOrder = [...currentIds];
+    const [moved] = newOrder.splice(fromIdx, 1);
+    newOrder.splice(toIdx, 0, moved);
+
+    setTabOrder(newOrder);
+    localStorage.setItem("tab-order", JSON.stringify(newOrder));
+  }, [orderedTabs]);
+
+  const activeTabIndex = orderedTabs.findIndex((tab) => tab.id === activeTab);
+  const canMoveActiveLeft = activeTabIndex > 0;
+  const canMoveActiveRight = activeTabIndex >= 0 && activeTabIndex < orderedTabs.length - 1;
 
   if (loading) {
     return (
@@ -253,62 +273,91 @@ const Personal = () => {
 
       {/* Main Tabs */}
       <Tabs value={activeTab} onValueChange={setActiveTab} className="flex-1 flex flex-col min-h-0">
-        <div className="border-b border-border bg-card px-4 flex-shrink-0 overflow-x-auto scrollbar-thin">
-          <TabsList className="h-12 bg-transparent w-max min-w-full">
-            {orderedTabs.map((tab) => {
-              if (tab.visibilityKey && !isTabVisible(tab.visibilityKey)) return null;
-              const Icon = tab.icon;
-              const label = t(tab.label as any);
-              return (
-                <TabsTrigger
-                  key={tab.id}
-                  value={tab.id}
-                  className="gap-2 cursor-grab active:cursor-grabbing"
-                  draggable
-                  onDragStart={(e) => {
-                    setDraggedTab(tab.id);
-                    e.dataTransfer.effectAllowed = "move";
-                  }}
-                  onDragOver={(e) => {
-                    e.preventDefault();
-                    e.dataTransfer.dropEffect = "move";
-                  }}
-                  onDrop={(e) => {
-                    e.preventDefault();
-                    if (!draggedTab || draggedTab === tab.id) return;
-                    const currentIds = orderedTabs.map(t => t.id);
-                    const fromIdx = currentIds.indexOf(draggedTab);
-                    const toIdx = currentIds.indexOf(tab.id);
-                    if (fromIdx === -1 || toIdx === -1) return;
-                    const newOrder = [...currentIds];
-                    newOrder.splice(fromIdx, 1);
-                    newOrder.splice(toIdx, 0, draggedTab);
-                    setTabOrder(newOrder);
-                    localStorage.setItem("tab-order", JSON.stringify(newOrder));
-                    setDraggedTab(null);
-                  }}
-                  onDragEnd={() => setDraggedTab(null)}
+        <div className="border-b border-border bg-card px-4 py-1 flex-shrink-0">
+          <div className="flex items-center gap-2">
+            <div className="overflow-x-auto scrollbar-thin flex-1">
+              <TabsList className="h-12 bg-transparent w-max min-w-full">
+                {orderedTabs.map((tab) => {
+                  if (tab.visibilityKey && !isTabVisible(tab.visibilityKey)) return null;
+                  const Icon = tab.icon;
+                  const label = t(tab.label as any);
+                  return (
+                    <TabsTrigger
+                      key={tab.id}
+                      value={tab.id}
+                      className="gap-2 cursor-grab active:cursor-grabbing"
+                      draggable
+                      onDragStart={(e) => {
+                        setDraggedTab(tab.id);
+                        e.dataTransfer.effectAllowed = "move";
+                      }}
+                      onDragOver={(e) => {
+                        e.preventDefault();
+                        e.dataTransfer.dropEffect = "move";
+                      }}
+                      onDrop={(e) => {
+                        e.preventDefault();
+                        if (!draggedTab || draggedTab === tab.id) return;
+                        const currentIds = orderedTabs.map((t) => t.id);
+                        const fromIdx = currentIds.indexOf(draggedTab);
+                        const toIdx = currentIds.indexOf(tab.id);
+                        if (fromIdx === -1 || toIdx === -1) return;
+                        const newOrder = [...currentIds];
+                        newOrder.splice(fromIdx, 1);
+                        newOrder.splice(toIdx, 0, draggedTab);
+                        setTabOrder(newOrder);
+                        localStorage.setItem("tab-order", JSON.stringify(newOrder));
+                        setDraggedTab(null);
+                      }}
+                      onDragEnd={() => setDraggedTab(null)}
+                    >
+                      <Icon className="h-4 w-4" />
+                      {label}
+                    </TabsTrigger>
+                  );
+                })}
+                {sharedSheets.map((shared) => (
+                  <TabsTrigger key={`shared-${shared.sheet_id}`} value={`shared-${shared.sheet_id}`} className="gap-2">
+                    {shared.task_type === "work" ? <Briefcase className="h-4 w-4" /> : <ListTodo className="h-4 w-4" />}
+                    <span className="max-w-[160px] truncate">
+                      {shared.sheet_name} · {shared.owner_display_name}
+                    </span>
+                  </TabsTrigger>
+                ))}
+                {customBoards.map((board) => (
+                  <TabsTrigger key={`board-${board.id}`} value={`board-${board.id}`} className="gap-2">
+                    <LayoutGrid className="h-4 w-4" />
+                    {board.name}
+                  </TabsTrigger>
+                ))}
+              </TabsList>
+            </div>
+
+            {activeTabIndex >= 0 && (
+              <div className="flex items-center gap-1 shrink-0">
+                <Button
+                  variant="outline"
+                  size="icon"
+                  className="h-8 w-8"
+                  onClick={() => moveTabInOrder(activeTab, "left")}
+                  disabled={!canMoveActiveLeft}
+                  title="הזז שמאלה"
                 >
-                  <Icon className="h-4 w-4" />
-                  {label}
-                </TabsTrigger>
-              );
-            })}
-            {sharedSheets.map((shared) => (
-              <TabsTrigger key={`shared-${shared.sheet_id}`} value={`shared-${shared.sheet_id}`} className="gap-2">
-                {shared.task_type === "work" ? <Briefcase className="h-4 w-4" /> : <ListTodo className="h-4 w-4" />}
-                <span className="max-w-[160px] truncate">
-                  {shared.sheet_name} · {shared.owner_display_name}
-                </span>
-              </TabsTrigger>
-            ))}
-            {customBoards.map((board) => (
-              <TabsTrigger key={`board-${board.id}`} value={`board-${board.id}`} className="gap-2">
-                <LayoutGrid className="h-4 w-4" />
-                {board.name}
-              </TabsTrigger>
-            ))}
-          </TabsList>
+                  <ChevronRight className="h-4 w-4" />
+                </Button>
+                <Button
+                  variant="outline"
+                  size="icon"
+                  className="h-8 w-8"
+                  onClick={() => moveTabInOrder(activeTab, "right")}
+                  disabled={!canMoveActiveRight}
+                  title="הזז ימינה"
+                >
+                  <ChevronLeft className="h-4 w-4" />
+                </Button>
+              </div>
+            )}
+          </div>
         </div>
 
         <TabsContent value="dashboard" className="flex-1 min-h-0 overflow-auto m-0 p-0">
