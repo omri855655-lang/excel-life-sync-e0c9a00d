@@ -85,6 +85,9 @@ const TaskSpreadsheetDb = ({ title, taskType, readOnly = false, showYearSelector
   const [mentalDialogOpen, setMentalDialogOpen] = useState(false);
   const [mentalTask, setMentalTask] = useState<Task | null>(null);
   const [sharingDialogOpen, setSharingDialogOpen] = useState(false);
+  const [hideCreatorInfo, setHideCreatorInfo] = useState(() => {
+    return localStorage.getItem("hide-creator-info") === "true";
+  });
 
   const compareSheetNames = useCallback((a: string, b: string) => {
     if (a === MAIN_SHEET_NAME && b !== MAIN_SHEET_NAME) return -1;
