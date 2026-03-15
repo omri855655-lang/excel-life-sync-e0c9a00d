@@ -204,24 +204,68 @@ const Personal = () => {
     navigate("/");
   };
 
-  // Compute ordered tabs based on saved order
-  const orderedTabs = useMemo(() => {
-    if (tabOrder.length === 0) return STATIC_TABS;
-    const ordered: TabDef[] = [];
-    for (const id of tabOrder) {
-      const tab = STATIC_TABS.find((t) => t.id === id);
-      if (tab) ordered.push(tab);
+  // Build a unified list of ALL tab IDs (static + shared + custom boards)
+  const allTabIds = useMemo(() => {
+    // Start with ordered static tabs
+    let staticIds: string[];
+    if (tabOrder.length === 0) {
+      staticIds = STATIC_TABS.map(t => t.id);
+    } else {
+      const ordered: string[] = [];
+      for (const id of tabOrder) {
+        if (STATIC_TABS.find(t => t.id === id)) ordered.push(id);
+      }
+      for (const tab of STATIC_TABS) {
+        if (!ordered.includes(tab.id)) ordered.push(tab.id);
+      }
+      staticIds = ordered;
     }
-    // Add any new tabs not in saved order
-    for (const tab of STATIC_TABS) {
-      if (!ordered.find((t) => t.id === tab.id)) ordered.push(tab);
-    }
-    return ordered;
-  }, [tabOrder]);
 
-  const moveTabInOrder = useCallback((tabId: string, direction: "left" | "right") => {
-    const currentIds = orderedTabs.map((t) => t.id);
-    const fromIdx = currentIds.indexOf(tabId);
+    // Build full list including shared + custom boards from tabOrder
+    const sharedIds = sharedSheets.map(s => `shared-${s.sheet_id}`);
+    const boardIds = customBoards.map(b => `board-${b.id}`);
+    const dynamicIds = [...sharedIds, ...boardIds];
+
+    // If tabOrder contains dynamic IDs, respect their positions
+    if (tabOrder.length > 0) {
+      const result: string[] = [];
+      for (const id of tabOrder) {
+        if (STATIC_TABS.find(t => t.id === id)) result.push(id);
+        else if (dynamicIds.includes(id)) result.push(id);
+        // skip IDs that no longer exist
+      }
+      // Add any new dynamic tabs not in saved order
+      for (const id of dynamicIds) {
+        if (!result.includes(id)) result.push(id);
+      }
+      // Add any new static tabs not in saved order
+      for (const id of staticIds) {
+        if (!result.includes(id)) result.push(id);
+      }
+      return result;
+    }
+
+    return [...staticIds, ...dynamicIds];
+  }, [tabOrder, sharedSheets, customBoards]);
+
+  // Compute orderedTabs for static tabs rendering only
+  const orderedTabs = useMemo(() => {
+    return allTabIds
+      .map(id => STATIC_TABS.find(t => t.id === id))
+      .filter((t): t is TabDef => !!t);
+  }, [allTabIds]);
+
+  // Check if a tab ID is currently visible
+  const isTabIdVisible = useCallback((tabId: string) => {
+    const staticTab = STATIC_TABS.find(t => t.id === tabId);
+    if (staticTab) {
+      return !staticTab.visibilityKey || isTabVisible(staticTab.visibilityKey);
+    }
+    return true; // shared sheets and custom boards are always visible
+  }, [isTabVisible]);
+
+  const moveActiveTab = useCallback((direction: "left" | "right") => {
+    const fromIdx = allTabIds.indexOf(activeTab);
     if (fromIdx === -1) return;
 
     const step = dir === "rtl"
@@ -229,26 +273,23 @@ const Personal = () => {
       : (direction === "left" ? -1 : 1);
 
     let toIdx = fromIdx + step;
-    while (toIdx >= 0 && toIdx < currentIds.length) {
-      const candidateTab = orderedTabs[toIdx];
-      if (!candidateTab) break;
-      if (!candidateTab.visibilityKey || isTabVisible(candidateTab.visibilityKey)) break;
+    while (toIdx >= 0 && toIdx < allTabIds.length) {
+      if (isTabIdVisible(allTabIds[toIdx])) break;
       toIdx += step;
     }
 
-    if (toIdx < 0 || toIdx >= currentIds.length) return;
+    if (toIdx < 0 || toIdx >= allTabIds.length) return;
 
-    const newOrder = [...currentIds];
+    const newOrder = [...allTabIds];
     const [moved] = newOrder.splice(fromIdx, 1);
     newOrder.splice(toIdx, 0, moved);
 
     setTabOrder(newOrder);
     localStorage.setItem("tab-order", JSON.stringify(newOrder));
-  }, [orderedTabs, dir, isTabVisible]);
+  }, [allTabIds, activeTab, dir, isTabIdVisible]);
 
-  const canMoveStaticTab = useCallback((tabId: string, direction: "left" | "right") => {
-    const currentIds = orderedTabs.map((t) => t.id);
-    const fromIdx = currentIds.indexOf(tabId);
+  const canMoveActive = useCallback((direction: "left" | "right") => {
+    const fromIdx = allTabIds.indexOf(activeTab);
     if (fromIdx === -1) return false;
 
     const step = dir === "rtl"
@@ -256,60 +297,15 @@ const Personal = () => {
       : (direction === "left" ? -1 : 1);
 
     let idx = fromIdx + step;
-    while (idx >= 0 && idx < currentIds.length) {
-      const candidateTab = orderedTabs[idx];
-      if (candidateTab && (!candidateTab.visibilityKey || isTabVisible(candidateTab.visibilityKey))) {
-        return true;
-      }
+    while (idx >= 0 && idx < allTabIds.length) {
+      if (isTabIdVisible(allTabIds[idx])) return true;
       idx += step;
     }
-
     return false;
-  }, [orderedTabs, dir, isTabVisible]);
+  }, [allTabIds, activeTab, dir, isTabIdVisible]);
 
-  const activeTabIndex = orderedTabs.findIndex((tab) => tab.id === activeTab);
-  const activeCustomBoardId = activeTab.startsWith("board-") ? activeTab.replace("board-", "") : null;
-  const activeCustomBoardIndex = activeCustomBoardId
-    ? customBoards.findIndex((board) => board.id === activeCustomBoardId)
-    : -1;
-
-  const moveActiveTab = useCallback(async (direction: "left" | "right") => {
-    if (activeCustomBoardIndex >= 0) {
-      const step = dir === "rtl"
-        ? (direction === "left" ? 1 : -1)
-        : (direction === "left" ? -1 : 1);
-      const toIdx = activeCustomBoardIndex + step;
-      if (toIdx < 0 || toIdx >= customBoards.length) return;
-
-      const nextBoards = [...customBoards];
-      const [movedBoard] = nextBoards.splice(activeCustomBoardIndex, 1);
-      nextBoards.splice(toIdx, 0, movedBoard);
-
-      try {
-        await reorderBoards(nextBoards.map((board) => board.id));
-      } catch (error) {
-        console.error("Error reordering custom boards:", error);
-        toast.error("שגיאה בהזזת הרשימה");
-      }
-      return;
-    }
-
-    if (activeTabIndex >= 0) {
-      moveTabInOrder(activeTab, direction);
-    }
-  }, [activeCustomBoardIndex, activeTabIndex, customBoards, reorderBoards, dir, moveTabInOrder, activeTab]);
-
-  const canMoveActiveLeft = activeTabIndex >= 0
-    ? canMoveStaticTab(activeTab, "left")
-    : activeCustomBoardIndex >= 0
-      ? (dir === "rtl" ? activeCustomBoardIndex < customBoards.length - 1 : activeCustomBoardIndex > 0)
-      : false;
-
-  const canMoveActiveRight = activeTabIndex >= 0
-    ? canMoveStaticTab(activeTab, "right")
-    : activeCustomBoardIndex >= 0
-      ? (dir === "rtl" ? activeCustomBoardIndex > 0 : activeCustomBoardIndex < customBoards.length - 1)
-      : false;
+  const canMoveActiveLeft = canMoveActive("left");
+  const canMoveActiveRight = canMoveActive("right");
 
   if (loading) {
     return (
@@ -366,63 +362,118 @@ const Personal = () => {
           <div className="flex items-center gap-2">
             <div className="overflow-x-auto scrollbar-thin flex-1">
               <TabsList className="h-12 bg-transparent w-max min-w-full">
-                {orderedTabs.map((tab) => {
-                  if (tab.visibilityKey && !isTabVisible(tab.visibilityKey)) return null;
-                  const Icon = tab.icon;
-                  const label = t(tab.label as any);
-                  return (
-                    <TabsTrigger
-                      key={tab.id}
-                      value={tab.id}
-                      className="gap-2 cursor-grab active:cursor-grabbing"
-                      draggable
-                      onDragStart={(e) => {
-                        setDraggedTab(tab.id);
-                        e.dataTransfer.effectAllowed = "move";
-                      }}
-                      onDragOver={(e) => {
-                        e.preventDefault();
-                        e.dataTransfer.dropEffect = "move";
-                      }}
-                      onDrop={(e) => {
-                        e.preventDefault();
-                        if (!draggedTab || draggedTab === tab.id) return;
-                        const currentIds = orderedTabs.map((t) => t.id);
-                        const fromIdx = currentIds.indexOf(draggedTab);
-                        const toIdx = currentIds.indexOf(tab.id);
-                        if (fromIdx === -1 || toIdx === -1) return;
-                        const newOrder = [...currentIds];
-                        newOrder.splice(fromIdx, 1);
-                        newOrder.splice(toIdx, 0, draggedTab);
-                        setTabOrder(newOrder);
-                        localStorage.setItem("tab-order", JSON.stringify(newOrder));
-                        setDraggedTab(null);
-                      }}
-                      onDragEnd={() => setDraggedTab(null)}
-                    >
-                      <Icon className="h-4 w-4" />
-                      {label}
-                    </TabsTrigger>
-                  );
+                {allTabIds.map((tabId) => {
+                  // Static tab
+                  const staticTab = STATIC_TABS.find(t => t.id === tabId);
+                  if (staticTab) {
+                    if (staticTab.visibilityKey && !isTabVisible(staticTab.visibilityKey)) return null;
+                    const Icon = staticTab.icon;
+                    const label = t(staticTab.label as any);
+                    return (
+                      <TabsTrigger
+                        key={staticTab.id}
+                        value={staticTab.id}
+                        className="gap-2 cursor-grab active:cursor-grabbing"
+                        draggable
+                        onDragStart={(e) => {
+                          setDraggedTab(staticTab.id);
+                          e.dataTransfer.effectAllowed = "move";
+                        }}
+                        onDragOver={(e) => {
+                          e.preventDefault();
+                          e.dataTransfer.dropEffect = "move";
+                        }}
+                        onDrop={(e) => {
+                          e.preventDefault();
+                          if (!draggedTab || draggedTab === staticTab.id) return;
+                          const fromIdx = allTabIds.indexOf(draggedTab);
+                          const toIdx = allTabIds.indexOf(staticTab.id);
+                          if (fromIdx === -1 || toIdx === -1) return;
+                          const newOrder = [...allTabIds];
+                          newOrder.splice(fromIdx, 1);
+                          newOrder.splice(toIdx, 0, draggedTab);
+                          setTabOrder(newOrder);
+                          localStorage.setItem("tab-order", JSON.stringify(newOrder));
+                          setDraggedTab(null);
+                        }}
+                        onDragEnd={() => setDraggedTab(null)}
+                      >
+                        <Icon className="h-4 w-4" />
+                        {label}
+                      </TabsTrigger>
+                    );
+                  }
+
+                  // Shared sheet tab
+                  if (tabId.startsWith("shared-")) {
+                    const sheetId = tabId.replace("shared-", "");
+                    const shared = sharedSheets.find(s => s.sheet_id === sheetId);
+                    if (!shared) return null;
+                    return (
+                      <TabsTrigger key={tabId} value={tabId} className="gap-2 cursor-grab active:cursor-grabbing"
+                        draggable
+                        onDragStart={(e) => { setDraggedTab(tabId); e.dataTransfer.effectAllowed = "move"; }}
+                        onDragOver={(e) => { e.preventDefault(); e.dataTransfer.dropEffect = "move"; }}
+                        onDrop={(e) => {
+                          e.preventDefault();
+                          if (!draggedTab || draggedTab === tabId) return;
+                          const fromIdx = allTabIds.indexOf(draggedTab);
+                          const toIdx = allTabIds.indexOf(tabId);
+                          if (fromIdx === -1 || toIdx === -1) return;
+                          const newOrder = [...allTabIds];
+                          newOrder.splice(fromIdx, 1);
+                          newOrder.splice(toIdx, 0, draggedTab);
+                          setTabOrder(newOrder);
+                          localStorage.setItem("tab-order", JSON.stringify(newOrder));
+                          setDraggedTab(null);
+                        }}
+                        onDragEnd={() => setDraggedTab(null)}
+                      >
+                        {shared.task_type === "work" ? <Briefcase className="h-4 w-4" /> : <ListTodo className="h-4 w-4" />}
+                        <span className="max-w-[160px] truncate">
+                          {shared.sheet_name} · {shared.owner_display_name}
+                        </span>
+                      </TabsTrigger>
+                    );
+                  }
+
+                  // Custom board tab
+                  if (tabId.startsWith("board-")) {
+                    const boardId = tabId.replace("board-", "");
+                    const board = customBoards.find(b => b.id === boardId);
+                    if (!board) return null;
+                    return (
+                      <TabsTrigger key={tabId} value={tabId} className="gap-2 cursor-grab active:cursor-grabbing"
+                        draggable
+                        onDragStart={(e) => { setDraggedTab(tabId); e.dataTransfer.effectAllowed = "move"; }}
+                        onDragOver={(e) => { e.preventDefault(); e.dataTransfer.dropEffect = "move"; }}
+                        onDrop={(e) => {
+                          e.preventDefault();
+                          if (!draggedTab || draggedTab === tabId) return;
+                          const fromIdx = allTabIds.indexOf(draggedTab);
+                          const toIdx = allTabIds.indexOf(tabId);
+                          if (fromIdx === -1 || toIdx === -1) return;
+                          const newOrder = [...allTabIds];
+                          newOrder.splice(fromIdx, 1);
+                          newOrder.splice(toIdx, 0, draggedTab);
+                          setTabOrder(newOrder);
+                          localStorage.setItem("tab-order", JSON.stringify(newOrder));
+                          setDraggedTab(null);
+                        }}
+                        onDragEnd={() => setDraggedTab(null)}
+                      >
+                        <LayoutGrid className="h-4 w-4" />
+                        {board.name}
+                      </TabsTrigger>
+                    );
+                  }
+
+                  return null;
                 })}
-                {sharedSheets.map((shared) => (
-                  <TabsTrigger key={`shared-${shared.sheet_id}`} value={`shared-${shared.sheet_id}`} className="gap-2">
-                    {shared.task_type === "work" ? <Briefcase className="h-4 w-4" /> : <ListTodo className="h-4 w-4" />}
-                    <span className="max-w-[160px] truncate">
-                      {shared.sheet_name} · {shared.owner_display_name}
-                    </span>
-                  </TabsTrigger>
-                ))}
-                {customBoards.map((board) => (
-                  <TabsTrigger key={`board-${board.id}`} value={`board-${board.id}`} className="gap-2">
-                    <LayoutGrid className="h-4 w-4" />
-                    {board.name}
-                  </TabsTrigger>
-                ))}
               </TabsList>
             </div>
 
-            {(activeTabIndex >= 0 || activeCustomBoardIndex >= 0) && (
+            {allTabIds.includes(activeTab) && (
               <div className="flex items-center gap-1 shrink-0">
                 <Button
                   variant="outline"

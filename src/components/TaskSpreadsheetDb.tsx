@@ -85,6 +85,9 @@ const TaskSpreadsheetDb = ({ title, taskType, readOnly = false, showYearSelector
   const [mentalDialogOpen, setMentalDialogOpen] = useState(false);
   const [mentalTask, setMentalTask] = useState<Task | null>(null);
   const [sharingDialogOpen, setSharingDialogOpen] = useState(false);
+  const [hideCreatorInfo, setHideCreatorInfo] = useState(() => {
+    return localStorage.getItem("hide-creator-info") === "true";
+  });
 
   const compareSheetNames = useCallback((a: string, b: string) => {
     if (a === MAIN_SHEET_NAME && b !== MAIN_SHEET_NAME) return -1;
@@ -751,6 +754,19 @@ const TaskSpreadsheetDb = ({ title, taskType, readOnly = false, showYearSelector
           )}>
             {readOnly ? "צפייה בלבד" : "עריכה"}
           </span>
+          <Button
+            variant="ghost"
+            size="sm"
+            onClick={() => {
+              const newVal = !hideCreatorInfo;
+              setHideCreatorInfo(newVal);
+              localStorage.setItem("hide-creator-info", String(newVal));
+            }}
+            className="text-xs gap-1 mr-auto"
+          >
+            {hideCreatorInfo ? <Users className="h-3 w-3" /> : <Users className="h-3 w-3" />}
+            {hideCreatorInfo ? "הצג יוצר" : "הסתר יוצר"}
+          </Button>
         </div>
       )}
       {isSharedSheet && sharedCollapsed ? null : (
@@ -927,8 +943,8 @@ const TaskSpreadsheetDb = ({ title, taskType, readOnly = false, showYearSelector
             <thead className="sticky top-0 z-10">
               <tr className="bg-muted">
                 {taskHeaders.filter((_, i) => {
-                  // Hide "נוצר על ידי" column (index 9) when not a shared sheet
-                  if (i === 9 && !isSharedSheet) return false;
+                  // Hide "נוצר על ידי" column (index 9) when not a shared sheet or when hidden
+                  if (i === 9 && (!isSharedSheet || hideCreatorInfo)) return false;
                   return true;
                 }).map((header, i) => (
                   <th
@@ -1038,19 +1054,21 @@ const TaskSpreadsheetDb = ({ title, taskType, readOnly = false, showYearSelector
                         <span className="text-muted-foreground">-</span>
                       )}
                     </td>
-                    {isSharedSheet && (
+                    {isSharedSheet && !hideCreatorInfo && (
                     <td className="px-3 py-2 text-xs text-muted-foreground whitespace-nowrap">
-                      {task.creatorName ? (
-                        <div className="flex flex-col leading-tight">
-                          <span className="text-foreground">{task.creatorName}</span>
-                          <span dir="ltr" className="text-[11px] text-muted-foreground">
-                            @{task.creatorUsername || task.creatorEmail.split("@")[0] || "-"}
-                          </span>
-                        </div>
-                      ) : task.creatorEmail ? (
-                        <span dir="ltr">{task.creatorEmail}</span>
+                      {task.creatorEmail && task.creatorEmail !== user?.email ? (
+                        task.creatorName ? (
+                          <div className="flex flex-col leading-tight">
+                            <span className="text-foreground">{task.creatorName}</span>
+                            <span dir="ltr" className="text-[11px] text-muted-foreground">
+                              @{task.creatorUsername || task.creatorEmail.split("@")[0] || "-"}
+                            </span>
+                          </div>
+                        ) : (
+                          <span dir="ltr">{task.creatorEmail}</span>
+                        )
                       ) : (
-                        "-"
+                        <span className="text-muted-foreground/50">-</span>
                       )}
                     </td>
                     )}
