@@ -231,7 +231,7 @@ const SettingsPanel = () => {
                 <Switch checked={newBoardDashboard} onCheckedChange={setNewBoardDashboard} />
                 <Label>הצג סיכום בדשבורד הראשי</Label>
               </div>
-              <Button onClick={handleAddBoard} className="w-full gap-2"><Plus className="h-4 w-4" />צור דשבורד</Button>
+              <Button onClick={handleAddBoard} className="w-full gap-2"><Plus className="h-4 w-4" />צור קטגוריה</Button>
             </div>
           ) : (
             <Button variant="outline" onClick={() => setShowAddBoard(true)} className="w-full gap-2"><Plus className="h-4 w-4" />הוסף דשבורד חדש</Button>
