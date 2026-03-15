@@ -1047,6 +1047,7 @@ const TaskSpreadsheetDb = ({ title, taskType, readOnly = false, showYearSelector
                         <span className="text-muted-foreground">-</span>
                       )}
                     </td>
+                    {isSharedSheet && (
                     <td className="px-3 py-2 text-xs text-muted-foreground whitespace-nowrap">
                       {task.creatorName ? (
                         <div className="flex flex-col leading-tight">
@@ -1061,6 +1062,7 @@ const TaskSpreadsheetDb = ({ title, taskType, readOnly = false, showYearSelector
                         "-"
                       )}
                     </td>
+                    )}
                     <td className="px-3 py-2 text-xs text-muted-foreground whitespace-nowrap">
                       {task.createdAt ? new Date(task.createdAt).toLocaleDateString('he-IL') + ' ' + new Date(task.createdAt).toLocaleTimeString('he-IL', { hour: '2-digit', minute: '2-digit' }) : '-'}
                     </td>
