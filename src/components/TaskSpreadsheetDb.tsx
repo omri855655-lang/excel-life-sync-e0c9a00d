@@ -1041,19 +1041,21 @@ const TaskSpreadsheetDb = ({ title, taskType, readOnly = false, showYearSelector
                         <span className="text-muted-foreground">-</span>
                       )}
                     </td>
-                    {isSharedSheet && (
+                    {isSharedSheet && !hideCreatorInfo && (
                     <td className="px-3 py-2 text-xs text-muted-foreground whitespace-nowrap">
-                      {task.creatorName ? (
-                        <div className="flex flex-col leading-tight">
-                          <span className="text-foreground">{task.creatorName}</span>
-                          <span dir="ltr" className="text-[11px] text-muted-foreground">
-                            @{task.creatorUsername || task.creatorEmail.split("@")[0] || "-"}
-                          </span>
-                        </div>
-                      ) : task.creatorEmail ? (
-                        <span dir="ltr">{task.creatorEmail}</span>
+                      {task.creatorEmail && task.creatorEmail !== user?.email ? (
+                        task.creatorName ? (
+                          <div className="flex flex-col leading-tight">
+                            <span className="text-foreground">{task.creatorName}</span>
+                            <span dir="ltr" className="text-[11px] text-muted-foreground">
+                              @{task.creatorUsername || task.creatorEmail.split("@")[0] || "-"}
+                            </span>
+                          </div>
+                        ) : (
+                          <span dir="ltr">{task.creatorEmail}</span>
+                        )
                       ) : (
-                        "-"
+                        <span className="text-muted-foreground/50">-</span>
                       )}
                     </td>
                     )}
