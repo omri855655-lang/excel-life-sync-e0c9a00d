@@ -1054,24 +1054,7 @@ const TaskSpreadsheetDb = ({ title, taskType, readOnly = false, showYearSelector
                         <span className="text-muted-foreground">-</span>
                       )}
                     </td>
-                    {isSharedSheet && !hideCreatorInfo && (
-                    <td className="px-3 py-2 text-xs text-muted-foreground whitespace-nowrap">
-                      {task.creatorEmail && task.creatorEmail !== user?.email ? (
-                        task.creatorName ? (
-                          <div className="flex flex-col leading-tight">
-                            <span className="text-foreground">{task.creatorName}</span>
-                            <span dir="ltr" className="text-[11px] text-muted-foreground">
-                              @{task.creatorUsername || task.creatorEmail.split("@")[0] || "-"}
-                            </span>
-                          </div>
-                        ) : (
-                          <span dir="ltr">{task.creatorEmail}</span>
-                        )
-                      ) : (
-                        <span className="text-muted-foreground/50">-</span>
-                      )}
-                    </td>
-                    )}
+                    {/* Creator info moved under date columns - no separate column needed */}
                     <td className="px-3 py-2 text-xs text-muted-foreground whitespace-nowrap">
                       <div>{task.createdAt ? new Date(task.createdAt).toLocaleDateString('he-IL') + ' ' + new Date(task.createdAt).toLocaleTimeString('he-IL', { hour: '2-digit', minute: '2-digit' }) : '-'}</div>
                       {isSharedSheet && !hideCreatorInfo && task.creatorEmail && task.creatorEmail !== user?.email && (
