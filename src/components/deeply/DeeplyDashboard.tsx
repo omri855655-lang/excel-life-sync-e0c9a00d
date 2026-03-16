@@ -4,7 +4,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Play, Pause, RotateCcw, Timer, Map, Plus, Trash2, BookOpen, ChevronDown, ChevronUp, Flame, CalendarClock, Music, StopCircle, MessageCircle, ExternalLink } from "lucide-react";
-import { AUDIO_PRESETS, CATEGORIES, GUIDES, MOTIVATION_TIPS, MORNING_HABITS_GUIDE, type AudioPreset } from "./audioPresets";
+import { AUDIO_PRESETS, CATEGORIES, GUIDES, MOTIVATION_TIPS, MORNING_HABITS_GUIDE, DEEP_SHALLOW_WORK_GUIDE, type AudioPreset } from "./audioPresets";
 import { useAudioEngine } from "./useAudioEngine";
 import { unlockAudioContext } from "./iosAudioUnlock";
 import { startSilentAudio } from "./iosSilentAudio";
@@ -326,11 +326,7 @@ const DeeplyDashboard = () => {
     setTimeLeft(TIMER_PRESETS[0].work * 60);
     setIsTimerRunning(false);
     setIsBreak(false);
-    // Suggest a classical preset for focus
-    if (!isPlaying) {
-      const studyPreset = AUDIO_PRESETS.find(p => p.id === "satie-gymnopedie") || AUDIO_PRESETS.find(p => p.category === "study");
-      if (studyPreset) toggle(studyPreset);
-    }
+    // Don't auto-start audio - let the user choose when to play
   };
 
   const today = new Date().toDateString();
@@ -1242,6 +1238,37 @@ const DeeplyDashboard = () => {
                 {expandedGuide === `morning-${idx}` && (
                   <div className="p-3 pr-12 text-sm text-[#e8e8ed]/60 leading-relaxed">
                     {step.content}
+                  </div>
+                )}
+              </div>
+            ))}
+          </CardContent>
+        </Card>
+
+        {/* Deep vs Shallow Work Guide */}
+        <Card className="bg-white/5 border-white/5">
+          <CardHeader className="pb-2">
+            <CardTitle className="text-sm flex items-center gap-2 text-[#e8e8ed]">
+              <span className="text-lg">{DEEP_SHALLOW_WORK_GUIDE.icon}</span>
+              {DEEP_SHALLOW_WORK_GUIDE.title}
+            </CardTitle>
+          </CardHeader>
+          <CardContent className="space-y-2">
+            {DEEP_SHALLOW_WORK_GUIDE.sections.map((section, idx) => (
+              <div key={idx}>
+                <button
+                  onClick={() => setExpandedGuide(expandedGuide === `dsw-${idx}` ? null : `dsw-${idx}`)}
+                  className={`w-full flex items-center gap-3 p-3 rounded-xl transition-all text-right ${
+                    expandedGuide === `dsw-${idx}` ? "bg-violet-500/10 border border-violet-500/20" : "bg-white/5 hover:bg-white/10"
+                  }`}
+                >
+                  <span className="text-lg">{section.icon}</span>
+                  <span className="text-sm font-medium text-[#e8e8ed] flex-1">{section.title}</span>
+                  {expandedGuide === `dsw-${idx}` ? <ChevronUp className="h-3 w-3 text-[#e8e8ed]/30" /> : <ChevronDown className="h-3 w-3 text-[#e8e8ed]/30" />}
+                </button>
+                {expandedGuide === `dsw-${idx}` && (
+                  <div className="p-3 pr-12 text-sm text-[#e8e8ed]/60 leading-relaxed">
+                    {section.content}
                   </div>
                 )}
               </div>

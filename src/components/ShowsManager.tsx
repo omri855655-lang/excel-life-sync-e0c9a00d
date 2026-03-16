@@ -363,7 +363,18 @@ const ShowsManager = () => {
               ) : (
                 filteredAndSorted.map((show) => (
                   <TableRow key={show.id}>
-                    <TableCell className="font-medium">{show.title}</TableCell>
+                    <TableCell className="font-medium">
+                      <Input
+                        defaultValue={show.title}
+                        className="border-0 bg-transparent p-0 h-auto font-medium focus-visible:ring-1"
+                        dir="rtl"
+                        onBlur={(e) => {
+                          const val = e.target.value.trim();
+                          if (val && val !== show.title) updateShow(show.id, { title: val });
+                        }}
+                        onKeyDown={(e) => { if (e.key === 'Enter') (e.target as HTMLInputElement).blur(); }}
+                      />
+                    </TableCell>
                     <TableCell>
                       <Badge variant={show.type === 'סרט' ? 'default' : 'secondary'} className="text-xs">
                         {show.type === 'סרט' ? <Film className="h-3 w-3 ml-1" /> : <Tv className="h-3 w-3 ml-1" />}

@@ -942,11 +942,7 @@ const TaskSpreadsheetDb = ({ title, taskType, readOnly = false, showYearSelector
               <table className="w-full border-collapse min-w-[1200px]">
             <thead className="sticky top-0 z-10">
               <tr className="bg-muted">
-                {taskHeaders.filter((_, i) => {
-                  // Hide "נוצר על ידי" column (index 9) when not a shared sheet or when hidden
-                  if (i === 9 && (!isSharedSheet || hideCreatorInfo)) return false;
-                  return true;
-                }).map((header, i) => (
+                {taskHeaders.map((header, i) => (
                   <th
                     key={i}
                     className="px-3 py-2 text-right text-sm font-medium text-muted-foreground border-b border-border whitespace-nowrap"
@@ -1054,26 +1050,14 @@ const TaskSpreadsheetDb = ({ title, taskType, readOnly = false, showYearSelector
                         <span className="text-muted-foreground">-</span>
                       )}
                     </td>
-                    {isSharedSheet && !hideCreatorInfo && (
+                    {/* Creator info moved under date columns - no separate column needed */}
                     <td className="px-3 py-2 text-xs text-muted-foreground whitespace-nowrap">
-                      {task.creatorEmail && task.creatorEmail !== user?.email ? (
-                        task.creatorName ? (
-                          <div className="flex flex-col leading-tight">
-                            <span className="text-foreground">{task.creatorName}</span>
-                            <span dir="ltr" className="text-[11px] text-muted-foreground">
-                              @{task.creatorUsername || task.creatorEmail.split("@")[0] || "-"}
-                            </span>
-                          </div>
-                        ) : (
-                          <span dir="ltr">{task.creatorEmail}</span>
-                        )
-                      ) : (
-                        <span className="text-muted-foreground/50">-</span>
+                      <div>{task.createdAt ? new Date(task.createdAt).toLocaleDateString('he-IL') + ' ' + new Date(task.createdAt).toLocaleTimeString('he-IL', { hour: '2-digit', minute: '2-digit' }) : '-'}</div>
+                      {isSharedSheet && !hideCreatorInfo && task.creatorEmail && task.creatorEmail !== user?.email && (
+                        <div className="text-[10px] text-primary/70 mt-0.5">
+                          {task.creatorName || task.creatorEmail}
+                        </div>
                       )}
-                    </td>
-                    )}
-                    <td className="px-3 py-2 text-xs text-muted-foreground whitespace-nowrap">
-                      {task.createdAt ? new Date(task.createdAt).toLocaleDateString('he-IL') + ' ' + new Date(task.createdAt).toLocaleTimeString('he-IL', { hour: '2-digit', minute: '2-digit' }) : '-'}
                     </td>
                     <td className="px-3 py-2 text-xs text-muted-foreground whitespace-nowrap">
                       {task.updatedAt ? new Date(task.updatedAt).toLocaleDateString('he-IL') + ' ' + new Date(task.updatedAt).toLocaleTimeString('he-IL', { hour: '2-digit', minute: '2-digit' }) : '-'}

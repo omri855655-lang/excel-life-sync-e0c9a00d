@@ -216,8 +216,39 @@ const PodcastsManager = () => {
             ) : (
               filteredPodcasts.map((podcast) => (
                 <TableRow key={podcast.id}>
-                  <TableCell className="font-medium">{podcast.title}</TableCell>
-                  <TableCell>{podcast.host || '-'}</TableCell>
+                  <TableCell className="font-medium">
+                    <Input
+                      defaultValue={podcast.title}
+                      className="border-0 bg-transparent p-0 h-auto font-medium focus-visible:ring-1"
+                      dir="rtl"
+                      onBlur={(e) => {
+                        const val = e.target.value.trim();
+                        if (val && val !== podcast.title) {
+                          supabase.from('podcasts').update({ title: val }).eq('id', podcast.id).then(() => {
+                            setPodcasts(prev => prev.map(p => p.id === podcast.id ? { ...p, title: val } : p));
+                          });
+                        }
+                      }}
+                      onKeyDown={(e) => { if (e.key === 'Enter') (e.target as HTMLInputElement).blur(); }}
+                    />
+                  </TableCell>
+                  <TableCell>
+                    <Input
+                      defaultValue={podcast.host || ''}
+                      placeholder="-"
+                      className="border-0 bg-transparent p-0 h-auto focus-visible:ring-1"
+                      dir="rtl"
+                      onBlur={(e) => {
+                        const val = e.target.value.trim() || null;
+                        if (val !== (podcast.host || null)) {
+                          supabase.from('podcasts').update({ host: val }).eq('id', podcast.id).then(() => {
+                            setPodcasts(prev => prev.map(p => p.id === podcast.id ? { ...p, host: val } : p));
+                          });
+                        }
+                      }}
+                      onKeyDown={(e) => { if (e.key === 'Enter') (e.target as HTMLInputElement).blur(); }}
+                    />
+                  </TableCell>
                   <TableCell>
                     <Select
                       value={podcast.status || 'להאזין'}
