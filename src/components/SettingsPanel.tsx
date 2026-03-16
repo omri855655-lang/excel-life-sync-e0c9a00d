@@ -33,17 +33,25 @@ const SettingsPanel = () => {
   const [newBoardDashboard, setNewBoardDashboard] = useState(false);
   const [boardTemplate, setBoardTemplate] = useState("custom");
 
+  // Profile name fields
+  const [firstName, setFirstName] = useState("");
+  const [lastName, setLastName] = useState("");
+  const [nameLoaded, setNameLoaded] = useState(false);
+
   useEffect(() => {
     if (!user) return;
     const fetch = async () => {
       const { data } = await supabase
         .from("profiles")
-        .select("pin_code, pin_enabled")
+        .select("pin_code, pin_enabled, first_name, last_name")
         .eq("user_id", user.id)
         .single();
       if (data) {
         setPinEnabled(data.pin_enabled);
         setHasPin(!!data.pin_code);
+        setFirstName(data.first_name || "");
+        setLastName(data.last_name || "");
+        setNameLoaded(true);
       }
       setLoading(false);
     };
