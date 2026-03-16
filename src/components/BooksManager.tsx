@@ -216,8 +216,39 @@ const BooksManager = () => {
             ) : (
               filteredBooks.map((book) => (
                 <TableRow key={book.id}>
-                  <TableCell className="font-medium text-right">{book.title}</TableCell>
-                  <TableCell className="text-right">{book.author || '-'}</TableCell>
+                  <TableCell className="font-medium text-right">
+                    <Input
+                      defaultValue={book.title}
+                      className="border-0 bg-transparent p-0 h-auto text-right font-medium focus-visible:ring-1"
+                      dir="rtl"
+                      onBlur={(e) => {
+                        const val = e.target.value.trim();
+                        if (val && val !== book.title) {
+                          supabase.from('books').update({ title: val }).eq('id', book.id).then(() => {
+                            setBooks(prev => prev.map(b => b.id === book.id ? { ...b, title: val } : b));
+                          });
+                        }
+                      }}
+                      onKeyDown={(e) => { if (e.key === 'Enter') (e.target as HTMLInputElement).blur(); }}
+                    />
+                  </TableCell>
+                  <TableCell className="text-right">
+                    <Input
+                      defaultValue={book.author || ''}
+                      placeholder="-"
+                      className="border-0 bg-transparent p-0 h-auto text-right focus-visible:ring-1"
+                      dir="rtl"
+                      onBlur={(e) => {
+                        const val = e.target.value.trim() || null;
+                        if (val !== (book.author || null)) {
+                          supabase.from('books').update({ author: val }).eq('id', book.id).then(() => {
+                            setBooks(prev => prev.map(b => b.id === book.id ? { ...b, author: val } : b));
+                          });
+                        }
+                      }}
+                      onKeyDown={(e) => { if (e.key === 'Enter') (e.target as HTMLInputElement).blur(); }}
+                    />
+                  </TableCell>
                   <TableCell>
                     <Select
                       value={book.status || 'לקרוא'}
