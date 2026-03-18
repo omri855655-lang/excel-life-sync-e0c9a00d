@@ -273,9 +273,31 @@ const TaskSpreadsheetDb = ({ title, taskType, readOnly = false, showYearSelector
     [updateTask]
   );
 
+  // Fetch user profile for auto-responsible
+  const [userProfileName, setUserProfileName] = useState<string>("");
+  
+  useEffect(() => {
+    if (!user) return;
+    const fetchProfile = async () => {
+      const { data } = await supabase
+        .from("profiles")
+        .select("display_name, username, first_name, last_name")
+        .eq("user_id", user.id)
+        .maybeSingle();
+      if (data) {
+        const name = data.display_name || 
+          [data.first_name, data.last_name].filter(Boolean).join(' ') || 
+          data.username || user.email || "";
+        setUserProfileName(name);
+      } else {
+        setUserProfileName(user.email || "");
+      }
+    };
+    fetchProfile();
+  }, [user]);
+
   const handleAddTask = async () => {
-    // When adding a task, use selected sheet or current year if showing all
-    const defaultResponsible = taskType === "work" && user?.email ? user.email : "";
+    const defaultResponsible = taskType === "work" ? userProfileName : "";
     await addTask(selectedSheet ?? currentYear, { responsible: defaultResponsible });
   };
 
