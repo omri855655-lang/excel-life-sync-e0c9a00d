@@ -360,7 +360,7 @@ const SheetSharingDialog = ({ open, onOpenChange, sheetName, taskType, available
         <div className="space-y-4">
           <div className="space-y-2">
             <Label>בחר גליון לשיתוף</Label>
-            <Select value={selectedShareSheet} onValueChange={setSelectedShareSheet}>
+            <Select value={selectedShareSheet} onValueChange={handleSheetChange}>
               <SelectTrigger>
                 <SelectValue />
               </SelectTrigger>
