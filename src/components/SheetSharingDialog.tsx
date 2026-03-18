@@ -79,12 +79,25 @@ const SheetSharingDialog = ({ open, onOpenChange, sheetName, taskType, available
 
   useEffect(() => {
     if (!open || !user) return;
+    if (selectedShareSheet === ALL_SHEETS_VALUE) {
+      setShareToAllSheets(true);
+      return;
+    }
     if (!selectableSheets.includes(selectedShareSheet)) {
-      setSelectedShareSheet(selectableSheets[0] || MAIN_SHEET_NAME);
+      const firstNonAll = selectableSheets.find(s => s !== ALL_SHEETS_VALUE) || MAIN_SHEET_NAME;
+      setSelectedShareSheet(firstNonAll);
       return;
     }
     fetchSheetAndCollaborators();
   }, [open, user, selectedShareSheet, selectableSheets]);
+
+  // Auto-set shareToAllSheets when "הכל" selected
+  const handleSheetChange = (value: string) => {
+    setSelectedShareSheet(value);
+    if (value === ALL_SHEETS_VALUE) {
+      setShareToAllSheets(true);
+    }
+  };
 
   const ensureSheet = async (name: string): Promise<string | null> => {
     if (!user) return null;
