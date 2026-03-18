@@ -21,6 +21,10 @@ export interface DbTask {
   creator_email: string | null;
   creator_name: string | null;
   creator_username: string | null;
+  last_editor_user_id: string | null;
+  last_editor_email: string | null;
+  last_editor_name: string | null;
+  last_editor_username: string | null;
   created_at: string;
   updated_at: string;
 }
