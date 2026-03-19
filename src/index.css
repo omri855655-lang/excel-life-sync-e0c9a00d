@@ -100,6 +100,42 @@ All colors MUST be HSL.
   body {
     @apply bg-background text-foreground font-sans antialiased;
     font-family: 'Rubik', sans-serif;
+    -webkit-text-size-adjust: 100%;
+    text-size-adjust: 100%;
+  }
+}
+
+/* iPhone / mobile responsive fixes */
+@media (max-width: 767px) {
+  /* Prevent text truncation in table cells */
+  table td, table th {
+    white-space: normal !important;
+    word-break: break-word;
+    min-width: 60px;
+  }
+  
+  /* Ensure header text wraps */
+  header h1 {
+    font-size: 1rem;
+  }
+  
+  /* Tab labels visible on small screens */
+  [role="tablist"] button {
+    font-size: 0.7rem;
+    padding-left: 0.5rem;
+    padding-right: 0.5rem;
+  }
+
+  /* Cards and inputs don't overflow */
+  .card, [class*="CardContent"] {
+    overflow-x: hidden;
+    word-break: break-word;
+  }
+
+  /* Fix select and input overflow */
+  select, input, textarea {
+    max-width: 100%;
+    font-size: 16px; /* Prevents iOS zoom on input focus */
   }
 }
 
