@@ -1276,6 +1276,68 @@ const DeeplyDashboard = () => {
           </CardContent>
         </Card>
 
+        {/* Sleep Habits Guide */}
+        <Card className="bg-white/5 border-white/5">
+          <CardHeader className="pb-2">
+            <CardTitle className="text-sm flex items-center gap-2 text-[#e8e8ed]">
+              <span className="text-lg">{SLEEP_HABITS_GUIDE.icon}</span>
+              {SLEEP_HABITS_GUIDE.title}
+            </CardTitle>
+          </CardHeader>
+          <CardContent className="space-y-2">
+            {SLEEP_HABITS_GUIDE.sections.map((section, idx) => (
+              <div key={idx}>
+                <button
+                  onClick={() => setExpandedGuide(expandedGuide === `sleep-${idx}` ? null : `sleep-${idx}`)}
+                  className={`w-full flex items-center gap-3 p-3 rounded-xl transition-all text-right ${
+                    expandedGuide === `sleep-${idx}` ? "bg-indigo-500/10 border border-indigo-500/20" : "bg-white/5 hover:bg-white/10"
+                  }`}
+                >
+                  <span className="text-lg">{section.icon}</span>
+                  <span className="text-sm font-medium text-[#e8e8ed] flex-1">{section.title}</span>
+                  {expandedGuide === `sleep-${idx}` ? <ChevronUp className="h-3 w-3 text-[#e8e8ed]/30" /> : <ChevronDown className="h-3 w-3 text-[#e8e8ed]/30" />}
+                </button>
+                {expandedGuide === `sleep-${idx}` && (
+                  <div className="p-3 pr-12 text-sm text-[#e8e8ed]/60 leading-relaxed">
+                    {section.content}
+                  </div>
+                )}
+              </div>
+            ))}
+          </CardContent>
+        </Card>
+
+        {/* Nutrition Guide */}
+        <Card className="bg-white/5 border-white/5">
+          <CardHeader className="pb-2">
+            <CardTitle className="text-sm flex items-center gap-2 text-[#e8e8ed]">
+              <span className="text-lg">{NUTRITION_GUIDE.icon}</span>
+              {NUTRITION_GUIDE.title}
+            </CardTitle>
+          </CardHeader>
+          <CardContent className="space-y-2">
+            {NUTRITION_GUIDE.sections.map((section, idx) => (
+              <div key={idx}>
+                <button
+                  onClick={() => setExpandedGuide(expandedGuide === `nutrition-${idx}` ? null : `nutrition-${idx}`)}
+                  className={`w-full flex items-center gap-3 p-3 rounded-xl transition-all text-right ${
+                    expandedGuide === `nutrition-${idx}` ? "bg-green-500/10 border border-green-500/20" : "bg-white/5 hover:bg-white/10"
+                  }`}
+                >
+                  <span className="text-lg">{section.icon}</span>
+                  <span className="text-sm font-medium text-[#e8e8ed] flex-1">{section.title}</span>
+                  {expandedGuide === `nutrition-${idx}` ? <ChevronUp className="h-3 w-3 text-[#e8e8ed]/30" /> : <ChevronDown className="h-3 w-3 text-[#e8e8ed]/30" />}
+                </button>
+                {expandedGuide === `nutrition-${idx}` && (
+                  <div className="p-3 pr-12 text-sm text-[#e8e8ed]/60 leading-relaxed">
+                    {section.content}
+                  </div>
+                )}
+              </div>
+            ))}
+          </CardContent>
+        </Card>
+
         {/* Guides section */}
         <Card className="bg-white/5 border-white/5">
           <CardHeader className="pb-2">
