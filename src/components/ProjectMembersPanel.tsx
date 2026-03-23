@@ -175,6 +175,26 @@ const ProjectMembersPanel = ({ projectId, isOwner }: ProjectMembersPanelProps) =
     setMembers(prev => prev.map(m => (m.id === id ? { ...m, job_title } : m)));
   };
 
+  const approveMember = async (id: string) => {
+    const { error } = await supabase
+      .from("project_members")
+      .update({ status: "approved" })
+      .eq("id", id);
+    if (error) { toast.error("שגיאה באישור"); return; }
+    setMembers(prev => prev.map(m => m.id === id ? { ...m, status: "approved" } : m));
+    toast.success("חבר צוות אושר ✅");
+  };
+
+  const rejectMember = async (id: string) => {
+    const { error } = await supabase
+      .from("project_members")
+      .delete()
+      .eq("id", id);
+    if (error) { toast.error("שגיאה בדחייה"); return; }
+    setMembers(prev => prev.filter(m => m.id !== id));
+    toast.success("הבקשה נדחתה");
+  };
+
   const removeMember = async (id: string) => {
     const { error } = await supabase
       .from("project_members")
