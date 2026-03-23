@@ -262,7 +262,35 @@ const ProjectMembersPanel = ({ projectId, isOwner }: ProjectMembersPanelProps) =
         <p className="text-sm text-muted-foreground">אין חברי צוות</p>
       ) : (
         <div className="space-y-2">
-          {members.map((member) => {
+          {/* Pending approvals first */}
+          {members.filter(m => m.status === "pending").length > 0 && isOwner && (
+            <div className="space-y-2 mb-3">
+              <p className="text-xs font-semibold text-amber-600 flex items-center gap-1"><Clock className="h-3 w-3" />ממתינים לאישור</p>
+              {members.filter(m => m.status === "pending").map(member => (
+                <div key={member.id} className="flex items-center justify-between gap-2 p-2 rounded-lg border border-amber-300 bg-amber-50 dark:bg-amber-950/20">
+                  <div className="flex items-center gap-2 min-w-0">
+                    <Clock className="h-4 w-4 text-amber-500 shrink-0" />
+                    <div className="min-w-0">
+                      <span className="text-sm font-medium truncate block">{member.invited_display_name || member.invited_email.split("@")[0]}</span>
+                      <span className="text-xs text-muted-foreground" dir="ltr">{member.invited_email}</span>
+                      {member.job_title && <span className="text-xs text-muted-foreground block">{member.job_title}</span>}
+                    </div>
+                  </div>
+                  <div className="flex items-center gap-1 shrink-0">
+                    <Button size="icon" variant="ghost" className="h-7 w-7 text-green-600" onClick={() => approveMember(member.id)}>
+                      <CheckCircle className="h-4 w-4" />
+                    </Button>
+                    <Button size="icon" variant="ghost" className="h-7 w-7 text-destructive" onClick={() => rejectMember(member.id)}>
+                      <XCircle className="h-4 w-4" />
+                    </Button>
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
+
+          {/* Approved members */}
+          {members.filter(m => m.status !== "pending").map((member) => {
             const RoleIcon = roleIcons[member.role] || UserCheck;
             return (
               <div
