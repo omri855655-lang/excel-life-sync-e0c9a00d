@@ -183,6 +183,7 @@ All colors MUST be HSL.
     --sidebar-background: 340 20% 96%;
     --sidebar-ring: 330 70% 50%;
   }
+  .dark {
     --background: 220 20% 10%;
     --foreground: 210 40% 98%;
 
