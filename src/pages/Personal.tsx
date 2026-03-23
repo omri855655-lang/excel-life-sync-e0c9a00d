@@ -628,7 +628,10 @@ const Personal = () => {
           <SharingManagement />
         </TabsContent>
 
-        {customBoards.map((board) => (
+        <TabsContent value="contact" className="flex-1 min-h-0 overflow-auto m-0 p-0">
+          <ContactForm />
+        </TabsContent>
+
           <TabsContent key={`board-${board.id}`} value={`board-${board.id}`} className="flex-1 min-h-0 overflow-auto m-0 p-0">
             <CustomBoardManager
               boardId={board.id}
