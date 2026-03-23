@@ -10,6 +10,7 @@ import { Progress } from "@/components/ui/progress";
 import { Plus, Trash2, Target, Sparkles, MessageCircle, ChevronDown, ChevronUp, MapPin, CheckCircle2 } from "lucide-react";
 import { toast } from "sonner";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
+import { useDashboardChatHistory } from "@/hooks/useDashboardChatHistory";
 
 interface DreamGoal {
   id: string;
@@ -34,15 +35,25 @@ const DreamRoadmapDashboard = () => {
   const [newDescription, setNewDescription] = useState("");
   const [expandedGoal, setExpandedGoal] = useState<string | null>(null);
   const [aiChat, setAiChat] = useState("");
-  // Per-goal AI messages stored in localStorage
-  const [aiMessages, setAiMessages] = useState<Record<string, { role: string; content: string }[]>>(() => {
+  const [aiLoading, setAiLoading] = useState(false);
+  const [generatingRoadmap, setGeneratingRoadmap] = useState<string | null>(null);
+
+  // Per-goal AI messages using the dashboard chat history hook
+  const { messages: allChatMessages, setMessages: setAllChatMessages, clearHistory } = useDashboardChatHistory("dreams");
+
+  // Helper to get/set per-goal messages within the flat array using a simple prefix approach
+  // We store messages as {role, content, goalId} but the hook expects {role, content}
+  // So we use localStorage directly for per-goal chats
+  const [goalChats, setGoalChats] = useState<Record<string, { role: string; content: string }[]>>(() => {
     try {
-      const raw = localStorage.getItem("dashboard-chat-dreams");
+      const raw = localStorage.getItem("dashboard-chat-dreams-goals");
       return raw ? JSON.parse(raw) : {};
     } catch { return {}; }
   });
-  const [aiLoading, setAiLoading] = useState(false);
-  const [generatingRoadmap, setGeneratingRoadmap] = useState<string | null>(null);
+
+  useEffect(() => {
+    localStorage.setItem("dashboard-chat-dreams-goals", JSON.stringify(goalChats));
+  }, [goalChats]);
 
   const fetchGoals = useCallback(async () => {
     if (!user) return;
@@ -52,16 +63,11 @@ const DreamRoadmapDashboard = () => {
       .eq("user_id", user.id)
       .eq("archived", false)
       .order("created_at", { ascending: false });
-    setGoals((data as any[])?.map(g => ({ ...g, milestones: g.milestones || [] })) || []);
+    setGoals((data as any[])?.map(g => ({ ...g, milestones: Array.isArray(g.milestones) ? g.milestones : [] })) || []);
     setLoading(false);
   }, [user]);
 
   useEffect(() => { fetchGoals(); }, [fetchGoals]);
-
-  // Persist dream AI messages
-  useEffect(() => {
-    localStorage.setItem("dashboard-chat-dreams", JSON.stringify(aiMessages));
-  }, [aiMessages]);
 
   const addGoal = async () => {
     if (!user || !newTitle.trim()) return;
@@ -88,27 +94,28 @@ const DreamRoadmapDashboard = () => {
       const { data, error } = await supabase.functions.invoke("task-ai-helper", {
         body: {
           taskDescription: goal.title,
-          taskCategory: "dreams",
           customPrompt: `אתה מאמן להגשמת חלומות. המשתמש רוצה להגשים את החלום: "${goal.title}". ${goal.description ? `תיאור: ${goal.description}` : ""}
           
-          צור מפת דרכים מפורטת עם 8-12 אבני דרך שבועיות. לכל אבן דרך כתוב:
-          - מספר שבוע
-          - כותרת האבן (קצרה וברורה)
-          - תיאור קצר מה צריך לעשות
-          
-          החזר בפורמט JSON:
-          { "milestones": [{ "week": 1, "title": "...", "description": "..." }] }
-          
-          רק JSON, בלי טקסט נוסף.`,
+צור מפת דרכים מפורטת עם 8-12 אבני דרך שבועיות. לכל אבן דרך כתוב:
+- מספר שבוע
+- כותרת האבן (קצרה וברורה)
+- תיאור קצר מה צריך לעשות
+
+חשוב מאוד: החזר תשובה שמכילה JSON בפורמט הזה בתוך הטקסט:
+{ "milestones": [{ "week": 1, "title": "כותרת", "description": "תיאור" }] }
+
+חובה לכלול את ה-JSON בתשובה.`,
         },
       });
       if (error) throw error;
       
       const suggestion = data?.suggestion || "";
       let milestones: any[] = [];
-      try {
-        const jsonMatch = suggestion.match(/\{[\s\S]*\}/);
-        if (jsonMatch) {
+      
+      // Try to extract JSON from the response
+      const jsonMatch = suggestion.match(/\{[\s\S]*?"milestones"[\s\S]*?\}/);
+      if (jsonMatch) {
+        try {
           const parsed = JSON.parse(jsonMatch[0]);
           milestones = (parsed.milestones || []).map((m: any, i: number) => ({
             id: `ms-${Date.now()}-${i}`,
@@ -116,16 +123,41 @@ const DreamRoadmapDashboard = () => {
             done: false,
             week: m.week || i + 1,
           }));
+        } catch {
+          // JSON parse failed
         }
-      } catch {
-        // Fallback: try to parse as text
+      }
+      
+      // Fallback: create milestones from text lines
+      if (milestones.length === 0 && suggestion.length > 10) {
+        const lines = suggestion.split('\n').filter((l: string) => l.trim().length > 5 && (l.includes('שבוע') || l.match(/^\d/) || l.includes('-') || l.includes('•')));
+        milestones = lines.slice(0, 12).map((line: string, i: number) => ({
+          id: `ms-${Date.now()}-${i}`,
+          title: line.replace(/^[\s\-•\d\.\)]+/, '').trim().slice(0, 100),
+          done: false,
+          week: i + 1,
+        }));
+      }
+
+      // Last fallback
+      if (milestones.length === 0) {
         milestones = [{ id: `ms-${Date.now()}`, title: suggestion.slice(0, 200), done: false, week: 1 }];
       }
 
-      await supabase.from("dream_goals").update({ milestones, ai_roadmap: data }).eq("id", goal.id);
+      const { error: updateError } = await supabase.from("dream_goals").update({ 
+        milestones: milestones as any, 
+        ai_roadmap: { suggestion } as any
+      }).eq("id", goal.id);
+      
+      if (updateError) {
+        console.error("Update error:", updateError);
+        throw updateError;
+      }
+      
       setGoals(prev => prev.map(g => g.id === goal.id ? { ...g, milestones, ai_roadmap: data } : g));
-      toast.success("מפת דרכים נוצרה! 🗺️");
-    } catch {
+      toast.success(`מפת דרכים נוצרה עם ${milestones.length} אבני דרך! 🗺️`);
+    } catch (err) {
+      console.error("Roadmap generation error:", err);
       toast.error("שגיאה ביצירת מפת דרכים");
     }
     setGeneratingRoadmap(null);
@@ -136,7 +168,7 @@ const DreamRoadmapDashboard = () => {
     if (!goal) return;
     const updated = goal.milestones.map(m => m.id === msId ? { ...m, done: !m.done } : m);
     const progress = Math.round((updated.filter(m => m.done).length / updated.length) * 100);
-    await supabase.from("dream_goals").update({ milestones: updated, progress }).eq("id", goalId);
+    await supabase.from("dream_goals").update({ milestones: updated as any, progress }).eq("id", goalId);
     setGoals(prev => prev.map(g => g.id === goalId ? { ...g, milestones: updated, progress } : g));
   };
 
@@ -145,10 +177,10 @@ const DreamRoadmapDashboard = () => {
     const goal = goals.find(g => g.id === goalId);
     if (!goal) return;
 
-    const msgs = aiMessages[goalId] || [];
+    const msgs = goalChats[goalId] || [];
     const userMsg = { role: "user", content: aiChat };
     const newMsgs = [...msgs, userMsg];
-    setAiMessages(prev => ({ ...prev, [goalId]: newMsgs }));
+    setGoalChats(prev => ({ ...prev, [goalId]: newMsgs }));
     setAiChat("");
     setAiLoading(true);
 
@@ -160,14 +192,19 @@ const DreamRoadmapDashboard = () => {
       const { data, error } = await supabase.functions.invoke("task-ai-helper", {
         body: {
           taskDescription: aiChat,
-          taskCategory: "dreams",
-          customPrompt: `אתה מאמן אישי להגשמת חלומות. ${context}\nהמשתמש שואל: ${aiChat}`,
+          customPrompt: `אתה מאמן אישי להגשמת חלומות. ${context}
+
+בסיס הידע שלך כולל: The 7 Habits (סטיבן קאבי), Think and Grow Rich (נפוליאון היל), The 4-Hour Workweek (טים פריס), Start with Why (סיימון סינק), Grit (אנג'לה דאקוורת').
+
+תן עצות מעשיות וספציפיות להגשמת החלום. השתמש באימוג'ים. דבר בעברית.
+
+המשתמש שואל: ${aiChat}`,
         },
       });
       if (error) throw error;
-      setAiMessages(prev => ({ ...prev, [goalId]: [...(prev[goalId] || []), { role: "assistant", content: data?.suggestion || "אין תשובה" }] }));
+      setGoalChats(prev => ({ ...prev, [goalId]: [...(prev[goalId] || []), { role: "assistant", content: data?.suggestion || "אין תשובה" }] }));
     } catch {
-      setAiMessages(prev => ({ ...prev, [goalId]: [...(prev[goalId] || []), { role: "assistant", content: "שגיאה" }] }));
+      setGoalChats(prev => ({ ...prev, [goalId]: [...(prev[goalId] || []), { role: "assistant", content: "שגיאה" }] }));
     }
     setAiLoading(false);
   };
@@ -205,6 +242,7 @@ const DreamRoadmapDashboard = () => {
                     </div>
                     <div className="flex items-center gap-2 shrink-0">
                       <Badge variant={goal.progress >= 100 ? "default" : "secondary"}>{goal.progress}%</Badge>
+                      {goal.milestones.length > 0 && <Badge variant="outline" className="text-[10px]">{goal.milestones.filter(m => m.done).length}/{goal.milestones.length}</Badge>}
                       {expandedGoal === goal.id ? <ChevronUp className="h-4 w-4" /> : <ChevronDown className="h-4 w-4" />}
                     </div>
                   </div>
@@ -225,8 +263,8 @@ const DreamRoadmapDashboard = () => {
                   {/* Milestones */}
                   {goal.milestones.length > 0 && (
                     <div className="space-y-2">
-                      <h4 className="text-sm font-semibold flex items-center gap-2"><MapPin className="h-4 w-4" />אבני דרך</h4>
-                      {goal.milestones.map((ms, i) => (
+                      <h4 className="text-sm font-semibold flex items-center gap-2"><MapPin className="h-4 w-4" />אבני דרך ({goal.milestones.filter(m => m.done).length}/{goal.milestones.length})</h4>
+                      {goal.milestones.map((ms) => (
                         <div key={ms.id} className={`flex items-center gap-3 p-2 rounded-lg border transition-all ${ms.done ? "bg-green-50 dark:bg-green-950/20" : "bg-card"}`}>
                           <Button size="icon" variant="ghost" className="h-6 w-6 shrink-0" onClick={() => toggleMilestone(goal.id, ms.id)}>
                             {ms.done ? <CheckCircle2 className="h-4 w-4 text-green-600" /> : <div className="h-4 w-4 border-2 rounded-full" />}
@@ -244,10 +282,15 @@ const DreamRoadmapDashboard = () => {
 
                   {/* AI Coach chat */}
                   <div className="border-t pt-3 space-y-2">
-                    <h4 className="text-sm font-semibold flex items-center gap-2"><MessageCircle className="h-4 w-4" />מאמן AI</h4>
+                    <div className="flex items-center justify-between">
+                      <h4 className="text-sm font-semibold flex items-center gap-2"><MessageCircle className="h-4 w-4" />מאמן AI</h4>
+                      {(goalChats[goal.id] || []).length > 0 && (
+                        <Button size="sm" variant="ghost" className="text-xs" onClick={() => setGoalChats(prev => ({ ...prev, [goal.id]: [] }))}>נקה</Button>
+                      )}
+                    </div>
                     <div className="border rounded-lg p-2 min-h-[100px] max-h-[200px] overflow-y-auto space-y-2">
-                      {(aiMessages[goal.id] || []).length === 0 && <p className="text-xs text-muted-foreground text-center py-4">שאל את המאמן כל שאלה על איך להגשים את החלום...</p>}
-                      {(aiMessages[goal.id] || []).map((msg, i) => (
+                      {(goalChats[goal.id] || []).length === 0 && <p className="text-xs text-muted-foreground text-center py-4">שאל את המאמן כל שאלה על איך להגשים את החלום...</p>}
+                      {(goalChats[goal.id] || []).map((msg, i) => (
                         <div key={i} className={`flex ${msg.role === "user" ? "justify-end" : "justify-start"}`}>
                           <div className={`max-w-[80%] rounded-lg px-3 py-1.5 text-xs ${msg.role === "user" ? "bg-primary text-primary-foreground" : "bg-muted"}`}>
                             <p className="whitespace-pre-wrap">{msg.content}</p>
