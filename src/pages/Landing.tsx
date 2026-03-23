@@ -64,9 +64,6 @@ const Landing = () => {
       <header className={`sticky top-0 z-50 transition-all duration-300 ${scrolled ? "bg-card/90 backdrop-blur-xl shadow-sm border-b border-border/50" : "bg-transparent"}`}>
         <div className="max-w-6xl mx-auto px-4 py-3 flex items-center justify-between">
           <div className="flex items-center gap-2.5">
-            <div className="w-9 h-9 rounded-xl bg-gradient-to-br from-primary to-primary/70 flex items-center justify-center shadow-lg shadow-primary/20">
-              <FileSpreadsheet className="h-5 w-5 text-primary-foreground" />
-            </div>
             <img src="/tabro-logo.png" alt="Tabro" className="h-8" />
             <span className="text-xl font-extrabold tracking-tight text-foreground">
               Tabro
