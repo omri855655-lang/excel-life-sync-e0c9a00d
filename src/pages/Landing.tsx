@@ -67,8 +67,9 @@ const Landing = () => {
             <div className="w-9 h-9 rounded-xl bg-gradient-to-br from-primary to-primary/70 flex items-center justify-center shadow-lg shadow-primary/20">
               <FileSpreadsheet className="h-5 w-5 text-primary-foreground" />
             </div>
+            <img src="/tabro-logo.png" alt="Tabro" className="h-8" />
             <span className="text-xl font-extrabold tracking-tight text-foreground">
-              Excel<span className="text-primary">Time</span>
+              Tabro
             </span>
           </div>
           <div className="flex items-center gap-2">
@@ -207,7 +208,7 @@ const Landing = () => {
 
       {/* Footer */}
       <footer className="border-t border-border/50 py-6 text-center text-sm text-muted-foreground">
-        <span className="font-medium text-foreground">ExcelTime</span> — מערכת ניהול אישית © {new Date().getFullYear()}
+        <span className="font-medium text-foreground">Tabro</span> — מערכת ניהול אישית © {new Date().getFullYear()}
       </footer>
     </div>
   );
