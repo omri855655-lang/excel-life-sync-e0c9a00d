@@ -1115,6 +1115,10 @@ export type Database = {
         Args: { _sheet_id: string; _user_id: string }
         Returns: boolean
       }
+      can_manage_project_members: {
+        Args: { _project_id: string; _user_id: string }
+        Returns: boolean
+      }
       get_project_role: {
         Args: { _project_id: string; _user_id: string }
         Returns: string
@@ -1127,6 +1131,10 @@ export type Database = {
         Returns: boolean
       }
       is_project_member: {
+        Args: { _project_id: string; _user_id: string }
+        Returns: boolean
+      }
+      is_project_owner: {
         Args: { _project_id: string; _user_id: string }
         Returns: boolean
       }
