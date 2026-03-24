@@ -1,6 +1,7 @@
 import { useState, useEffect, useRef } from "react";
 import { useAuth } from "@/hooks/useAuth";
 import { supabase } from "@/integrations/supabase/client";
+import { useNavigate } from "react-router-dom";
 import { useCustomBoards } from "@/hooks/useCustomBoards";
 import { useUserPreferences, DEFAULT_TABS } from "@/hooks/useUserPreferences";
 import { useSiteAppearance } from "@/hooks/useSiteAppearance";
@@ -10,13 +11,46 @@ import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Lock, Shield, LayoutGrid, Plus, Trash2, X, Eye, EyeOff, Globe, Palette, Moon, Sun } from "lucide-react";
+import { Lock, Shield, LayoutGrid, Plus, Trash2, X, Eye, EyeOff, Globe, Palette, Moon, Sun, Key, UserX } from "lucide-react";
 import { toast } from "sonner";
 import { useLanguage } from "@/hooks/useLanguage";
 import TelegramSettings from "@/components/TelegramSettings";
 
+const ChangePasswordForm = () => {
+  const [currentPw, setCurrentPw] = useState("");
+  const [newPw, setNewPw] = useState("");
+  const [confirmPw, setConfirmPw] = useState("");
+  const [saving, setSaving] = useState(false);
+
+  const handleChange = async () => {
+    if (newPw.length < 6) { toast.error("סיסמה חייבת להכיל לפחות 6 תווים"); return; }
+    if (newPw !== confirmPw) { toast.error("הסיסמאות לא תואמות"); return; }
+    setSaving(true);
+    const { error } = await supabase.auth.updateUser({ password: newPw });
+    setSaving(false);
+    if (error) { toast.error("שגיאה: " + error.message); return; }
+    setCurrentPw(""); setNewPw(""); setConfirmPw("");
+    toast.success("הסיסמה שונתה בהצלחה!");
+  };
+
+  return (
+    <div className="space-y-3">
+      <div className="space-y-1">
+        <Label>סיסמה חדשה</Label>
+        <Input type="password" value={newPw} onChange={(e) => setNewPw(e.target.value)} placeholder="••••••" dir="ltr" />
+      </div>
+      <div className="space-y-1">
+        <Label>אימות סיסמה חדשה</Label>
+        <Input type="password" value={confirmPw} onChange={(e) => setConfirmPw(e.target.value)} placeholder="••••••" dir="ltr" />
+      </div>
+      <Button onClick={handleChange} disabled={saving || !newPw}>{saving ? "משנה..." : "שנה סיסמה"}</Button>
+    </div>
+  );
+};
+
 const SettingsPanel = () => {
-  const { user } = useAuth();
+  const { user, signOut } = useAuth();
+  const navTo = useNavigate();
   const { toggleTab, isTabVisible } = useUserPreferences();
   const { lang, setLang } = useLanguage();
   const { themeId, mode, themes, setThemeId, setMode } = useSiteAppearance();
@@ -253,7 +287,48 @@ const SettingsPanel = () => {
         </CardContent>
       </Card>
 
-      {/* Custom Boards Card */}
+      {/* Change Password Card */}
+      <Card>
+        <CardHeader>
+          <CardTitle className="flex items-center gap-2"><Key className="h-5 w-5" />שינוי סיסמה</CardTitle>
+        </CardHeader>
+        <CardContent className="space-y-4">
+          <ChangePasswordForm />
+        </CardContent>
+      </Card>
+
+      {/* Delete Account Card */}
+      <Card className="border-destructive/30">
+        <CardHeader>
+          <CardTitle className="flex items-center gap-2 text-destructive"><UserX className="h-5 w-5" />מחיקת חשבון</CardTitle>
+        </CardHeader>
+        <CardContent className="space-y-3">
+          <p className="text-sm text-muted-foreground">מחיקת החשבון תסיר את כל הנתונים שלך לצמיתות. פעולה זו אינה ניתנת לביטול.</p>
+          <Button
+            variant="destructive"
+            onClick={async () => {
+              if (!confirm("האם אתה בטוח? כל הנתונים שלך יימחקו לצמיתות.")) return;
+              if (!confirm("אישור אחרון - האם אתה בטוח שברצונך למחוק את החשבון?")) return;
+              try {
+                // Delete user data first, then sign out
+                if (user) {
+                  const tables = ["tasks", "books", "shows", "podcasts", "courses", "course_lessons", "projects", "project_tasks", "project_members", "calendar_events", "custom_board_items", "custom_boards", "daily_stopwatch", "dream_goals", "health_profiles", "nutrition_tracking", "payment_tracking", "shopping_items", "shopping_sheets", "shopping_sheet_collaborators", "checked_items", "recurring_tasks", "recurring_task_completions", "planner_conversations", "user_preferences", "profiles"];
+                  for (const table of tables) {
+                    await supabase.from(table as any).delete().eq("user_id", user.id);
+                  }
+                }
+                await signOut();
+                toast.success("החשבון נמחק בהצלחה");
+                navTo("/");
+              } catch {
+                toast.error("שגיאה במחיקת החשבון");
+              }
+            }}
+          >
+            מחק את החשבון שלי
+          </Button>
+        </CardContent>
+      </Card>
       <Card>
         <CardHeader>
           <CardTitle className="flex items-center gap-2"><LayoutGrid className="h-5 w-5" />רשימות ודשבורדים מותאמים אישית</CardTitle>

@@ -24,7 +24,7 @@ import { getHolidaysForDate } from "@/data/holidays";
 interface AggregatedTask {
   id: string;
   title: string;
-  source: "work" | "personal" | "project" | "recurring" | "show" | "course" | "podcast" | "book";
+  source: "work" | "personal" | "project" | "recurring" | "show" | "course" | "podcast" | "book" | "board";
   overdue: boolean;
   urgent: boolean;
   status: string;
@@ -271,13 +271,13 @@ const PersonalPlanner = () => {
           tasks.push({
             id: item.id,
             title: item.title,
-            source: "personal",
+            source: "board",
             overdue: false,
             urgent: false,
             status: item.status || "לביצוע",
             plannedEnd: "",
             createdAt: item.created_at,
-            category: item.custom_boards?.name || "דשבורד",
+            category: item.custom_boards?.name || "רשימה",
           })
         );
     }
@@ -1024,21 +1024,23 @@ const PersonalPlanner = () => {
       case "course": return "קורס";
       case "podcast": return "פודקאסט";
       case "book": return "ספר";
+      case "board": return "רשימה";
       default: return source;
     }
   };
 
   const getSourceBg = (source: string) => {
     switch (source) {
-      case "work": return "bg-orange-100 dark:bg-orange-900/30 border-orange-300";
-      case "personal": return "bg-purple-100 dark:bg-purple-900/30 border-purple-300";
-      case "project": return "bg-cyan-100 dark:bg-cyan-900/30 border-cyan-300";
-      case "recurring": return "bg-green-100 dark:bg-green-900/30 border-green-300";
-      case "show": return "bg-pink-100 dark:bg-pink-900/30 border-pink-300";
-      case "course": return "bg-indigo-100 dark:bg-indigo-900/30 border-indigo-300";
-      case "podcast": return "bg-amber-100 dark:bg-amber-900/30 border-amber-300";
-      case "book": return "bg-emerald-100 dark:bg-emerald-900/30 border-emerald-300";
-      default: return "bg-muted border-border";
+      case "work": return "bg-orange-100 dark:bg-orange-900/30 border-orange-300 border-l-4 border-l-orange-500";
+      case "personal": return "bg-purple-100 dark:bg-purple-900/30 border-purple-300 border-l-4 border-l-purple-500";
+      case "project": return "bg-cyan-100 dark:bg-cyan-900/30 border-cyan-300 border-l-4 border-l-cyan-500";
+      case "recurring": return "bg-green-100 dark:bg-green-900/30 border-green-300 border-l-4 border-l-green-500";
+      case "show": return "bg-pink-100 dark:bg-pink-900/30 border-pink-300 border-l-4 border-l-pink-500";
+      case "course": return "bg-indigo-100 dark:bg-indigo-900/30 border-indigo-300 border-l-4 border-l-indigo-500";
+      case "podcast": return "bg-amber-100 dark:bg-amber-900/30 border-amber-300 border-l-4 border-l-amber-500";
+      case "book": return "bg-emerald-100 dark:bg-emerald-900/30 border-emerald-300 border-l-4 border-l-emerald-500";
+      case "board": return "bg-teal-100 dark:bg-teal-900/30 border-teal-300 border-l-4 border-l-teal-500";
+      default: return "bg-muted border-border border-l-4 border-l-muted-foreground";
     }
   };
 
@@ -1625,7 +1627,7 @@ const PersonalPlanner = () => {
               >
                 <div className="flex items-center gap-1 mb-1">
                   <GripVertical className="h-3 w-3 text-muted-foreground flex-shrink-0" />
-                  <span className={`text-[10px] px-1.5 rounded-full font-medium ${task.source === "work" ? "bg-orange-200 text-orange-800" : task.source === "personal" ? "bg-purple-200 text-purple-800" : task.source === "recurring" ? "bg-green-200 text-green-800" : task.source === "show" ? "bg-pink-200 text-pink-800" : task.source === "course" ? "bg-indigo-200 text-indigo-800" : task.source === "podcast" ? "bg-amber-200 text-amber-800" : task.source === "book" ? "bg-emerald-200 text-emerald-800" : "bg-cyan-200 text-cyan-800"}`}>
+                  <span className={`text-[10px] px-1.5 rounded-full font-medium ${task.source === "work" ? "bg-orange-200 text-orange-800" : task.source === "personal" ? "bg-purple-200 text-purple-800" : task.source === "recurring" ? "bg-green-200 text-green-800" : task.source === "show" ? "bg-pink-200 text-pink-800" : task.source === "course" ? "bg-indigo-200 text-indigo-800" : task.source === "podcast" ? "bg-amber-200 text-amber-800" : task.source === "book" ? "bg-emerald-200 text-emerald-800" : task.source === "board" ? "bg-teal-200 text-teal-800" : "bg-cyan-200 text-cyan-800"}`}>
                     {getSourceLabel(task.source)}
                   </span>
                   {task.source === "recurring" && <RotateCcw className="h-3 w-3 text-green-600" />}
