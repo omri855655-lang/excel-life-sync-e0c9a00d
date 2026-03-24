@@ -17,7 +17,7 @@ import DailyRoutine from "@/components/DailyRoutine";
 import AiDailyPlanner from "@/components/AiDailyPlanner";
 import PersonalPlanner from "@/components/PersonalPlanner";
 import DeeplyDashboard from "@/components/deeply/DeeplyDashboard";
-import { FloatingMusicMini } from "@/components/deeply/FloatingMusicMini";
+// FloatingMusicMini removed — music plays in background
 import PushNotificationToggle from "@/components/PushNotificationToggle";
 import NotificationBell from "@/components/NotificationBell";
 import SettingsPanel from "@/components/SettingsPanel";
@@ -645,11 +645,7 @@ const Personal = () => {
         ))}
       </Tabs>
 
-      {/* Floating mini music player */}
-      <FloatingMusicMini
-        visible={activeTab !== "deeply"}
-        onGoToDeeply={() => setActiveTab("deeply")}
-      />
+      {/* Music plays in background — no floating icon needed */}
 
       {/* AI Daily Planner floating button */}
       <AiDailyPlanner />
