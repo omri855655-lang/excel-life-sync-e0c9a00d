@@ -48,6 +48,7 @@ const ChangePasswordForm = () => {
   );
 };
 
+const SettingsPanel = () => {
   const { user, signOut } = useAuth();
   const navTo = useNavigate();
   const { toggleTab, isTabVisible } = useUserPreferences();
