@@ -1030,15 +1030,16 @@ const PersonalPlanner = () => {
 
   const getSourceBg = (source: string) => {
     switch (source) {
-      case "work": return "bg-orange-100 dark:bg-orange-900/30 border-orange-300";
-      case "personal": return "bg-purple-100 dark:bg-purple-900/30 border-purple-300";
-      case "project": return "bg-cyan-100 dark:bg-cyan-900/30 border-cyan-300";
-      case "recurring": return "bg-green-100 dark:bg-green-900/30 border-green-300";
-      case "show": return "bg-pink-100 dark:bg-pink-900/30 border-pink-300";
-      case "course": return "bg-indigo-100 dark:bg-indigo-900/30 border-indigo-300";
-      case "podcast": return "bg-amber-100 dark:bg-amber-900/30 border-amber-300";
-      case "book": return "bg-emerald-100 dark:bg-emerald-900/30 border-emerald-300";
-      default: return "bg-muted border-border";
+      case "work": return "bg-orange-100 dark:bg-orange-900/30 border-orange-300 border-l-4 border-l-orange-500";
+      case "personal": return "bg-purple-100 dark:bg-purple-900/30 border-purple-300 border-l-4 border-l-purple-500";
+      case "project": return "bg-cyan-100 dark:bg-cyan-900/30 border-cyan-300 border-l-4 border-l-cyan-500";
+      case "recurring": return "bg-green-100 dark:bg-green-900/30 border-green-300 border-l-4 border-l-green-500";
+      case "show": return "bg-pink-100 dark:bg-pink-900/30 border-pink-300 border-l-4 border-l-pink-500";
+      case "course": return "bg-indigo-100 dark:bg-indigo-900/30 border-indigo-300 border-l-4 border-l-indigo-500";
+      case "podcast": return "bg-amber-100 dark:bg-amber-900/30 border-amber-300 border-l-4 border-l-amber-500";
+      case "book": return "bg-emerald-100 dark:bg-emerald-900/30 border-emerald-300 border-l-4 border-l-emerald-500";
+      case "board": return "bg-teal-100 dark:bg-teal-900/30 border-teal-300 border-l-4 border-l-teal-500";
+      default: return "bg-muted border-border border-l-4 border-l-muted-foreground";
     }
   };
 
