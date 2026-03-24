@@ -231,9 +231,39 @@ const ShoppingDashboard = () => {
               </div>
               <div className="flex flex-wrap gap-1 mt-2">
                 {SUPERMARKET_CATEGORIES.map(cat => (
-                  <Badge key={cat} variant={newCategory === cat ? "default" : "outline"} className="cursor-pointer text-[10px]" onClick={() => setNewCategory(cat)}>{cat}</Badge>
+                  <Badge key={cat} variant={newCategory === cat ? "default" : "outline"} className="cursor-pointer text-[10px]" onClick={() => setNewCategory(newCategory === cat ? "" : cat)}>{cat}</Badge>
                 ))}
               </div>
+              {newCategory && CATEGORY_ITEMS[newCategory] && (
+                <div className="mt-2 p-2 rounded-lg border bg-muted/30">
+                  <p className="text-[10px] text-muted-foreground mb-1">לחץ להוספה מהירה:</p>
+                  <div className="flex flex-wrap gap-1">
+                    {CATEGORY_ITEMS[newCategory]
+                      .filter(item => !supermarketItems.some(si => si.title === item && si.category === newCategory))
+                      .map(item => (
+                        <Badge
+                          key={item}
+                          variant="outline"
+                          className="cursor-pointer text-[10px] hover:bg-primary hover:text-primary-foreground transition-colors"
+                          onClick={async () => {
+                            if (!user) return;
+                            await supabase.from("shopping_items").insert({
+                              user_id: user.id,
+                              title: item,
+                              category: newCategory,
+                              sheet_name: "סופר",
+                              is_dream: false,
+                            });
+                            fetchItems();
+                            toast.success(`${item} נוסף`);
+                          }}
+                        >
+                          + {item}
+                        </Badge>
+                      ))}
+                  </div>
+                </div>
+              )}
             </CardContent>
           </Card>
 
