@@ -256,7 +256,23 @@ const Auth = () => {
             </Button>
           </form>
 
-          <div className="mt-4 text-center">
+          <div className="mt-4 text-center space-y-1">
+            {mode === "login" && (
+              <Button
+                variant="link"
+                onClick={async () => {
+                  if (!email.trim()) { toast.error("הזן אימייל קודם"); return; }
+                  const { error } = await (await import("@/integrations/supabase/client")).supabase.auth.resetPasswordForEmail(email.trim(), {
+                    redirectTo: window.location.origin + "/reset-password",
+                  });
+                  if (error) toast.error("שגיאה: " + error.message);
+                  else toast.success("נשלח מייל לאיפוס סיסמה");
+                }}
+                className="text-sm"
+              >
+                שכחתי סיסמה
+              </Button>
+            )}
             <Button
               variant="link"
               onClick={() => setMode(mode === "login" ? "signup" : "login")}
