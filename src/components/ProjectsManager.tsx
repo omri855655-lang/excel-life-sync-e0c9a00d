@@ -262,7 +262,37 @@ const ProjectsManager = () => {
     ));
   };
 
-  const toggleExpanded = (projectId: string) => {
+  const generateAiMilestones = async (project: Project) => {
+    setAiMilestonesLoading(project.id);
+    try {
+      const { data, error } = await supabase.functions.invoke('task-ai-helper', {
+        body: {
+          taskDescription: project.title,
+          taskCategory: 'project_milestones',
+          customPrompt: `צור רשימת אבני דרך (milestones) לפרויקט "${project.title}". ${project.description ? `תיאור: ${project.description}` : ''} החזר רשימה של עד 10 אבני דרך מסודרות מ-0% ל-100% השלמה. כל אבן דרך צריכה להיות קצרה וספציפית.`,
+        },
+      });
+      if (error) throw error;
+      const text = data?.suggestion || '';
+      const lines = text.split('\n').map((l: string) => l.replace(/^\s*[-*•\d\.\)\-]+\s*/, '').trim()).filter((l: string) => l.length > 2);
+      const milestones = lines.slice(0, 10).map((title: string) => ({ title, done: false }));
+      setAiMilestones(prev => ({ ...prev, [project.id]: milestones }));
+      toast.success(`נוצרו ${milestones.length} אבני דרך`);
+    } catch {
+      toast.error('שגיאה ביצירת אבני דרך');
+    } finally {
+      setAiMilestonesLoading(null);
+    }
+  };
+
+  const toggleAiMilestone = (projectId: string, index: number) => {
+    setAiMilestones(prev => ({
+      ...prev,
+      [projectId]: prev[projectId].map((m, i) => i === index ? { ...m, done: !m.done } : m),
+    }));
+  };
+
+
     setExpandedProjects(prev => {
       const newSet = new Set(prev);
       if (newSet.has(projectId)) {
