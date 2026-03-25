@@ -24,7 +24,7 @@ serve(async (req) => {
       supabase.from("tasks").select("id, description, status, task_type, category, responsible, planned_end, sheet_name, urgent, overdue").eq("user_id", userId).eq("archived", false).limit(200),
       supabase.from("books").select("id, title, author, status, notes").eq("user_id", userId).limit(200),
       supabase.from("projects").select("id, title, description, status, target_date").eq("user_id", userId).limit(50),
-      supabase.from("calendar_events").select("id, title, start_time, end_time, category, description").eq("user_id", userId).order("start_time", { ascending: false }).limit(100),
+      supabase.from("calendar_events").select("id, title, start_time, end_time, category, description, color").eq("user_id", userId).order("start_time", { ascending: false }).limit(100),
       supabase.from("shows").select("id, title, status, type, current_season, current_episode").eq("user_id", userId).limit(100),
       supabase.from("courses").select("id, title, status, notes").eq("user_id", userId).limit(50),
       supabase.from("shopping_items").select("id, title, status, category, sheet_name, quantity, price, is_dream").eq("user_id", userId).eq("archived", false).limit(200),
@@ -38,7 +38,7 @@ serve(async (req) => {
     const projectIds = (projectsRes.data || []).map(p => p.id);
     let projectTasksData: any[] = [];
     if (projectIds.length > 0) {
-      const { data } = await supabase.from("project_tasks").select("id, title, completed, project_id, status").eq("user_id", userId).in("project_id", projectIds);
+      const { data } = await supabase.from("project_tasks").select("id, title, completed, project_id, status, assigned_email").eq("user_id", userId).in("project_id", projectIds);
       projectTasksData = data || [];
     }
 
@@ -54,6 +54,8 @@ serve(async (req) => {
     (boardsRes.data || []).forEach((b: any) => { boardsMap[b.id] = b.name; });
 
     const today = new Date().toISOString().split('T')[0];
+    const now = new Date();
+    const currentTime = `${now.getHours().toString().padStart(2, '0')}:${now.getMinutes().toString().padStart(2, '0')}`;
 
     const systemPrompt = `אתה Tabro AI - עוזר חכם עם שליטה מלאה באפליקציה. אתה מדבר עברית.
 
@@ -75,7 +77,7 @@ ${(projectsRes.data || []).map(p => {
   const total = pTasks.length;
   const progress = total > 0 ? Math.round((completed / total) * 100) : 0;
   return `- [ID:${p.id}] "${p.title}" | סטטוס: ${p.status} | התקדמות: ${progress}% (${completed}/${total})
-  משימות: ${pTasks.map(t => `[ID:${t.id}] "${t.title}" ${t.completed ? '✅' : '⬜'}`).join(', ')}`;
+  משימות: ${pTasks.map(t => `[ID:${t.id}] "${t.title}" ${t.completed ? '✅' : '⬜'}${t.assigned_email ? ` (${t.assigned_email})` : ''}`).join(', ')}`;
 }).join('\n')}
 
 ### אירועי לוח זמנים (${(eventsRes.data || []).length}):
@@ -100,108 +102,173 @@ ${(podcastsRes.data || []).map(p => `- [ID:${p.id}] "${p.title}"${p.host ? ` - $
 ### רשימות מותאמות (${(boardsRes.data || []).length}):
 ${(boardsRes.data || []).map(b => {
   const items = (boardItemsRes.data || []).filter((i: any) => i.board_id === b.id);
-  return `- רשימה "${b.name}" [ID:${b.id}]: ${items.map((i: any) => `"${i.title}" (${i.status})`).join(', ') || 'ריקה'}`;
+  const itemsStr = items.map((i: any) => '"' + i.title + '" (' + i.status + ')').join(', ') || 'ריקה';
+  return '- רשימה "' + b.name + '" [ID:' + b.id + ']: ' + itemsStr;
 }).join('\n')}
 
 ### חלומות ומטרות (${(dreamGoalsRes.data || []).length}):
 ${(dreamGoalsRes.data || []).map(d => `- [ID:${d.id}] "${d.title}" | סטטוס: ${d.status} | התקדמות: ${d.progress}%`).join('\n')}
 
 התאריך היום: ${today}
+השעה עכשיו: ${currentTime}
 
-## פעולות שאתה יכול לבצע:
-כשהמשתמש מבקש פעולה, החזר בלוק JSON בתוך \`\`\`action ... \`\`\` עם הפעולה.
+## הוראות פעולה - חשוב מאוד!
+כשהמשתמש מבקש פעולה (הוספה, עדכון, מחיקה), אתה חייב להחזיר בלוק JSON של הפעולה.
+הבלוק חייב להתחיל ב-\`\`\`action ולהסתיים ב-\`\`\`.
+בתוכו JSON תקין בלבד - בלי הערות, בלי טקסט נוסף.
 
-### הוספת משימה:
+### דוגמאות לפעולות:
+
+הוספת משימה:
 \`\`\`action
-{"type": "add_task", "task_type": "work|personal", "description": "תיאור", "category": "קטגוריה", "responsible": "אחראי", "planned_end": "YYYY-MM-DD"}
+{"type":"add_task","task_type":"work","description":"לסיים דוח","category":"עבודה","sheet_name":"2026"}
 \`\`\`
 
-### עדכון סטטוס משימה (סיום/עדכון):
+הוספת משימה אישית:
 \`\`\`action
-{"type": "update_task", "task_id": "UUID", "status": "בוצע|בתהליך|לא התחיל", "urgent": true/false}
+{"type":"add_task","task_type":"personal","description":"לקנות אוכל","category":"אישי","sheet_name":"2026"}
 \`\`\`
 
-### הוספת אירוע ללוח זמנים:
+עדכון סטטוס משימה:
 \`\`\`action
-{"type": "add_event", "title": "כותרת", "start_time": "ISO datetime", "end_time": "ISO datetime", "category": "קטגוריה"}
+{"type":"update_task","task_id":"UUID","status":"בוצע"}
 \`\`\`
 
-### עדכון/מחיקת אירוע:
+הוספת אירוע למתכנן לוז:
 \`\`\`action
-{"type": "update_event", "event_id": "UUID", "title": "כותרת", "start_time": "ISO", "end_time": "ISO"}
-\`\`\`
-\`\`\`action
-{"type": "delete_event", "event_id": "UUID"}
+{"type":"add_event","title":"פגישה","start_time":"2026-03-25T14:00:00","end_time":"2026-03-25T15:00:00","category":"עבודה","color":"#f97316"}
 \`\`\`
 
-### הוספת ספר:
+עדכון/מחיקת אירוע:
 \`\`\`action
-{"type": "add_book", "title": "שם הספר", "author": "מחבר", "status": "לקרוא|קורא|נקרא"}
+{"type":"update_event","event_id":"UUID","title":"כותרת","start_time":"ISO","end_time":"ISO"}
+\`\`\`
+\`\`\`action
+{"type":"delete_event","event_id":"UUID"}
 \`\`\`
 
-### עדכון סטטוס ספר:
+הוספת ספר:
 \`\`\`action
-{"type": "update_book", "book_id": "UUID", "status": "לקרוא|קורא|נקרא"}
+{"type":"add_book","title":"שם","author":"מחבר","status":"לקרוא"}
 \`\`\`
 
-### הוספת פריט קניות:
+עדכון סטטוס ספר:
 \`\`\`action
-{"type": "add_shopping", "title": "שם הפריט", "category": "קטגוריה", "sheet_name": "ראשי|סופר", "is_dream": false}
+{"type":"update_book","book_id":"UUID","status":"קורא"}
 \`\`\`
 
-### סימון פריט קניות (נקנה/לקנות):
+פריט קניות:
 \`\`\`action
-{"type": "update_shopping", "item_id": "UUID", "status": "נקנה|לקנות"}
+{"type":"add_shopping","title":"חלב","category":"מוצרי חלב","sheet_name":"סופר"}
 \`\`\`
 
-### עדכון סטטוס פרויקט:
+סימון פריט קניות:
 \`\`\`action
-{"type": "update_project", "project_id": "UUID", "status": "פעיל|בהמתנה|הושלם"}
+{"type":"update_shopping","item_id":"UUID","status":"נקנה"}
 \`\`\`
 
-### סימון משימת פרויקט:
+עדכון פרויקט:
 \`\`\`action
-{"type": "toggle_project_task", "task_id": "UUID", "completed": true}
+{"type":"update_project","project_id":"UUID","status":"הושלם"}
 \`\`\`
 
-### הוספת משימה לפרויקט:
+סימון משימת פרויקט:
 \`\`\`action
-{"type": "add_project_task", "project_id": "UUID", "title": "כותרת"}
+{"type":"toggle_project_task","task_id":"UUID","completed":true}
 \`\`\`
 
-### עדכון סטטוס סדרה/סרט:
+הוספת משימה לפרויקט:
 \`\`\`action
-{"type": "update_show", "show_id": "UUID", "status": "בצפייה|נצפה|לצפות", "current_season": 1, "current_episode": 5}
+{"type":"add_project_task","project_id":"UUID","title":"כותרת"}
 \`\`\`
 
-### הוספת פריט לרשימה מותאמת:
+עדכון סדרה:
 \`\`\`action
-{"type": "add_board_item", "board_id": "UUID", "title": "כותרת", "category": "קטגוריה"}
+{"type":"update_show","show_id":"UUID","status":"בצפייה","current_season":1,"current_episode":5}
 \`\`\`
 
-### עדכון סטטוס קורס:
+הוספת פריט לרשימה מותאמת:
 \`\`\`action
-{"type": "update_course", "course_id": "UUID", "status": "בתכנון|פעיל|הושלם"}
+{"type":"add_board_item","board_id":"UUID","title":"כותרת","category":"קטגוריה"}
 \`\`\`
 
-### פעולות מרובות:
+עדכון קורס:
 \`\`\`action
-{"type": "multi", "actions": [{"type": "...", ...}, {"type": "...", ...}]}
+{"type":"update_course","course_id":"UUID","status":"פעיל"}
 \`\`\`
 
-## כללים:
-- כשהמשתמש אומר "סיימתי" או "עשיתי" - עדכן את הסטטוס ל"בוצע"
-- כשהמשתמש אומר "קניתי את X" - סמן ברשימת קניות כ"נקנה"
-- חפש תמיד את הפריט הנכון לפי שם (חיפוש חלקי)
-- כשנשאלת שאלה על מידע - ענה מהנתונים שלמעלה, אל תמציא
-- תמיד השב בעברית. תהיה תמציתי וידידותי
-- כשמבקשים להוסיף אירוע עם תאריך יחסי (כמו "מחר", "ב-26 לחודש") - חשב מהתאריך של היום
-- אם המשתמש מבקש לראות את הלו"ז - הצג את האירועים הקרובים מהנתונים`;
+פעולות מרובות (כמה פעולות ביחד):
+\`\`\`action
+{"type":"multi","actions":[{"type":"add_task","task_type":"personal","description":"לקנות אוכל","sheet_name":"2026"},{"type":"add_event","title":"קניות","start_time":"2026-03-25T15:00:00","end_time":"2026-03-25T16:00:00","category":"אישי","color":"#a855f7"}]}
+\`\`\`
+
+## כללים חשובים:
+1. כשהמשתמש מבקש לעשות פעולה - תמיד תכלול בלוק action תקין!
+2. כשהמשתמש אומר "סיימתי" או "עשיתי" - עדכן סטטוס ל"בוצע"
+3. כשמבקשים להוסיף משימה - תמיד תציין task_type (work/personal) ו-sheet_name (שנה נוכחית)
+4. כשמבקשים להוסיף אירוע למתכנן לוז - חשב את התאריך הנכון מהתאריך של היום
+5. כשמבקשים משימה + אירוע ביחד - השתמש ב-multi action
+6. כשהמשתמש אומר "קניתי" - סמן כ"נקנה"
+7. חפש תמיד את הפריט הנכון לפי שם (חיפוש חלקי)
+8. תמיד השב בעברית. תהיה תמציתי וידידותי
+9. כשמבקשים לראות מידע - ענה מהנתונים שלמעלה, אל תמציא
+10. אל תוסיף הערות או טקסט בתוך בלוק ה-JSON - רק JSON נקי`;
 
     const messages = [
       { role: "system", content: systemPrompt },
       ...(conversationHistory || []),
       { role: "user", content: message },
+    ];
+
+    // Use tool calling for more reliable action extraction
+    const tools = [
+      {
+        type: "function",
+        function: {
+          name: "execute_action",
+          description: "Execute an action in the app (add task, update task, add event, etc.)",
+          parameters: {
+            type: "object",
+            properties: {
+              action: {
+                type: "object",
+                description: "The action to execute",
+                properties: {
+                  type: { type: "string", enum: ["add_task", "update_task", "add_event", "update_event", "delete_event", "add_book", "update_book", "add_shopping", "update_shopping", "update_project", "toggle_project_task", "add_project_task", "update_show", "add_board_item", "update_course", "multi"] },
+                  task_type: { type: "string", enum: ["work", "personal"] },
+                  description: { type: "string" },
+                  category: { type: "string" },
+                  responsible: { type: "string" },
+                  planned_end: { type: "string" },
+                  sheet_name: { type: "string" },
+                  urgent: { type: "boolean" },
+                  task_id: { type: "string" },
+                  status: { type: "string" },
+                  title: { type: "string" },
+                  start_time: { type: "string" },
+                  end_time: { type: "string" },
+                  color: { type: "string" },
+                  event_id: { type: "string" },
+                  book_id: { type: "string" },
+                  author: { type: "string" },
+                  item_id: { type: "string" },
+                  project_id: { type: "string" },
+                  completed: { type: "boolean" },
+                  show_id: { type: "string" },
+                  current_season: { type: "number" },
+                  current_episode: { type: "number" },
+                  board_id: { type: "string" },
+                  course_id: { type: "string" },
+                  is_dream: { type: "boolean" },
+                  actions: { type: "array", items: { type: "object" } },
+                },
+                required: ["type"]
+              }
+            },
+            required: ["action"]
+          }
+        }
+      }
     ];
 
     const response = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
@@ -213,6 +280,7 @@ ${(dreamGoalsRes.data || []).map(d => `- [ID:${d.id}] "${d.title}" | סטטוס:
       body: JSON.stringify({
         model: "google/gemini-2.5-flash",
         messages,
+        tools,
         stream: false,
       }),
     });
@@ -228,27 +296,59 @@ ${(dreamGoalsRes.data || []).map(d => `- [ID:${d.id}] "${d.title}" | סטטוס:
     }
 
     const aiResult = await response.json();
-    const aiContent = aiResult.choices?.[0]?.message?.content || "לא הצלחתי לענות";
+    const choice = aiResult.choices?.[0];
+    const aiMessage = choice?.message;
+    const aiContent = aiMessage?.content || "";
 
-    // Parse actions from the response
-    const actionMatch = aiContent.match(/```action\s*\n?([\s\S]*?)\n?\s*```/);
     let actionResult = null;
 
-    if (actionMatch) {
-      try {
-        const action = JSON.parse(actionMatch[1]);
-        actionResult = await executeAction(supabase, userId, action);
-      } catch (e) {
-        console.error("Action parse error:", e);
-        actionResult = { success: false, error: "שגיאה בפענוח הפעולה" };
+    // Check for tool calls first (more reliable)
+    if (aiMessage?.tool_calls && aiMessage.tool_calls.length > 0) {
+      for (const toolCall of aiMessage.tool_calls) {
+        if (toolCall.function?.name === "execute_action") {
+          try {
+            const args = JSON.parse(toolCall.function.arguments);
+            const action = args.action;
+            console.log("Executing tool call action:", JSON.stringify(action));
+            actionResult = await executeAction(supabase, userId, action);
+            console.log("Action result:", JSON.stringify(actionResult));
+          } catch (e) {
+            console.error("Tool call parse error:", e);
+          }
+        }
+      }
+    }
+
+    // Fallback: also check for ```action blocks in content
+    if (!actionResult) {
+      const actionMatch = aiContent.match(/```action\s*\n?([\s\S]*?)\n?\s*```/);
+      if (actionMatch) {
+        try {
+          const action = JSON.parse(actionMatch[1].trim());
+          console.log("Executing inline action:", JSON.stringify(action));
+          actionResult = await executeAction(supabase, userId, action);
+          console.log("Action result:", JSON.stringify(actionResult));
+        } catch (e) {
+          console.error("Action parse error:", e);
+          actionResult = { success: false, error: "שגיאה בפענוח הפעולה" };
+        }
       }
     }
 
     // Clean response text
     const cleanContent = aiContent.replace(/```action[\s\S]*?```/g, "").trim();
 
+    // Build response text
+    let responseText = cleanContent;
+    if (!responseText && actionResult?.success) {
+      // If the model only used tool calls and didn't provide text
+      responseText = "בוצע! ✅";
+    } else if (!responseText) {
+      responseText = "לא הצלחתי לענות";
+    }
+
     return new Response(JSON.stringify({
-      response: cleanContent,
+      response: responseText,
       action: actionResult,
     }), {
       headers: { ...corsHeaders, "Content-Type": "application/json" },
@@ -276,14 +376,16 @@ async function executeAction(supabase: any, userId: string, action: any): Promis
       case "add_task": {
         const { error } = await supabase.from("tasks").insert({
           user_id: userId,
-          description: action.description,
+          description: action.description || action.title,
           task_type: action.task_type || "personal",
           category: action.category || null,
           responsible: action.responsible || null,
           planned_end: action.planned_end || null,
-          status: "לא התחיל",
-          sheet_name: String(new Date().getFullYear()),
+          urgent: action.urgent || false,
+          status: action.status || "לא התחיל",
+          sheet_name: action.sheet_name || String(new Date().getFullYear()),
         });
+        if (error) console.error("add_task error:", error);
         return error ? { success: false, error: error.message } : { success: true, type: "add_task" };
       }
 
@@ -294,7 +396,9 @@ async function executeAction(supabase: any, userId: string, action: any): Promis
         if (action.responsible) updates.responsible = action.responsible;
         if (action.category) updates.category = action.category;
         if (action.planned_end) updates.planned_end = action.planned_end;
+        if (action.description) updates.description = action.description;
         const { error } = await supabase.from("tasks").update(updates).eq("id", action.task_id).eq("user_id", userId);
+        if (error) console.error("update_task error:", error);
         return error ? { success: false, error: error.message } : { success: true, type: "update_task" };
       }
 
@@ -305,8 +409,10 @@ async function executeAction(supabase: any, userId: string, action: any): Promis
           start_time: action.start_time,
           end_time: action.end_time,
           category: action.category || "משימה",
+          color: action.color || null,
           source_type: "custom",
         });
+        if (error) console.error("add_event error:", error);
         return error ? { success: false, error: error.message } : { success: true, type: "add_event" };
       }
 
@@ -316,7 +422,9 @@ async function executeAction(supabase: any, userId: string, action: any): Promis
         if (action.start_time) updates.start_time = action.start_time;
         if (action.end_time) updates.end_time = action.end_time;
         if (action.category) updates.category = action.category;
+        if (action.color) updates.color = action.color;
         const { error } = await supabase.from("calendar_events").update(updates).eq("id", action.event_id).eq("user_id", userId);
+        if (error) console.error("update_event error:", error);
         return error ? { success: false, error: error.message } : { success: true, type: "update_event" };
       }
 
@@ -332,6 +440,7 @@ async function executeAction(supabase: any, userId: string, action: any): Promis
           author: action.author || null,
           status: action.status || "לקרוא",
         });
+        if (error) console.error("add_book error:", error);
         return error ? { success: false, error: error.message } : { success: true, type: "add_book" };
       }
 
@@ -349,7 +458,9 @@ async function executeAction(supabase: any, userId: string, action: any): Promis
           category: action.category || null,
           sheet_name: action.sheet_name || "ראשי",
           is_dream: action.is_dream || false,
+          quantity: action.quantity || null,
         });
+        if (error) console.error("add_shopping error:", error);
         return error ? { success: false, error: error.message } : { success: true, type: "add_shopping" };
       }
 
@@ -375,6 +486,7 @@ async function executeAction(supabase: any, userId: string, action: any): Promis
           title: action.title,
           sort_order: 0,
         });
+        if (error) console.error("add_project_task error:", error);
         return error ? { success: false, error: error.message } : { success: true, type: "add_project_task" };
       }
 
@@ -395,6 +507,7 @@ async function executeAction(supabase: any, userId: string, action: any): Promis
           category: action.category || null,
           status: "לביצוע",
         });
+        if (error) console.error("add_board_item error:", error);
         return error ? { success: false, error: error.message } : { success: true, type: "add_board_item" };
       }
 

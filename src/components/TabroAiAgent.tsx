@@ -35,13 +35,25 @@ const TabroAiAgent = () => {
   const { user } = useAuth();
   const [open, setOpen] = useState(false);
   const [input, setInput] = useState("");
-  const [messages, setMessages] = useState<Message[]>([]);
+  const [messages, setMessages] = useState<Message[]>(() => {
+    try {
+      const saved = localStorage.getItem("tabro-ai-history");
+      return saved ? JSON.parse(saved) : [];
+    } catch { return []; }
+  });
   const [loading, setLoading] = useState(false);
   const scrollRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     if (scrollRef.current) {
       scrollRef.current.scrollTop = scrollRef.current.scrollHeight;
+    }
+  }, [messages]);
+
+  // Save conversation history
+  useEffect(() => {
+    if (messages.length > 0) {
+      localStorage.setItem("tabro-ai-history", JSON.stringify(messages.slice(-50)));
     }
   }, [messages]);
 
@@ -85,7 +97,7 @@ const TabroAiAgent = () => {
       {!open && (
         <button
           onClick={() => setOpen(true)}
-          className="fixed left-4 bottom-4 z-50 w-14 h-14 rounded-full bg-primary text-primary-foreground shadow-lg hover:shadow-xl transition-all hover:scale-105 flex items-center justify-center"
+          className="fixed left-4 bottom-20 z-50 w-14 h-14 rounded-full bg-primary text-primary-foreground shadow-lg hover:shadow-xl transition-all hover:scale-105 flex items-center justify-center"
           title="Tabro AI"
         >
           <Bot className="h-6 w-6" />
@@ -94,7 +106,7 @@ const TabroAiAgent = () => {
 
       {/* Chat panel */}
       {open && (
-        <div className="fixed left-4 bottom-4 z-50 w-[360px] max-w-[calc(100vw-2rem)] h-[500px] max-h-[calc(100vh-6rem)] bg-card border border-border rounded-2xl shadow-2xl flex flex-col overflow-hidden" dir="rtl">
+        <div className="fixed left-4 bottom-20 z-50 w-[360px] max-w-[calc(100vw-2rem)] h-[500px] max-h-[calc(100vh-6rem)] bg-card border border-border rounded-2xl shadow-2xl flex flex-col overflow-hidden" dir="rtl">
           {/* Header */}
           <div className="flex items-center gap-2 px-4 py-3 border-b border-border bg-primary/5">
             <Bot className="h-5 w-5 text-primary" />

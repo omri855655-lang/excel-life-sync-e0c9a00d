@@ -532,7 +532,7 @@ const ProjectsManager = () => {
                             <div key={index} className="flex items-center gap-1 text-xs bg-muted px-2 py-1 rounded">
                               <a href={link} target="_blank" rel="noopener noreferrer" className="text-primary hover:underline flex items-center gap-1">
                                 <ExternalLink className="h-3 w-3" />
-                                {new URL(link).hostname}
+                                {(() => { try { return new URL(link).hostname; } catch { return link.slice(0, 30); } })()}
                               </a>
                               <button
                                 onClick={() => removeLink(project.id, index)}
