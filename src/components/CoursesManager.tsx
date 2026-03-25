@@ -7,7 +7,7 @@ import { Textarea } from '@/components/ui/textarea';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogTrigger } from '@/components/ui/dialog';
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible';
-import { Plus, Trash2, Search, GraduationCap, ChevronDown, ChevronLeft, Sparkles, CheckCircle2, Circle, Loader2, Calendar } from 'lucide-react';
+import { Plus, Trash2, Search, GraduationCap, ChevronDown, ChevronLeft, Sparkles, CheckCircle2, Circle, Loader2, Calendar, Flame } from 'lucide-react';
 import { Progress } from '@/components/ui/progress';
 import { toast } from 'sonner';
 import { cn } from '@/lib/utils';
@@ -34,6 +34,7 @@ interface CourseLesson {
   completed: boolean;
   scheduled_date: string | null;
   duration_minutes: number | null;
+  urgent: boolean;
   created_at: string;
   updated_at: string;
 }
