@@ -76,7 +76,7 @@ const App = () => (
         <TooltipProvider>
           <Toaster />
           <Sonner />
-          <IosMusicBanner />
+          
           <TabroAiAgent />
           <AppContent />
         </TooltipProvider>

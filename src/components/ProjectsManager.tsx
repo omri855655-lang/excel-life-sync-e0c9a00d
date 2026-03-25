@@ -615,7 +615,7 @@ const ProjectsManager = () => {
                             {(projectMembers[project.id] || []).length > 0 && (
                               <Select
                                 value={newTaskAssignee[project.id] || ''}
-                                onValueChange={(v) => setNewTaskAssignee(prev => ({ ...prev, [project.id]: v }))}
+                                onValueChange={(v) => setNewTaskAssignee(prev => ({ ...prev, [project.id]: v === '__none__' ? '' : v }))}
                               >
                                 <SelectTrigger className="w-[160px] h-8 text-xs">
                                   <SelectValue placeholder="הקצה לחבר צוות" />
