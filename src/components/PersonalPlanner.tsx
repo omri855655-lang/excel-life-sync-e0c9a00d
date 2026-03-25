@@ -1652,6 +1652,8 @@ const PersonalPlanner = () => {
             </Button>
           </CollapsibleContent>
         </Collapsible>
+
+        <ScrollArea className="flex-1">
           <div className="p-2 space-y-1.5">
             {filteredTasks.map((task) => (
               <div
