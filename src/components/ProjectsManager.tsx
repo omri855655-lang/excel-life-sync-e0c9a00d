@@ -104,7 +104,16 @@ const ProjectsManager = () => {
           if (!tasksByProject[task.project_id]) {
             tasksByProject[task.project_id] = [];
           }
-          tasksByProject[task.project_id].push(task as ProjectTask);
+          tasksByProject[task.project_id].push({
+            ...task,
+            urgent: task.urgent ?? false,
+            completed: task.completed ?? false,
+            sort_order: task.sort_order ?? 0,
+            assigned_to: task.assigned_to ?? null,
+            assigned_email: task.assigned_email ?? null,
+            status: task.status ?? null,
+            notes: task.notes ?? null,
+          });
         });
         setProjectTasks(tasksByProject);
 
