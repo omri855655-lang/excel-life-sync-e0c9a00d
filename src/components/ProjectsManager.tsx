@@ -624,7 +624,7 @@ const ProjectsManager = () => {
                           <div className="flex gap-2 items-center flex-wrap">
                             {(projectMembers[project.id] || []).length > 0 && (
                               <Select
-                                value={newTaskAssignee[project.id] || ''}
+                                value={newTaskAssignee[project.id] || '__none__'}
                                 onValueChange={(v) => setNewTaskAssignee(prev => ({ ...prev, [project.id]: v === '__none__' ? '' : v }))}
                               >
                                 <SelectTrigger className="w-[160px] h-8 text-xs">
@@ -633,13 +633,20 @@ const ProjectsManager = () => {
                                 <SelectContent>
                                   <SelectItem value="__none__">ללא הקצאה</SelectItem>
                                   {(projectMembers[project.id] || []).map(m => (
-                                    <SelectItem key={m.id} value={m.invited_display_name || m.invited_email}>
+                                    <SelectItem key={m.id} value={m.id}>
                                       {m.invited_display_name || m.invited_email}
                                     </SelectItem>
                                   ))}
                                 </SelectContent>
                               </Select>
                             )}
+                            <Input
+                              placeholder="תפקיד/חלק במשימה..."
+                              value={newTaskNotes[project.id] || ''}
+                              onChange={(e) => setNewTaskNotes(prev => ({ ...prev, [project.id]: e.target.value }))}
+                              className="w-[200px] h-8 text-xs"
+                              dir="rtl"
+                            />
                             <label className="flex items-center gap-1.5 text-xs text-muted-foreground cursor-pointer">
                               <input
                                 type="checkbox"
