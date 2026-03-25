@@ -50,6 +50,13 @@ const TabroAiAgent = () => {
     }
   }, [messages]);
 
+  // Save conversation history
+  useEffect(() => {
+    if (messages.length > 0) {
+      localStorage.setItem("tabro-ai-history", JSON.stringify(messages.slice(-50)));
+    }
+  }, [messages]);
+
   const sendMessage = async () => {
     if (!input.trim() || !user || loading) return;
     const userMsg: Message = { role: "user", content: input.trim() };
