@@ -1671,6 +1671,36 @@ const PersonalPlanner = () => {
             >
               ⚙️ ניהול מלא
             </Button>
+           </CollapsibleContent>
+        </Collapsible>
+
+        {/* Source color pickers */}
+        <Collapsible>
+          <CollapsibleTrigger asChild>
+            <Button variant="ghost" size="sm" className="w-full justify-between text-[10px] h-7 px-2 border-b border-border rounded-none">
+              🎨 צבעי מקורות
+              <Filter className="h-3 w-3" />
+            </Button>
+          </CollapsibleTrigger>
+          <CollapsibleContent className="p-2 border-b border-border space-y-1.5 max-h-[300px] overflow-auto">
+            {Object.entries(sourceColors).map(([source, color]) => (
+              <div key={source} className="space-y-1">
+                <div className="flex items-center gap-1.5">
+                  <div className="w-4 h-4 rounded-full border border-border shrink-0" style={{ backgroundColor: color }} />
+                  <span className="text-[10px] flex-1 font-medium">{getSourceLabel(source)}</span>
+                </div>
+                <div className="flex flex-wrap gap-1">
+                  {COLOR_PALETTE.slice(0, 28).map(c => (
+                    <button
+                      key={c}
+                      className={`w-4 h-4 rounded-full border transition-transform hover:scale-125 ${c === color ? "ring-2 ring-primary ring-offset-1" : "border-border"}`}
+                      style={{ backgroundColor: c }}
+                      onClick={() => updateSourceColor(source, c)}
+                    />
+                  ))}
+                </div>
+              </div>
+            ))}
           </CollapsibleContent>
         </Collapsible>
 
