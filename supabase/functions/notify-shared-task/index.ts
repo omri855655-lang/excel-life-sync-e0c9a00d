@@ -12,7 +12,7 @@ serve(async (req) => {
   }
 
   try {
-    const { ownerUserId, taskDescription, creatorName, sheetName } = await req.json();
+    const { ownerUserId, taskDescription, creatorName, sheetName, projectId, notifyAllMembers } = await req.json();
     const normalizedTaskDescription = typeof taskDescription === "string" ? taskDescription.trim() : "";
     const taskPreview = normalizedTaskDescription ? `: ${normalizedTaskDescription.slice(0, 80)}` : "";
 
@@ -29,59 +29,93 @@ serve(async (req) => {
 
     const supabase = createClient(supabaseUrl, serviceKey);
 
-    // Get owner's email
-    const { data: ownerData } = await supabase.auth.admin.getUserById(ownerUserId);
-    const ownerEmail = ownerData?.user?.email;
+    // Determine who to notify
+    const targetUserIds: string[] = [];
 
-    if (!ownerEmail || !resendKey) {
-      return new Response(JSON.stringify({ error: "Could not resolve owner email or missing API key" }), {
-        status: 400,
+    if (notifyAllMembers && projectId) {
+      // Notify all project members except the creator
+      const { data: members } = await supabase
+        .from("project_members")
+        .select("user_id, invited_email")
+        .eq("project_id", projectId)
+        .eq("status", "approved");
+
+      if (members) {
+        for (const m of members) {
+          if (m.user_id && m.user_id !== ownerUserId) {
+            targetUserIds.push(m.user_id);
+          }
+        }
+      }
+
+      // Also notify the project owner if they're not the one adding
+      const { data: project } = await supabase
+        .from("projects")
+        .select("user_id")
+        .eq("id", projectId)
+        .single();
+
+      if (project && project.user_id !== ownerUserId && !targetUserIds.includes(project.user_id)) {
+        targetUserIds.push(project.user_id);
+      }
+    } else {
+      // Original behavior: notify the owner only
+      targetUserIds.push(ownerUserId);
+    }
+
+    if (targetUserIds.length === 0) {
+      return new Response(JSON.stringify({ success: true, message: "No users to notify" }), {
         headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
     }
 
-    // Send email notification
-    const emailRes = await fetch("https://api.resend.com/emails", {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-        Authorization: `Bearer ${resendKey}`,
-      },
-      body: JSON.stringify({
-        from: "ExcelSync <onboarding@resend.dev>",
-        to: [ownerEmail],
-        subject: `${creatorName} צירף/ה לך משימה${taskPreview}`,
-        html: `
-          <div dir="rtl" style="font-family: Arial, sans-serif; padding: 20px;">
-            <h2>נוספה לך משימה חדשה</h2>
-            <p><strong>${creatorName}</strong> צירף/ה לך משימה חדשה לגליון <strong>${sheetName || "משותף"}</strong>.</p>
-            ${normalizedTaskDescription ? `<p>המשימה: <strong>${normalizedTaskDescription}</strong></p>` : ""}
-            <hr style="margin: 20px 0;" />
-            <a href="https://excel-life-sync.lovable.app/personal" style="display: inline-block; background: #6366f1; color: white; padding: 10px 20px; border-radius: 8px; text-decoration: none;">
-              פתח את האפליקציה
-            </a>
-          </div>
-        `,
-      }),
-    });
+    const results = [];
 
-    const emailResult = await emailRes.json();
+    for (const targetUserId of targetUserIds) {
+      // Get target user's email
+      const { data: userData } = await supabase.auth.admin.getUserById(targetUserId);
+      const targetEmail = userData?.user?.email;
 
-    // Also send push notification to the owner
-    const { data: pushSubs } = await supabase
-      .from("push_subscriptions")
-      .select("*")
-      .eq("user_id", ownerUserId);
+      // Send email notification
+      if (targetEmail && resendKey) {
+        try {
+          await fetch("https://api.resend.com/emails", {
+            method: "POST",
+            headers: {
+              "Content-Type": "application/json",
+              Authorization: `Bearer ${resendKey}`,
+            },
+            body: JSON.stringify({
+              from: "ExcelSync <onboarding@resend.dev>",
+              to: [targetEmail],
+              subject: `${creatorName} צירף/ה משימה${taskPreview}`,
+              html: `
+                <div dir="rtl" style="font-family: Arial, sans-serif; padding: 20px;">
+                  <h2>נוספה משימה חדשה</h2>
+                  <p><strong>${creatorName}</strong> צירף/ה משימה חדשה ${sheetName ? `ל<strong>${sheetName}</strong>` : ""}.</p>
+                  ${normalizedTaskDescription ? `<p>המשימה: <strong>${normalizedTaskDescription}</strong></p>` : ""}
+                  <hr style="margin: 20px 0;" />
+                  <a href="https://excel-life-sync.lovable.app/personal" style="display: inline-block; background: #6366f1; color: white; padding: 10px 20px; border-radius: 8px; text-decoration: none;">
+                    פתח את האפליקציה
+                  </a>
+                </div>
+              `,
+            }),
+          });
+        } catch (emailErr) {
+          console.error("Email error:", emailErr);
+        }
+      }
 
-    if (pushSubs && pushSubs.length > 0) {
-      const vapidPrivateKey = Deno.env.get("VAPID_PRIVATE_KEY");
-      const vapidPublicKey = Deno.env.get("VAPID_PUBLIC_KEY");
+      // Send push notification
+      const { data: pushSubs } = await supabase
+        .from("push_subscriptions")
+        .select("*")
+        .eq("user_id", targetUserId);
 
-      if (vapidPrivateKey && vapidPublicKey) {
-        // Use web-push via fetch to send notifications
+      if (pushSubs && pushSubs.length > 0) {
         for (const sub of pushSubs) {
           try {
-            // Simple notification via the existing send-push-notifications function pattern
             await fetch(`${supabaseUrl}/functions/v1/send-push-notifications`, {
               method: "POST",
               headers: {
@@ -96,7 +130,7 @@ serve(async (req) => {
                 title: `📋 ${creatorName} הוסיף/ה משימה`,
                 body: normalizedTaskDescription
                   ? `${normalizedTaskDescription.slice(0, 100)}`
-                  : `משימה חדשה נוספה לגליון ${sheetName || "משותף"}`,
+                  : `משימה חדשה נוספה ל${sheetName || "פרויקט"}`,
               }),
             });
           } catch (pushErr) {
@@ -104,9 +138,20 @@ serve(async (req) => {
           }
         }
       }
+
+      // Save in-app notification
+      try {
+        await supabase.from("sent_notifications").insert({
+          user_id: targetUserId,
+          notification_type: `project_task_added`,
+          channel: "in_app",
+        });
+      } catch {}
+
+      results.push({ userId: targetUserId, notified: true });
     }
 
-    return new Response(JSON.stringify({ success: true, emailResult }), {
+    return new Response(JSON.stringify({ success: true, results }), {
       headers: { ...corsHeaders, "Content-Type": "application/json" },
     });
   } catch (error: any) {

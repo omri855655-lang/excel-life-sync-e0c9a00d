@@ -597,18 +597,49 @@ const ProjectsManager = () => {
                     <CollapsibleContent>
                       <div className="bg-muted/30 p-4 mr-11 border-t border-border">
                         {/* Add task input */}
-                        <div className="flex gap-2 mb-3">
-                          <Input
-                            placeholder="משימה חדשה..."
-                            value={newTaskTitle[project.id] || ''}
-                            onChange={(e) => setNewTaskTitle(prev => ({ ...prev, [project.id]: e.target.value }))}
-                            onKeyDown={(e) => e.key === 'Enter' && addProjectTask(project.id)}
-                            className="flex-1 text-right"
-                            dir="rtl"
-                          />
-                          <Button size="sm" onClick={() => addProjectTask(project.id)}>
-                            <Plus className="h-4 w-4" />
-                          </Button>
+                        <div className="space-y-2 mb-3">
+                          <div className="flex gap-2">
+                            <Input
+                              placeholder="משימה חדשה..."
+                              value={newTaskTitle[project.id] || ''}
+                              onChange={(e) => setNewTaskTitle(prev => ({ ...prev, [project.id]: e.target.value }))}
+                              onKeyDown={(e) => e.key === 'Enter' && addProjectTask(project.id)}
+                              className="flex-1 text-right"
+                              dir="rtl"
+                            />
+                            <Button size="sm" onClick={() => addProjectTask(project.id)}>
+                              <Plus className="h-4 w-4" />
+                            </Button>
+                          </div>
+                          <div className="flex gap-2 items-center flex-wrap">
+                            {(projectMembers[project.id] || []).length > 0 && (
+                              <Select
+                                value={newTaskAssignee[project.id] || ''}
+                                onValueChange={(v) => setNewTaskAssignee(prev => ({ ...prev, [project.id]: v }))}
+                              >
+                                <SelectTrigger className="w-[160px] h-8 text-xs">
+                                  <SelectValue placeholder="הקצה לחבר צוות" />
+                                </SelectTrigger>
+                                <SelectContent>
+                                  <SelectItem value="">ללא הקצאה</SelectItem>
+                                  {(projectMembers[project.id] || []).map(m => (
+                                    <SelectItem key={m.id} value={m.invited_display_name || m.invited_email}>
+                                      {m.invited_display_name || m.invited_email}
+                                    </SelectItem>
+                                  ))}
+                                </SelectContent>
+                              </Select>
+                            )}
+                            <label className="flex items-center gap-1.5 text-xs text-muted-foreground cursor-pointer">
+                              <input
+                                type="checkbox"
+                                checked={newTaskPushToWork[project.id] || false}
+                                onChange={(e) => setNewTaskPushToWork(prev => ({ ...prev, [project.id]: e.target.checked }))}
+                                className="rounded"
+                              />
+                              הוסף גם לדשבורד משימות עבודה
+                            </label>
+                          </div>
                         </div>
 
                         {/* Tasks list */}
@@ -634,6 +665,11 @@ const ProjectsManager = () => {
                                 <span className={cn("flex-1", task.completed && "line-through")}>
                                   {task.title}
                                 </span>
+                                {task.assigned_email && (
+                                  <span className="text-[10px] px-1.5 py-0.5 rounded-full bg-primary/10 text-primary">
+                                    {(projectMembers[project.id] || []).find(m => m.invited_email === task.assigned_email)?.invited_display_name || task.assigned_email}
+                                  </span>
+                                )}
                                 <Button
                                   variant="ghost"
                                   size="icon"
