@@ -100,9 +100,23 @@ const ProjectsManager = () => {
           if (!tasksByProject[task.project_id]) {
             tasksByProject[task.project_id] = [];
           }
-          tasksByProject[task.project_id].push(task);
+          tasksByProject[task.project_id].push(task as ProjectTask);
         });
         setProjectTasks(tasksByProject);
+
+        // Fetch members for all projects
+        const { data: membersData } = await supabase
+          .from('project_members')
+          .select('id, project_id, invited_email, invited_display_name, role, status')
+          .in('project_id', projectIds)
+          .eq('status', 'approved');
+
+        const membersByProject: Record<string, ProjectMember[]> = {};
+        (membersData || []).forEach((m: any) => {
+          if (!membersByProject[m.project_id]) membersByProject[m.project_id] = [];
+          membersByProject[m.project_id].push(m);
+        });
+        setProjectMembers(membersByProject);
       }
     }
     setLoading(false);
