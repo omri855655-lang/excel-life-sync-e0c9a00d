@@ -192,11 +192,16 @@ const ProjectsManager = () => {
     const currentTasks = projectTasks[projectId] || [];
     const maxOrder = currentTasks.length > 0 ? Math.max(...currentTasks.map(t => t.sort_order)) : 0;
 
+    const assignee = newTaskAssignee[projectId] || null;
+    const assigneeEmail = assignee ? (projectMembers[projectId]?.find(m => m.invited_display_name === assignee)?.invited_email || null) : null;
+
     const { data, error } = await supabase.from('project_tasks').insert({
       project_id: projectId,
       user_id: user?.id,
       title,
       sort_order: maxOrder + 1,
+      assigned_to: assignee ? (projectMembers[projectId]?.find(m => m.invited_display_name === assignee)?.id || null) : null,
+      assigned_email: assigneeEmail,
     }).select().single();
 
     if (error) {
@@ -204,11 +209,41 @@ const ProjectsManager = () => {
       return;
     }
 
+    // Also push to work dashboard if checked
+    if (newTaskPushToWork[projectId]) {
+      const project = projects.find(p => p.id === projectId);
+      await supabase.from('tasks').insert({
+        user_id: user?.id,
+        description: `${project?.title || 'פרויקט'}: ${title}`,
+        task_type: 'work',
+        status: 'לא התחיל',
+        category: 'פרויקט',
+        responsible: assignee || null,
+        sheet_name: String(new Date().getFullYear()),
+      });
+    }
+
+    // Notify team members
+    try {
+      await supabase.functions.invoke('notify-shared-task', {
+        body: {
+          ownerUserId: user?.id,
+          taskDescription: title,
+          creatorName: user?.email?.split('@')[0] || 'משתמש',
+          sheetName: projects.find(p => p.id === projectId)?.title || 'פרויקט',
+          projectId,
+          notifyAllMembers: true,
+        },
+      });
+    } catch {}
+
     setProjectTasks(prev => ({
       ...prev,
-      [projectId]: [...(prev[projectId] || []), data]
+      [projectId]: [...(prev[projectId] || []), data as ProjectTask]
     }));
     setNewTaskTitle(prev => ({ ...prev, [projectId]: '' }));
+    setNewTaskAssignee(prev => ({ ...prev, [projectId]: '' }));
+    setNewTaskPushToWork(prev => ({ ...prev, [projectId]: false }));
   };
 
   const toggleTaskCompletion = async (task: ProjectTask) => {
