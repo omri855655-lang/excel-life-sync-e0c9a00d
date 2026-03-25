@@ -1029,8 +1029,8 @@ const PersonalPlanner = () => {
     }
   };
 
-  // Source-to-color mapping using dynamic categories or fallback defaults
-  const SOURCE_COLOR_MAP: Record<string, string> = {
+  // Source-to-color mapping - customizable and persisted
+  const DEFAULT_SOURCE_COLORS: Record<string, string> = {
     work: "#f97316",
     personal: "#a855f7",
     project: "#06b6d4",
@@ -1042,16 +1042,26 @@ const PersonalPlanner = () => {
     board: "#14b8a6",
   };
 
+  const [sourceColors, setSourceColors] = useState<Record<string, string>>(() => {
+    try {
+      const saved = localStorage.getItem("planner-source-colors");
+      return saved ? { ...DEFAULT_SOURCE_COLORS, ...JSON.parse(saved) } : DEFAULT_SOURCE_COLORS;
+    } catch { return DEFAULT_SOURCE_COLORS; }
+  });
+
+  const updateSourceColor = (source: string, color: string) => {
+    setSourceColors(prev => {
+      const updated = { ...prev, [source]: color };
+      localStorage.setItem("planner-source-colors", JSON.stringify(updated));
+      return updated;
+    });
+  };
+
   const getSourceColor = (source: string): string => {
-    // Try to find matching category color from user's custom categories
-    const sourceLabel = getSourceLabel(source);
-    const catColor = getDynCategoryColor(sourceLabel);
-    if (catColor && catColor !== "#6b7280") return catColor;
-    return SOURCE_COLOR_MAP[source] || "#6b7280";
+    return sourceColors[source] || "#6b7280";
   };
 
   const getSourceBg = (source: string) => {
-    const color = getSourceColor(source);
     return `border-l-4`;
   };
 
