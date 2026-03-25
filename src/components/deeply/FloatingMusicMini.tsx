@@ -36,7 +36,7 @@ export function FloatingMusicMini({ visible, onGoToDeeply }: FloatingMusicMiniPr
   if (!visible || !musicState?.playing) return null;
 
   return (
-    <div className="fixed bottom-4 left-4 z-[100] animate-in slide-in-from-bottom-2 fade-in duration-300">
+    <div className="fixed bottom-4 right-4 z-[100] animate-in slide-in-from-bottom-2 fade-in duration-300">
       <div
         className="w-14 h-14 rounded-xl bg-purple-600 shadow-lg shadow-purple-900/40 flex flex-col items-center justify-center cursor-pointer hover:scale-105 transition-transform relative group"
         onClick={onGoToDeeply}
