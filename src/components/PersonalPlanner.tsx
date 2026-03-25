@@ -1933,13 +1933,8 @@ const PersonalPlanner = () => {
                         type="color"
                         value={cat.color}
                         onChange={(e) => {
-                          const { updateCategory } = { updateCategory: async (oldName: string, name: string, color: string) => {
-                            const newCats = categories.map(c => c.name === oldName ? { name, color } : c);
-                            // We call saveCategories directly from the hook
-                          }};
-                          // Directly update via the hook
                           const newCats = categories.map(c => c.name === cat.name ? { ...c, color: e.target.value } : c);
-                          // Use the saveCategories from the hook - need to access it
+                          saveCategories(newCats);
                         }}
                         className="absolute inset-0 w-full h-full opacity-0 cursor-pointer"
                       />
