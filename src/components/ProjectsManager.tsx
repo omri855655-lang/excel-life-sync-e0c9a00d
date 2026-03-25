@@ -34,6 +34,16 @@ interface ProjectTask {
   sort_order: number;
   created_at: string;
   updated_at: string;
+  assigned_to: string | null;
+  assigned_email: string | null;
+}
+
+interface ProjectMember {
+  id: string;
+  invited_email: string;
+  invited_display_name: string | null;
+  role: string;
+  status: string;
 }
 
 const formatDateTime = (dateStr: string) => {
@@ -55,6 +65,9 @@ const ProjectsManager = () => {
   const [newLink, setNewLink] = useState('');
   const [aiMilestonesLoading, setAiMilestonesLoading] = useState<string | null>(null);
   const [aiMilestones, setAiMilestones] = useState<Record<string, { title: string; done: boolean }[]>>({});
+  const [projectMembers, setProjectMembers] = useState<Record<string, ProjectMember[]>>({});
+  const [newTaskAssignee, setNewTaskAssignee] = useState<Record<string, string>>({});
+  const [newTaskPushToWork, setNewTaskPushToWork] = useState<Record<string, boolean>>({});
 
   useEffect(() => {
     if (user) {
