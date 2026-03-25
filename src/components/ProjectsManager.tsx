@@ -37,6 +37,8 @@ interface ProjectTask {
   assigned_to: string | null;
   assigned_email: string | null;
   urgent: boolean;
+  status: string | null;
+  notes: string | null;
 }
 
 interface ProjectMember {
@@ -68,6 +70,7 @@ const ProjectsManager = () => {
   const [aiMilestones, setAiMilestones] = useState<Record<string, { title: string; done: boolean }[]>>({});
   const [projectMembers, setProjectMembers] = useState<Record<string, ProjectMember[]>>({});
   const [newTaskAssignee, setNewTaskAssignee] = useState<Record<string, string>>({});
+  const [newTaskNotes, setNewTaskNotes] = useState<Record<string, string>>({});
   const [newTaskPushToWork, setNewTaskPushToWork] = useState<Record<string, boolean>>({});
 
   useEffect(() => {
@@ -101,7 +104,16 @@ const ProjectsManager = () => {
           if (!tasksByProject[task.project_id]) {
             tasksByProject[task.project_id] = [];
           }
-          tasksByProject[task.project_id].push(task as ProjectTask);
+          tasksByProject[task.project_id].push({
+            ...task,
+            urgent: task.urgent ?? false,
+            completed: task.completed ?? false,
+            sort_order: task.sort_order ?? 0,
+            assigned_to: task.assigned_to ?? null,
+            assigned_email: task.assigned_email ?? null,
+            status: task.status ?? null,
+            notes: task.notes ?? null,
+          });
         });
         setProjectTasks(tasksByProject);
 
@@ -193,16 +205,20 @@ const ProjectsManager = () => {
     const currentTasks = projectTasks[projectId] || [];
     const maxOrder = currentTasks.length > 0 ? Math.max(...currentTasks.map(t => t.sort_order)) : 0;
 
-    const assignee = newTaskAssignee[projectId] || null;
-    const assigneeEmail = assignee ? (projectMembers[projectId]?.find(m => m.invited_display_name === assignee)?.invited_email || null) : null;
+    const assigneeMemberId = newTaskAssignee[projectId] || null;
+    const assigneeMember = assigneeMemberId ? (projectMembers[projectId]?.find(m => m.id === assigneeMemberId)) : null;
+    const assigneeName = assigneeMember?.invited_display_name || assigneeMember?.invited_email || null;
+    const assigneeEmail = assigneeMember?.invited_email || null;
+    const taskNotes = newTaskNotes[projectId]?.trim() || null;
 
     const { data, error } = await supabase.from('project_tasks').insert({
       project_id: projectId,
       user_id: user?.id,
       title,
       sort_order: maxOrder + 1,
-      assigned_to: assignee ? (projectMembers[projectId]?.find(m => m.invited_display_name === assignee)?.id || null) : null,
+      assigned_to: assigneeMemberId || null,
       assigned_email: assigneeEmail,
+      notes: taskNotes,
     }).select().single();
 
     if (error) {
@@ -219,7 +235,8 @@ const ProjectsManager = () => {
         task_type: 'work',
         status: 'לא התחיל',
         category: 'פרויקט',
-        responsible: assignee || null,
+        responsible: assigneeName || null,
+        status_notes: taskNotes || null,
         sheet_name: String(new Date().getFullYear()),
       });
     }
@@ -244,6 +261,7 @@ const ProjectsManager = () => {
     }));
     setNewTaskTitle(prev => ({ ...prev, [projectId]: '' }));
     setNewTaskAssignee(prev => ({ ...prev, [projectId]: '' }));
+    setNewTaskNotes(prev => ({ ...prev, [projectId]: '' }));
     setNewTaskPushToWork(prev => ({ ...prev, [projectId]: false }));
   };
 
@@ -615,7 +633,7 @@ const ProjectsManager = () => {
                           <div className="flex gap-2 items-center flex-wrap">
                             {(projectMembers[project.id] || []).length > 0 && (
                               <Select
-                                value={newTaskAssignee[project.id] || ''}
+                                value={newTaskAssignee[project.id] || '__none__'}
                                 onValueChange={(v) => setNewTaskAssignee(prev => ({ ...prev, [project.id]: v === '__none__' ? '' : v }))}
                               >
                                 <SelectTrigger className="w-[160px] h-8 text-xs">
@@ -624,13 +642,20 @@ const ProjectsManager = () => {
                                 <SelectContent>
                                   <SelectItem value="__none__">ללא הקצאה</SelectItem>
                                   {(projectMembers[project.id] || []).map(m => (
-                                    <SelectItem key={m.id} value={m.invited_display_name || m.invited_email}>
+                                    <SelectItem key={m.id} value={m.id}>
                                       {m.invited_display_name || m.invited_email}
                                     </SelectItem>
                                   ))}
                                 </SelectContent>
                               </Select>
                             )}
+                            <Input
+                              placeholder="תפקיד/חלק במשימה..."
+                              value={newTaskNotes[project.id] || ''}
+                              onChange={(e) => setNewTaskNotes(prev => ({ ...prev, [project.id]: e.target.value }))}
+                              className="w-[200px] h-8 text-xs"
+                              dir="rtl"
+                            />
                             <label className="flex items-center gap-1.5 text-xs text-muted-foreground cursor-pointer">
                               <input
                                 type="checkbox"
@@ -679,18 +704,23 @@ const ProjectsManager = () => {
                                 >
                                   <Flame className={cn("h-4 w-4", task.urgent ? "text-red-500 fill-red-500" : "text-muted-foreground/40")} />
                                 </button>
-                                <span className={cn("flex-1", task.completed && "line-through")}>
-                                  {task.title}
-                                </span>
+                                <div className="flex-1 min-w-0">
+                                  <span className={cn("block", task.completed && "line-through")}>
+                                    {task.title}
+                                  </span>
+                                  {task.notes && (
+                                    <span className="text-[10px] text-muted-foreground block">{task.notes}</span>
+                                  )}
+                                </div>
                                 {task.assigned_email && (
-                                  <span className="text-[10px] px-1.5 py-0.5 rounded-full bg-primary/10 text-primary">
+                                  <span className="text-[10px] px-1.5 py-0.5 rounded-full bg-primary/10 text-primary shrink-0">
                                     {(projectMembers[project.id] || []).find(m => m.invited_email === task.assigned_email)?.invited_display_name || task.assigned_email}
                                   </span>
                                 )}
                                 <Button
                                   variant="ghost"
                                   size="icon"
-                                  className="h-6 w-6 text-muted-foreground hover:text-destructive"
+                                  className="h-6 w-6 text-muted-foreground hover:text-destructive shrink-0"
                                   onClick={() => deleteProjectTask(task)}
                                 >
                                   <Trash2 className="h-3 w-3" />
