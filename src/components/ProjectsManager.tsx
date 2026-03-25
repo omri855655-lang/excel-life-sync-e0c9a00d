@@ -71,7 +71,7 @@ const ProjectsManager = () => {
   const [projectMembers, setProjectMembers] = useState<Record<string, ProjectMember[]>>({});
   const [newTaskAssignee, setNewTaskAssignee] = useState<Record<string, string>>({});
   const [newTaskNotes, setNewTaskNotes] = useState<Record<string, string>>({});
-  const [newTaskPushToWork, setNewTaskPushToWork] = useState<Record<string, boolean>>({});
+  const [newTaskPushToWork, setNewTaskPushToWork] = useState<Record<string, string | boolean>>({});
 
   useEffect(() => {
     if (user) {
@@ -263,7 +263,7 @@ const ProjectsManager = () => {
     setNewTaskTitle(prev => ({ ...prev, [projectId]: '' }));
     setNewTaskAssignee(prev => ({ ...prev, [projectId]: '' }));
     setNewTaskNotes(prev => ({ ...prev, [projectId]: '' }));
-    setNewTaskPushToWork(prev => ({ ...prev, [projectId]: false }));
+    setNewTaskPushToWork(prev => ({ ...prev, [projectId]: '__none__' }));
   };
 
   const toggleTaskCompletion = async (task: ProjectTask) => {
