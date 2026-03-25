@@ -36,6 +36,7 @@ interface ProjectTask {
   updated_at: string;
   assigned_to: string | null;
   assigned_email: string | null;
+  urgent: boolean;
 }
 
 interface ProjectMember {
@@ -652,7 +653,8 @@ const ProjectsManager = () => {
                                 key={task.id}
                                 className={cn(
                                   "flex items-center gap-2 p-2 rounded bg-background",
-                                  task.completed && "opacity-60"
+                                  task.completed && "opacity-60",
+                                  task.urgent && !task.completed && "bg-red-500/10 border border-red-500/30"
                                 )}
                               >
                                 <button onClick={() => toggleTaskCompletion(task)}>
@@ -661,6 +663,21 @@ const ProjectsManager = () => {
                                   ) : (
                                     <Circle className="h-5 w-5 text-muted-foreground" />
                                   )}
+                                </button>
+                                <button
+                                  onClick={async () => {
+                                    const newUrgent = !task.urgent;
+                                    await supabase.from('project_tasks').update({ urgent: newUrgent }).eq('id', task.id);
+                                    setProjectTasks(prev => ({
+                                      ...prev,
+                                      [task.project_id]: prev[task.project_id].map(t =>
+                                        t.id === task.id ? { ...t, urgent: newUrgent } : t
+                                      )
+                                    }));
+                                  }}
+                                  title="סמן כדחוף"
+                                >
+                                  <Flame className={cn("h-4 w-4", task.urgent ? "text-red-500 fill-red-500" : "text-muted-foreground/40")} />
                                 </button>
                                 <span className={cn("flex-1", task.completed && "line-through")}>
                                   {task.title}
