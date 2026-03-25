@@ -1029,19 +1029,40 @@ const PersonalPlanner = () => {
     }
   };
 
+  // Source-to-color mapping - customizable and persisted
+  const DEFAULT_SOURCE_COLORS: Record<string, string> = {
+    work: "#f97316",
+    personal: "#a855f7",
+    project: "#06b6d4",
+    recurring: "#22c55e",
+    show: "#ec4899",
+    course: "#6366f1",
+    podcast: "#f59e0b",
+    book: "#10b981",
+    board: "#14b8a6",
+  };
+
+  const [sourceColors, setSourceColors] = useState<Record<string, string>>(() => {
+    try {
+      const saved = localStorage.getItem("planner-source-colors");
+      return saved ? { ...DEFAULT_SOURCE_COLORS, ...JSON.parse(saved) } : DEFAULT_SOURCE_COLORS;
+    } catch { return DEFAULT_SOURCE_COLORS; }
+  });
+
+  const updateSourceColor = (source: string, color: string) => {
+    setSourceColors(prev => {
+      const updated = { ...prev, [source]: color };
+      localStorage.setItem("planner-source-colors", JSON.stringify(updated));
+      return updated;
+    });
+  };
+
+  const getSourceColor = (source: string): string => {
+    return sourceColors[source] || "#6b7280";
+  };
+
   const getSourceBg = (source: string) => {
-    switch (source) {
-      case "work": return "bg-orange-100 dark:bg-orange-900/30 border-orange-300 border-l-4 border-l-orange-500";
-      case "personal": return "bg-purple-100 dark:bg-purple-900/30 border-purple-300 border-l-4 border-l-purple-500";
-      case "project": return "bg-cyan-100 dark:bg-cyan-900/30 border-cyan-300 border-l-4 border-l-cyan-500";
-      case "recurring": return "bg-green-100 dark:bg-green-900/30 border-green-300 border-l-4 border-l-green-500";
-      case "show": return "bg-pink-100 dark:bg-pink-900/30 border-pink-300 border-l-4 border-l-pink-500";
-      case "course": return "bg-indigo-100 dark:bg-indigo-900/30 border-indigo-300 border-l-4 border-l-indigo-500";
-      case "podcast": return "bg-amber-100 dark:bg-amber-900/30 border-amber-300 border-l-4 border-l-amber-500";
-      case "book": return "bg-emerald-100 dark:bg-emerald-900/30 border-emerald-300 border-l-4 border-l-emerald-500";
-      case "board": return "bg-teal-100 dark:bg-teal-900/30 border-teal-300 border-l-4 border-l-teal-500";
-      default: return "bg-muted border-border border-l-4 border-l-muted-foreground";
-    }
+    return `border-l-4`;
   };
 
   // Render time grid for day/week view
@@ -1650,12 +1671,44 @@ const PersonalPlanner = () => {
             >
               ⚙️ ניהול מלא
             </Button>
+           </CollapsibleContent>
+        </Collapsible>
+
+        {/* Source color pickers */}
+        <Collapsible>
+          <CollapsibleTrigger asChild>
+            <Button variant="ghost" size="sm" className="w-full justify-between text-[10px] h-7 px-2 border-b border-border rounded-none">
+              🎨 צבעי מקורות
+              <Filter className="h-3 w-3" />
+            </Button>
+          </CollapsibleTrigger>
+          <CollapsibleContent className="p-2 border-b border-border space-y-1.5 max-h-[300px] overflow-auto">
+            {Object.entries(sourceColors).map(([source, color]) => (
+              <div key={source} className="space-y-1">
+                <div className="flex items-center gap-1.5">
+                  <div className="w-4 h-4 rounded-full border border-border shrink-0" style={{ backgroundColor: color }} />
+                  <span className="text-[10px] flex-1 font-medium">{getSourceLabel(source)}</span>
+                </div>
+                <div className="flex flex-wrap gap-1">
+                  {COLOR_PALETTE.slice(0, 28).map(c => (
+                    <button
+                      key={c}
+                      className={`w-4 h-4 rounded-full border transition-transform hover:scale-125 ${c === color ? "ring-2 ring-primary ring-offset-1" : "border-border"}`}
+                      style={{ backgroundColor: c }}
+                      onClick={() => updateSourceColor(source, c)}
+                    />
+                  ))}
+                </div>
+              </div>
+            ))}
           </CollapsibleContent>
         </Collapsible>
 
         <ScrollArea className="flex-1">
           <div className="p-2 space-y-1.5">
-            {filteredTasks.map((task) => (
+            {filteredTasks.map((task) => {
+              const srcColor = getSourceColor(task.source);
+              return (
               <div
                 key={`${task.source}-${task.id}`}
                 draggable
@@ -1664,15 +1717,19 @@ const PersonalPlanner = () => {
                 onTouchStart={(e) => handleTouchStart(e, task)}
                 onTouchMove={(e) => handleTouchMove(e)}
                 onTouchEnd={(e) => handleTouchEnd(e)}
-                className={`p-2 rounded-lg border cursor-grab active:cursor-grabbing text-sm transition-colors hover:shadow-sm ${getSourceBg(task.source)} ${task.overdue ? "ring-1 ring-red-400" : ""}`}
+                className={`p-2 rounded-lg border cursor-grab active:cursor-grabbing text-sm transition-colors hover:shadow-sm border-l-4 ${task.overdue ? "ring-1 ring-red-400" : ""}`}
+                style={{ borderLeftColor: srcColor, backgroundColor: srcColor + "12" }}
               >
                 <div className="flex items-center gap-1 mb-1">
                   <GripVertical className="h-3 w-3 text-muted-foreground flex-shrink-0" />
-                  <span className={`text-[10px] px-1.5 rounded-full font-medium ${task.source === "work" ? "bg-orange-200 text-orange-800" : task.source === "personal" ? "bg-purple-200 text-purple-800" : task.source === "recurring" ? "bg-green-200 text-green-800" : task.source === "show" ? "bg-pink-200 text-pink-800" : task.source === "course" ? "bg-indigo-200 text-indigo-800" : task.source === "podcast" ? "bg-amber-200 text-amber-800" : task.source === "book" ? "bg-emerald-200 text-emerald-800" : task.source === "board" ? "bg-teal-200 text-teal-800" : "bg-cyan-200 text-cyan-800"}`}>
+                  <span
+                    className="text-[10px] px-1.5 rounded-full font-medium"
+                    style={{ backgroundColor: srcColor + "33", color: srcColor }}
+                  >
                     {getSourceLabel(task.source)}
                   </span>
-                  {task.source === "recurring" && <RotateCcw className="h-3 w-3 text-green-600" />}
-                  {task.source === "show" && (task.showType === "סרט" ? <Film className="h-3 w-3 text-pink-600" /> : <Tv className="h-3 w-3 text-pink-600" />)}
+                  {task.source === "recurring" && <RotateCcw className="h-3 w-3" style={{ color: srcColor }} />}
+                  {task.source === "show" && (task.showType === "סרט" ? <Film className="h-3 w-3" style={{ color: srcColor }} /> : <Tv className="h-3 w-3" style={{ color: srcColor }} />)}
                   {task.urgent && <Flame className="h-3 w-3 text-destructive" />}
                   {task.overdue && <AlertTriangle className="h-3 w-3 text-amber-500" />}
                 </div>
@@ -1684,7 +1741,8 @@ const PersonalPlanner = () => {
                   </div>
                 )}
               </div>
-            ))}
+              );
+            })}
             {filteredTasks.length === 0 && (
               <div className="text-center text-muted-foreground text-sm py-8">
                 {activeFilters.has("all") ? "אין משימות פתוחות" : "אין משימות לפי הסינון"}

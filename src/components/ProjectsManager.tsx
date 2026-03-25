@@ -71,7 +71,7 @@ const ProjectsManager = () => {
   const [projectMembers, setProjectMembers] = useState<Record<string, ProjectMember[]>>({});
   const [newTaskAssignee, setNewTaskAssignee] = useState<Record<string, string>>({});
   const [newTaskNotes, setNewTaskNotes] = useState<Record<string, string>>({});
-  const [newTaskPushToWork, setNewTaskPushToWork] = useState<Record<string, boolean>>({});
+  const [newTaskPushToWork, setNewTaskPushToWork] = useState<Record<string, string | boolean>>({});
 
   useEffect(() => {
     if (user) {
@@ -226,13 +226,14 @@ const ProjectsManager = () => {
       return;
     }
 
-    // Also push to work dashboard if checked
-    if (newTaskPushToWork[projectId]) {
+    // Also push to selected dashboard if chosen
+    const pushTarget = newTaskPushToWork[projectId];
+    if (pushTarget && typeof pushTarget === 'string' && pushTarget !== '__none__') {
       const project = projects.find(p => p.id === projectId);
       await supabase.from('tasks').insert({
         user_id: user?.id,
         description: `${project?.title || 'פרויקט'}: ${title}`,
-        task_type: 'work',
+        task_type: pushTarget as 'work' | 'personal',
         status: 'לא התחיל',
         category: 'פרויקט',
         responsible: assigneeName || null,
@@ -262,7 +263,7 @@ const ProjectsManager = () => {
     setNewTaskTitle(prev => ({ ...prev, [projectId]: '' }));
     setNewTaskAssignee(prev => ({ ...prev, [projectId]: '' }));
     setNewTaskNotes(prev => ({ ...prev, [projectId]: '' }));
-    setNewTaskPushToWork(prev => ({ ...prev, [projectId]: false }));
+    setNewTaskPushToWork(prev => ({ ...prev, [projectId]: '__none__' }));
   };
 
   const toggleTaskCompletion = async (task: ProjectTask) => {
@@ -656,15 +657,19 @@ const ProjectsManager = () => {
                               className="w-[200px] h-8 text-xs"
                               dir="rtl"
                             />
-                            <label className="flex items-center gap-1.5 text-xs text-muted-foreground cursor-pointer">
-                              <input
-                                type="checkbox"
-                                checked={newTaskPushToWork[project.id] || false}
-                                onChange={(e) => setNewTaskPushToWork(prev => ({ ...prev, [project.id]: e.target.checked }))}
-                                className="rounded"
-                              />
-                              הוסף גם לדשבורד משימות עבודה
-                            </label>
+                            <Select
+                              value={newTaskPushToWork[project.id] ? String(newTaskPushToWork[project.id]) : '__none__'}
+                              onValueChange={(v) => setNewTaskPushToWork(prev => ({ ...prev, [project.id]: v === '__none__' ? false : v as any }))}
+                            >
+                              <SelectTrigger className="w-[180px] h-8 text-xs">
+                                <SelectValue placeholder="הוסף גם לדשבורד..." />
+                              </SelectTrigger>
+                              <SelectContent>
+                                <SelectItem value="__none__">ללא סנכרון לדשבורד</SelectItem>
+                                <SelectItem value="work">משימות עבודה</SelectItem>
+                                <SelectItem value="personal">משימות אישיות</SelectItem>
+                              </SelectContent>
+                            </Select>
                           </div>
                         </div>
 
