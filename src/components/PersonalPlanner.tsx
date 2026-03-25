@@ -51,7 +51,7 @@ const PersonalPlanner = () => {
   const { tasks: workTasks } = useTasks("work");
   const { tasks: recurringTasks, isTaskDueToday, isTaskCompletedToday } = useRecurringTasks();
   const { events, addEvent, updateEvent, deleteEvent } = useCalendarEvents();
-  const { categories, categoryNames, addCategory, removeCategory, getCategoryColor: getDynCategoryColor } = useCustomCategories();
+  const { categories, categoryNames, addCategory, removeCategory, getCategoryColor: getDynCategoryColor, saveCategories } = useCustomCategories();
   const { boards: customBoards } = useCustomBoards();
 
   const [showCategoryManager, setShowCategoryManager] = useState(false);
@@ -1922,12 +1922,23 @@ const PersonalPlanner = () => {
 
           <div className="space-y-4">
             {/* Existing categories */}
-            <div className="space-y-2">
-              <label className="text-sm font-medium">קטגוריות קיימות</label>
+          <div className="space-y-2">
+              <label className="text-sm font-medium">קטגוריות קיימות — לחץ על העיגול לשינוי צבע</label>
               <div className="space-y-1.5 max-h-[200px] overflow-auto">
                 {categories.map((cat) => (
                   <div key={cat.name} className="flex items-center gap-2 p-2 rounded-lg border border-border">
-                    <div className="w-5 h-5 rounded-full shrink-0" style={{ backgroundColor: cat.color }} />
+                    <label className="relative w-5 h-5 shrink-0 cursor-pointer">
+                      <div className="w-5 h-5 rounded-full" style={{ backgroundColor: cat.color }} />
+                      <input
+                        type="color"
+                        value={cat.color}
+                        onChange={(e) => {
+                          const newCats = categories.map(c => c.name === cat.name ? { ...c, color: e.target.value } : c);
+                          saveCategories(newCats);
+                        }}
+                        className="absolute inset-0 w-full h-full opacity-0 cursor-pointer"
+                      />
+                    </label>
                     <span className="text-sm flex-1">{cat.name}</span>
                     <Button
                       variant="ghost"
