@@ -695,18 +695,23 @@ const ProjectsManager = () => {
                                 >
                                   <Flame className={cn("h-4 w-4", task.urgent ? "text-red-500 fill-red-500" : "text-muted-foreground/40")} />
                                 </button>
-                                <span className={cn("flex-1", task.completed && "line-through")}>
-                                  {task.title}
-                                </span>
+                                <div className="flex-1 min-w-0">
+                                  <span className={cn("block", task.completed && "line-through")}>
+                                    {task.title}
+                                  </span>
+                                  {task.notes && (
+                                    <span className="text-[10px] text-muted-foreground block">{task.notes}</span>
+                                  )}
+                                </div>
                                 {task.assigned_email && (
-                                  <span className="text-[10px] px-1.5 py-0.5 rounded-full bg-primary/10 text-primary">
+                                  <span className="text-[10px] px-1.5 py-0.5 rounded-full bg-primary/10 text-primary shrink-0">
                                     {(projectMembers[project.id] || []).find(m => m.invited_email === task.assigned_email)?.invited_display_name || task.assigned_email}
                                   </span>
                                 )}
                                 <Button
                                   variant="ghost"
                                   size="icon"
-                                  className="h-6 w-6 text-muted-foreground hover:text-destructive"
+                                  className="h-6 w-6 text-muted-foreground hover:text-destructive shrink-0"
                                   onClick={() => deleteProjectTask(task)}
                                 >
                                   <Trash2 className="h-3 w-3" />
