@@ -354,6 +354,74 @@ const ShoppingDashboard = () => {
             <CardTitle className="text-sm font-medium flex items-center gap-2">
               {cat}
               {catItems.length > 0 && <Badge variant="secondary" className="text-[10px]">{catItems.length}</Badge>}
+              <div className="flex-1" />
+              {showCustomInput && (
+                <div className="flex items-center gap-1">
+                  <Input
+                    placeholder="+ פריט חדש"
+                    value={customItemInputs[`header-${cat}`] || ""}
+                    onChange={e => setCustomItemInputs(prev => ({ ...prev, [`header-${cat}`]: e.target.value }))}
+                    onKeyDown={e => {
+                      if (e.key === "Enter") {
+                        const title = customItemInputs[`header-${cat}`]?.trim();
+                        if (title && user) {
+                          supabase.from("shopping_items").insert({
+                            user_id: user.id,
+                            title,
+                            category: cat,
+                            sheet_name: "סופר",
+                            is_dream: false,
+                          }).then(() => {
+                            // Also save to permanent catalog
+                            const updated = { ...customCatalog };
+                            if (!updated[cat]) updated[cat] = [];
+                            if (!updated[cat].includes(title)) {
+                              updated[cat] = [...updated[cat], title];
+                              setCustomCatalog(updated);
+                              localStorage.setItem("shopping-custom-catalog", JSON.stringify(updated));
+                            }
+                            setCustomItemInputs(prev => ({ ...prev, [`header-${cat}`]: "" }));
+                            fetchItems();
+                            toast.success(`${title} נוסף ל-${cat}`);
+                          });
+                        }
+                      }
+                    }}
+                    className="w-28 h-6 text-[10px] px-2"
+                  />
+                  <Button
+                    size="icon"
+                    variant="ghost"
+                    className="h-6 w-6"
+                    onClick={() => {
+                      const title = customItemInputs[`header-${cat}`]?.trim();
+                      if (title && user) {
+                        supabase.from("shopping_items").insert({
+                          user_id: user.id,
+                          title,
+                          category: cat,
+                          sheet_name: "סופר",
+                          is_dream: false,
+                        }).then(() => {
+                          const updated = { ...customCatalog };
+                          if (!updated[cat]) updated[cat] = [];
+                          if (!updated[cat].includes(title)) {
+                            updated[cat] = [...updated[cat], title];
+                            setCustomCatalog(updated);
+                            localStorage.setItem("shopping-custom-catalog", JSON.stringify(updated));
+                          }
+                          setCustomItemInputs(prev => ({ ...prev, [`header-${cat}`]: "" }));
+                          fetchItems();
+                          toast.success(`${title} נוסף ל-${cat}`);
+                        });
+                      }
+                    }}
+                    disabled={!customItemInputs[`header-${cat}`]?.trim()}
+                  >
+                    <Plus className="h-3 w-3" />
+                  </Button>
+                </div>
+              )}
             </CardTitle>
           </CardHeader>
           <CardContent className="py-1 px-2 space-y-1">
@@ -405,7 +473,7 @@ const ShoppingDashboard = () => {
                 <Button size="icon" variant="ghost" className="h-6 w-6 text-destructive" onClick={() => deleteItem(item.id)}><Trash2 className="h-3 w-3" /></Button>
               </div>
             ))}
-            {/* Custom item input per category */}
+            {/* Custom item input per category - always visible in supermarket */}
             {showCustomInput && (
               <div className="flex gap-1 mt-2 pt-2 border-t border-border">
                 <Input
