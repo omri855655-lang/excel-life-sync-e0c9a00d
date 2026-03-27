@@ -1,8 +1,12 @@
 import { useState, useCallback, useRef, useEffect } from "react";
-import { AudioPreset } from "./audioPresets";
+import { AudioPreset, AUDIO_PRESETS } from "./audioPresets";
 import { startSilentAudio, stopSilentAudio } from "./iosSilentAudio";
 import { unlockAudioContext } from "./iosAudioUnlock";
 import { renderPresetToBlob } from "./renderPresetToAudio";
+
+// Quick lookup for preset names by id
+const PRESET_NAME_MAP: Record<string, string> = {};
+AUDIO_PRESETS.forEach(p => { PRESET_NAME_MAP[p.id] = p.nameHe || p.name; });
 
 /**
  * Audio engine that pre-renders presets to WAV blobs and plays them
