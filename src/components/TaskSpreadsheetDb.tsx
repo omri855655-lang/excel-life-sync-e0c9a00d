@@ -1121,7 +1121,13 @@ const TaskSpreadsheetDb = ({ title, taskType, readOnly = false, showYearSelector
                     {/* Creator info moved under date columns - no separate column needed */}
                     <td className="px-3 py-2 text-xs text-muted-foreground whitespace-nowrap">
                       <div>{task.createdAt ? new Date(task.createdAt).toLocaleDateString('he-IL') + ' ' + new Date(task.createdAt).toLocaleTimeString('he-IL', { hour: '2-digit', minute: '2-digit' }) : '-'}</div>
-                      {!hideCreatorInfo && task.creatorName && task.creatorEmail !== user?.email && (
+                      {/* Always show AI attribution, respect hideCreatorInfo for human users */}
+                      {task.creatorEmail === 'ai@tabro.app' && (
+                        <div className="text-[10px] text-purple-500/80 mt-0.5 flex items-center gap-0.5">
+                          🤖 נוסף ע״י Tabro AI
+                        </div>
+                      )}
+                      {!hideCreatorInfo && task.creatorName && task.creatorEmail !== user?.email && task.creatorEmail !== 'ai@tabro.app' && (
                         <div className="text-[10px] text-primary/70 mt-0.5">
                           נוצר ע״י: {task.creatorName || task.creatorEmail}
                         </div>
@@ -1129,7 +1135,12 @@ const TaskSpreadsheetDb = ({ title, taskType, readOnly = false, showYearSelector
                     </td>
                     <td className="px-3 py-2 text-xs text-muted-foreground whitespace-nowrap">
                       <div>{task.updatedAt ? new Date(task.updatedAt).toLocaleDateString('he-IL') + ' ' + new Date(task.updatedAt).toLocaleTimeString('he-IL', { hour: '2-digit', minute: '2-digit' }) : '-'}</div>
-                      {!hideCreatorInfo && task.lastEditorName && task.lastEditorEmail !== user?.email && (
+                      {task.lastEditorEmail === 'ai@tabro.app' && (
+                        <div className="text-[10px] text-purple-500/80 mt-0.5 flex items-center gap-0.5">
+                          🤖 עודכן ע״י Tabro AI
+                        </div>
+                      )}
+                      {!hideCreatorInfo && task.lastEditorName && task.lastEditorEmail !== user?.email && task.lastEditorEmail !== 'ai@tabro.app' && (
                         <div className="text-[10px] text-blue-500/70 mt-0.5">
                           עודכן ע״י: {task.lastEditorName || task.lastEditorEmail}
                         </div>
