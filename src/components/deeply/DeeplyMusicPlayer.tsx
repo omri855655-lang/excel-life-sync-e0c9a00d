@@ -85,6 +85,11 @@ export function DeeplyMusicPlayer({ onPlayingChange, themeCard, themeMuted, them
   const playFile = useCallback(async (file: AudioFile) => {
     stopMusic();
 
+    // Stop frequency presets when starting music
+    if (window._deeplyFreqState?.playing) {
+      window._deeplyFreqState.stop();
+    }
+
     // Unlock audio context on user gesture
     unlockAudioContext();
 
