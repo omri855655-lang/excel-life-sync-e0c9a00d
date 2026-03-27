@@ -41,6 +41,12 @@ export function useAudioEngine() {
 
   const playPreset = useCallback(async (preset: AudioPreset) => {
     stopAudio();
+
+    // Stop music player when starting frequency preset
+    if (window._deeplyMusicState?.playing) {
+      window._deeplyMusicState.stop();
+    }
+
     setIsRendering(true);
     setActivePresetId(preset.id);
 
