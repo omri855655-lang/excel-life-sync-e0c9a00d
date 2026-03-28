@@ -792,12 +792,30 @@ const ProjectsManager = () => {
                                   {task.notes && (
                                     <span className="text-[10px] text-muted-foreground block">{task.notes}</span>
                                   )}
+                                  {/* Multi-assignee chips */}
+                                  <div className="flex flex-wrap gap-1 mt-1">
+                                    {task.assigned_email && (
+                                      <span className="text-[10px] px-1.5 py-0.5 rounded-full bg-primary/10 text-primary">
+                                        {(projectMembers[project.id] || []).find(m => m.invited_email === task.assigned_email)?.invited_display_name || task.assigned_email}
+                                      </span>
+                                    )}
+                                    {(taskAssignments[task.id] || []).map(a => (
+                                      <span key={a.id} className="text-[10px] px-1.5 py-0.5 rounded-full bg-accent text-accent-foreground flex items-center gap-0.5">
+                                        {a.assignee_name || a.assignee_email}
+                                        {a.responsibility && <span className="text-muted-foreground">({a.responsibility})</span>}
+                                        <button onClick={() => removeTaskAssignment(a.id, task.id)} className="hover:text-destructive ml-0.5">×</button>
+                                      </span>
+                                    ))}
+                                    {(projectMembers[project.id] || []).length > 0 && (
+                                      <button
+                                        className="text-[10px] px-1.5 py-0.5 rounded-full border border-dashed border-muted-foreground/40 text-muted-foreground hover:bg-muted"
+                                        onClick={() => { setAssignDialogTask(task.id); setAssignDialogProject(project.id); }}
+                                      >
+                                        + אחראי
+                                      </button>
+                                    )}
+                                  </div>
                                 </div>
-                                {task.assigned_email && (
-                                  <span className="text-[10px] px-1.5 py-0.5 rounded-full bg-primary/10 text-primary shrink-0">
-                                    {(projectMembers[project.id] || []).find(m => m.invited_email === task.assigned_email)?.invited_display_name || task.assigned_email}
-                                  </span>
-                                )}
                                 <Button
                                   variant="ghost"
                                   size="icon"
