@@ -298,6 +298,8 @@ ${(notesRes.data || []).map((n: any) => `- [ID:${n.id}] "${n.title}" | ${n.conte
                   board_id: { type: "string" },
                   course_id: { type: "string" },
                   is_dream: { type: "boolean" },
+                  note_id: { type: "string" },
+                  content: { type: "string" },
                   actions: { type: "array", items: { type: "object" } },
                 },
                 required: ["type"]
