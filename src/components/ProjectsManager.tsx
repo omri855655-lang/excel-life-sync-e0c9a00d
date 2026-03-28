@@ -50,6 +50,14 @@ interface ProjectMember {
   status: string;
 }
 
+interface TaskAssignment {
+  id: string;
+  project_task_id: string;
+  assignee_email: string;
+  assignee_name: string | null;
+  responsibility: string | null;
+}
+
 const formatDateTime = (dateStr: string) => {
   if (!dateStr) return '-';
   const date = new Date(dateStr);
@@ -74,6 +82,11 @@ const ProjectsManager = () => {
   const [newTaskNotes, setNewTaskNotes] = useState<Record<string, string>>({});
   const [newTaskPushToWork, setNewTaskPushToWork] = useState<Record<string, string | boolean>>({});
   const { boards: customBoardsList } = useCustomBoards();
+  const [taskAssignments, setTaskAssignments] = useState<Record<string, TaskAssignment[]>>({});
+  const [assignDialogTask, setAssignDialogTask] = useState<string | null>(null);
+  const [assignDialogProject, setAssignDialogProject] = useState<string | null>(null);
+  const [assignMember, setAssignMember] = useState('');
+  const [assignResponsibility, setAssignResponsibility] = useState('');
 
   useEffect(() => {
     if (user) {
