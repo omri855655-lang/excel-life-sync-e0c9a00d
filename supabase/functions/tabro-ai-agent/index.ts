@@ -567,6 +567,26 @@ async function executeAction(supabase: any, userId: string, action: any): Promis
         return error ? { success: false, error: error.message } : { success: true, type: "update_course" };
       }
 
+      case "add_note": {
+        const { error } = await supabase.from("notes").insert({
+          user_id: userId,
+          title: action.title || "",
+          content: action.content || "",
+          color: action.color || "#fef08a",
+        });
+        if (error) console.error("add_note error:", error);
+        return error ? { success: false, error: error.message } : { success: true, type: "add_note" };
+      }
+
+      case "update_note": {
+        const updates: any = {};
+        if (action.title !== undefined) updates.title = action.title;
+        if (action.content !== undefined) updates.content = action.content;
+        if (action.color) updates.color = action.color;
+        const { error } = await supabase.from("notes").update(updates).eq("id", action.note_id).eq("user_id", userId);
+        return error ? { success: false, error: error.message } : { success: true, type: "update_note" };
+      }
+
       default:
         return { success: false, error: `Unknown action type: ${action.type}` };
     }
