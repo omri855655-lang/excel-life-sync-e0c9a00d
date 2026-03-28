@@ -125,6 +125,9 @@ ${(boardsRes.data || []).map(b => {
 ### חלומות ומטרות (${(dreamGoalsRes.data || []).length}):
 ${(dreamGoalsRes.data || []).map(d => `- [ID:${d.id}] "${d.title}" | סטטוס: ${d.status} | התקדמות: ${d.progress}%`).join('\n')}
 
+### פתקים (${(notesRes.data || []).length}):
+${(notesRes.data || []).map((n: any) => `- [ID:${n.id}] "${n.title}" | ${n.content?.slice(0, 50)}${n.pinned ? ' 📌' : ''}`).join('\n')}
+
 התאריך היום: ${today}
 השעה עכשיו (שעון ישראל): ${currentTime}
 אזור הזמן: Asia/Jerusalem (${tzOffset})
