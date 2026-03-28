@@ -13,6 +13,7 @@ import { Progress } from '@/components/ui/progress';
 import { toast } from 'sonner';
 import { cn } from '@/lib/utils';
 import ProjectMembersPanel from '@/components/ProjectMembersPanel';
+import { useCustomBoards } from '@/hooks/useCustomBoards';
 
 interface Project {
   id: string;
@@ -49,6 +50,14 @@ interface ProjectMember {
   status: string;
 }
 
+interface TaskAssignment {
+  id: string;
+  project_task_id: string;
+  assignee_email: string;
+  assignee_name: string | null;
+  responsibility: string | null;
+}
+
 const formatDateTime = (dateStr: string) => {
   if (!dateStr) return '-';
   const date = new Date(dateStr);
@@ -72,6 +81,12 @@ const ProjectsManager = () => {
   const [newTaskAssignee, setNewTaskAssignee] = useState<Record<string, string>>({});
   const [newTaskNotes, setNewTaskNotes] = useState<Record<string, string>>({});
   const [newTaskPushToWork, setNewTaskPushToWork] = useState<Record<string, string | boolean>>({});
+  const { boards: customBoardsList } = useCustomBoards();
+  const [taskAssignments, setTaskAssignments] = useState<Record<string, TaskAssignment[]>>({});
+  const [assignDialogTask, setAssignDialogTask] = useState<string | null>(null);
+  const [assignDialogProject, setAssignDialogProject] = useState<string | null>(null);
+  const [assignMember, setAssignMember] = useState('');
+  const [assignResponsibility, setAssignResponsibility] = useState('');
 
   useEffect(() => {
     if (user) {
@@ -130,6 +145,21 @@ const ProjectsManager = () => {
           membersByProject[m.project_id].push(m);
         });
         setProjectMembers(membersByProject);
+
+        // Fetch task assignments
+        const allTaskIds = Object.values(tasksByProject).flat().map(t => t.id);
+        if (allTaskIds.length > 0) {
+          const { data: assignData } = await supabase
+            .from('project_task_assignments')
+            .select('id, project_task_id, assignee_email, assignee_name, responsibility')
+            .in('project_task_id', allTaskIds);
+          const byTask: Record<string, TaskAssignment[]> = {};
+          (assignData || []).forEach((a: any) => {
+            if (!byTask[a.project_task_id]) byTask[a.project_task_id] = [];
+            byTask[a.project_task_id].push(a);
+          });
+          setTaskAssignments(byTask);
+        }
       }
     }
     setLoading(false);
@@ -230,16 +260,28 @@ const ProjectsManager = () => {
     const pushTarget = newTaskPushToWork[projectId];
     if (pushTarget && typeof pushTarget === 'string' && pushTarget !== '__none__') {
       const project = projects.find(p => p.id === projectId);
-      await supabase.from('tasks').insert({
-        user_id: user?.id,
-        description: `${project?.title || 'פרויקט'}: ${title}`,
-        task_type: pushTarget as 'work' | 'personal',
-        status: 'לא התחיל',
-        category: 'פרויקט',
-        responsible: assigneeName || null,
-        status_notes: taskNotes || null,
-        sheet_name: String(new Date().getFullYear()),
-      });
+      if (pushTarget.startsWith('board:')) {
+        const boardId = pushTarget.replace('board:', '');
+        await supabase.from('custom_board_items').insert({
+          user_id: user?.id,
+          board_id: boardId,
+          title: `${project?.title || 'פרויקט'}: ${title}`,
+          category: 'פרויקט',
+          status: 'לביצוע',
+          sheet_name: 'ראשי',
+        });
+      } else {
+        await supabase.from('tasks').insert({
+          user_id: user?.id,
+          description: `${project?.title || 'פרויקט'}: ${title}`,
+          task_type: pushTarget as 'work' | 'personal',
+          status: 'לא התחיל',
+          category: 'פרויקט',
+          responsible: assigneeName || null,
+          status_notes: taskNotes || null,
+          sheet_name: String(new Date().getFullYear()),
+        });
+      }
     }
 
     // Notify team members
@@ -264,6 +306,37 @@ const ProjectsManager = () => {
     setNewTaskAssignee(prev => ({ ...prev, [projectId]: '' }));
     setNewTaskNotes(prev => ({ ...prev, [projectId]: '' }));
     setNewTaskPushToWork(prev => ({ ...prev, [projectId]: '__none__' }));
+  };
+
+  const addTaskAssignment = async (taskId: string, projectId: string) => {
+    if (!assignMember || !user) return;
+    const member = (projectMembers[projectId] || []).find(m => m.id === assignMember);
+    if (!member) return;
+    const { data, error } = await supabase.from('project_task_assignments').insert({
+      project_task_id: taskId,
+      project_id: projectId,
+      user_id: user.id,
+      assignee_email: member.invited_email,
+      assignee_name: member.invited_display_name || member.invited_email,
+      responsibility: assignResponsibility.trim() || null,
+    }).select().single();
+    if (error) { toast.error('שגיאה בהקצאה'); return; }
+    setTaskAssignments(prev => ({
+      ...prev,
+      [taskId]: [...(prev[taskId] || []), data as TaskAssignment],
+    }));
+    setAssignMember('');
+    setAssignResponsibility('');
+    setAssignDialogTask(null);
+    toast.success('אחראי נוסף למשימה');
+  };
+
+  const removeTaskAssignment = async (assignmentId: string, taskId: string) => {
+    await supabase.from('project_task_assignments').delete().eq('id', assignmentId);
+    setTaskAssignments(prev => ({
+      ...prev,
+      [taskId]: (prev[taskId] || []).filter(a => a.id !== assignmentId),
+    }));
   };
 
   const toggleTaskCompletion = async (task: ProjectTask) => {
@@ -668,6 +741,9 @@ const ProjectsManager = () => {
                                 <SelectItem value="__none__">ללא סנכרון לדשבורד</SelectItem>
                                 <SelectItem value="work">משימות עבודה</SelectItem>
                                 <SelectItem value="personal">משימות אישיות</SelectItem>
+                                {customBoardsList.map(b => (
+                                  <SelectItem key={b.id} value={`board:${b.id}`}>{b.name}</SelectItem>
+                                ))}
                               </SelectContent>
                             </Select>
                           </div>
@@ -716,12 +792,30 @@ const ProjectsManager = () => {
                                   {task.notes && (
                                     <span className="text-[10px] text-muted-foreground block">{task.notes}</span>
                                   )}
+                                  {/* Multi-assignee chips */}
+                                  <div className="flex flex-wrap gap-1 mt-1">
+                                    {task.assigned_email && (
+                                      <span className="text-[10px] px-1.5 py-0.5 rounded-full bg-primary/10 text-primary">
+                                        {(projectMembers[project.id] || []).find(m => m.invited_email === task.assigned_email)?.invited_display_name || task.assigned_email}
+                                      </span>
+                                    )}
+                                    {(taskAssignments[task.id] || []).map(a => (
+                                      <span key={a.id} className="text-[10px] px-1.5 py-0.5 rounded-full bg-accent text-accent-foreground flex items-center gap-0.5">
+                                        {a.assignee_name || a.assignee_email}
+                                        {a.responsibility && <span className="text-muted-foreground">({a.responsibility})</span>}
+                                        <button onClick={() => removeTaskAssignment(a.id, task.id)} className="hover:text-destructive ml-0.5">×</button>
+                                      </span>
+                                    ))}
+                                    {(projectMembers[project.id] || []).length > 0 && (
+                                      <button
+                                        className="text-[10px] px-1.5 py-0.5 rounded-full border border-dashed border-muted-foreground/40 text-muted-foreground hover:bg-muted"
+                                        onClick={() => { setAssignDialogTask(task.id); setAssignDialogProject(project.id); }}
+                                      >
+                                        + אחראי
+                                      </button>
+                                    )}
+                                  </div>
                                 </div>
-                                {task.assigned_email && (
-                                  <span className="text-[10px] px-1.5 py-0.5 rounded-full bg-primary/10 text-primary shrink-0">
-                                    {(projectMembers[project.id] || []).find(m => m.invited_email === task.assigned_email)?.invited_display_name || task.assigned_email}
-                                  </span>
-                                )}
                                 <Button
                                   variant="ghost"
                                   size="icon"
@@ -746,6 +840,38 @@ const ProjectsManager = () => {
           )}
         </div>
       </div>
+
+      {/* Multi-assign dialog */}
+      <Dialog open={!!assignDialogTask} onOpenChange={(open) => { if (!open) setAssignDialogTask(null); }}>
+        <DialogContent dir="rtl">
+          <DialogHeader>
+            <DialogTitle>הוסף אחראי למשימה</DialogTitle>
+          </DialogHeader>
+          <div className="space-y-3">
+            <Select value={assignMember} onValueChange={setAssignMember}>
+              <SelectTrigger><SelectValue placeholder="בחר חבר צוות" /></SelectTrigger>
+              <SelectContent>
+                {(projectMembers[assignDialogProject || ''] || []).map(m => (
+                  <SelectItem key={m.id} value={m.id}>
+                    {m.invited_display_name || m.invited_email}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+            <Input
+              placeholder="תפקיד/אחריות (אופציונלי)..."
+              value={assignResponsibility}
+              onChange={e => setAssignResponsibility(e.target.value)}
+              dir="rtl"
+            />
+          </div>
+          <DialogFooter>
+            <Button onClick={() => assignDialogTask && assignDialogProject && addTaskAssignment(assignDialogTask, assignDialogProject)} disabled={!assignMember}>
+              הוסף אחראי
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 };

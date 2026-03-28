@@ -522,6 +522,45 @@ export type Database = {
         }
         Relationships: []
       }
+      notes: {
+        Row: {
+          archived: boolean | null
+          category: string | null
+          color: string | null
+          content: string
+          created_at: string | null
+          id: string
+          pinned: boolean | null
+          title: string
+          updated_at: string | null
+          user_id: string
+        }
+        Insert: {
+          archived?: boolean | null
+          category?: string | null
+          color?: string | null
+          content?: string
+          created_at?: string | null
+          id?: string
+          pinned?: boolean | null
+          title?: string
+          updated_at?: string | null
+          user_id: string
+        }
+        Update: {
+          archived?: boolean | null
+          category?: string | null
+          color?: string | null
+          content?: string
+          created_at?: string | null
+          id?: string
+          pinned?: boolean | null
+          title?: string
+          updated_at?: string | null
+          user_id?: string
+        }
+        Relationships: []
+      }
       nutrition_tracking: {
         Row: {
           calories: number | null

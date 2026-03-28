@@ -29,7 +29,8 @@ import DreamRoadmapDashboard from "@/components/dashboards/DreamRoadmapDashboard
 import ShoppingDashboard from "@/components/dashboards/ShoppingDashboard";
 import PaymentDashboard from "@/components/dashboards/PaymentDashboard";
 import ContactForm from "@/components/ContactForm";
-import { FileSpreadsheet, Moon, Sun, LogOut, BookOpen, Tv, LayoutDashboard, ListTodo, Briefcase, Download, Headphones, CalendarCheck, FolderKanban, GraduationCap, CalendarDays, Focus, Settings, LayoutGrid, Trophy, ChevronLeft, ChevronRight, Share2, Apple, Target, ShoppingCart, CreditCard, MessageSquare } from "lucide-react";
+import NotesDashboard from "@/components/dashboards/NotesDashboard";
+import { FileSpreadsheet, Moon, Sun, LogOut, BookOpen, Tv, LayoutDashboard, ListTodo, Briefcase, Download, Headphones, CalendarCheck, FolderKanban, GraduationCap, CalendarDays, Focus, Settings, LayoutGrid, Trophy, ChevronLeft, ChevronRight, Share2, Apple, Target, ShoppingCart, CreditCard, MessageSquare, StickyNote } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { toast } from "sonner";
@@ -80,6 +81,7 @@ const STATIC_TABS: TabDef[] = [
   { id: "dreams", icon: Target, label: "מפת חלומות", visibilityKey: "dreams" },
   { id: "shopping", icon: ShoppingCart, label: "קניות", visibilityKey: "shopping" },
   { id: "payments", icon: CreditCard, label: "תשלומים", visibilityKey: "payments" },
+  { id: "notes", icon: StickyNote, label: "פתקים", visibilityKey: "notes" },
   { id: "sharing", icon: Share2, label: "שיתופים" },
   { id: "contact", icon: MessageSquare, label: "contactForm" },
   { id: "settings", icon: Settings, label: "settings" },
@@ -622,6 +624,10 @@ const Personal = () => {
 
         <TabsContent value="payments" className="flex-1 min-h-0 overflow-auto m-0 p-0">
           <PaymentDashboard />
+        </TabsContent>
+
+        <TabsContent value="notes" className="flex-1 min-h-0 overflow-auto m-0 p-0">
+          <NotesDashboard />
         </TabsContent>
 
         <TabsContent value="sharing" className="flex-1 min-h-0 overflow-auto m-0 p-0">

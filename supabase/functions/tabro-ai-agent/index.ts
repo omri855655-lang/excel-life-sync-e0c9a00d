@@ -21,7 +21,7 @@ serve(async (req) => {
     const supabase = createClient(supabaseUrl, supabaseKey);
 
     // Fetch ALL context data for the user
-    const [tasksRes, booksRes, projectsRes, eventsRes, showsRes, coursesRes, shoppingRes, podcastsRes, boardsRes, boardItemsRes, dreamGoalsRes] = await Promise.all([
+    const [tasksRes, booksRes, projectsRes, eventsRes, showsRes, coursesRes, shoppingRes, podcastsRes, boardsRes, boardItemsRes, dreamGoalsRes, notesRes] = await Promise.all([
       supabase.from("tasks").select("id, description, status, task_type, category, responsible, planned_end, sheet_name, urgent, overdue").eq("user_id", userId).eq("archived", false).limit(200),
       supabase.from("books").select("id, title, author, status, notes").eq("user_id", userId).limit(200),
       supabase.from("projects").select("id, title, description, status, target_date").eq("user_id", userId).limit(50),
@@ -33,6 +33,7 @@ serve(async (req) => {
       supabase.from("custom_boards").select("id, name, statuses").eq("user_id", userId).limit(50),
       supabase.from("custom_board_items").select("id, title, status, category, board_id, sheet_name").eq("user_id", userId).eq("archived", false).limit(200),
       supabase.from("dream_goals").select("id, title, description, status, progress, target_date").eq("user_id", userId).eq("archived", false).limit(50),
+      supabase.from("notes").select("id, title, content, pinned, color, category").eq("user_id", userId).eq("archived", false).order("updated_at", { ascending: false }).limit(50),
     ]);
 
     // Fetch project tasks for progress
@@ -123,6 +124,9 @@ ${(boardsRes.data || []).map(b => {
 
 ### חלומות ומטרות (${(dreamGoalsRes.data || []).length}):
 ${(dreamGoalsRes.data || []).map(d => `- [ID:${d.id}] "${d.title}" | סטטוס: ${d.status} | התקדמות: ${d.progress}%`).join('\n')}
+
+### פתקים (${(notesRes.data || []).length}):
+${(notesRes.data || []).map((n: any) => `- [ID:${n.id}] "${n.title}" | ${n.content?.slice(0, 50)}${n.pinned ? ' 📌' : ''}`).join('\n')}
 
 התאריך היום: ${today}
 השעה עכשיו (שעון ישראל): ${currentTime}
@@ -216,6 +220,16 @@ ${(dreamGoalsRes.data || []).map(d => `- [ID:${d.id}] "${d.title}" | סטטוס:
 {"type":"update_course","course_id":"UUID","status":"פעיל"}
 \`\`\`
 
+הוספת פתק:
+\`\`\`action
+{"type":"add_note","title":"כותרת","content":"תוכן הפתק","color":"#fef08a"}
+\`\`\`
+
+עדכון פתק:
+\`\`\`action
+{"type":"update_note","note_id":"UUID","title":"כותרת חדשה","content":"תוכן חדש"}
+\`\`\`
+
 פעולות מרובות (כמה פעולות ביחד):
 \`\`\`action
 {"type":"multi","actions":[{"type":"add_task","task_type":"personal","description":"לקנות אוכל","sheet_name":"2026"},{"type":"add_event","title":"קניות","start_time":"${today}T15:00:00${tzOffset}","end_time":"${today}T16:00:00${tzOffset}","category":"אישי","color":"#a855f7"}]}
@@ -233,7 +247,10 @@ ${(dreamGoalsRes.data || []).map(d => `- [ID:${d.id}] "${d.title}" | סטטוס:
 9. כשמבקשים לראות מידע - ענה מהנתונים שלמעלה, אל תמציא
 10. אל תוסיף הערות או טקסט בתוך בלוק ה-JSON - רק JSON נקי
 11. כשמבקשים להוסיף לרשימה מותאמת, הרשימות המותאמות מכילות גליונות (sheet_name). ברירת מחדל: "ראשי". אם המשתמש מציין גליון ספציפי - השתמש בו.
-12. המשימות שאתה מוסיף יסומנו כ"נוסף ע"י Tabro AI" - זה קורה אוטומטית.`;
+12. המשימות שאתה מוסיף יסומנו כ"נוסף ע"י Tabro AI" - זה קורה אוטומטית.
+13. כשמבקשים תזכורת - צור אירוע בלוח הזמנים עם הזמן המבוקש. אם אין שעה ספציפית, שים ב-09:00 באותו יום.
+14. ימי הולדת, חגים, אירועים חוזרים - צור אירוע ביום המבוקש. לימי הולדת השתמש בקטגוריה "יום הולדת" וצבע "#ec4899". לחגים השתמש בקטגוריה "חג" וצבע "#a855f7".
+15. כשמבקשים לכתוב פתק - השתמש ב-add_note. אפשר גם לעדכן פתקים קיימים.`;
 
     const messages = [
       { role: "system", content: systemPrompt },
@@ -255,7 +272,7 @@ ${(dreamGoalsRes.data || []).map(d => `- [ID:${d.id}] "${d.title}" | סטטוס:
                 type: "object",
                 description: "The action to execute",
                 properties: {
-                  type: { type: "string", enum: ["add_task", "update_task", "add_event", "update_event", "delete_event", "add_book", "update_book", "add_shopping", "update_shopping", "update_project", "toggle_project_task", "add_project_task", "update_show", "add_board_item", "update_course", "multi"] },
+                  type: { type: "string", enum: ["add_task", "update_task", "add_event", "update_event", "delete_event", "add_book", "update_book", "add_shopping", "update_shopping", "update_project", "toggle_project_task", "add_project_task", "update_show", "add_board_item", "update_course", "add_note", "update_note", "multi"] },
                   task_type: { type: "string", enum: ["work", "personal"] },
                   description: { type: "string" },
                   category: { type: "string" },
@@ -281,6 +298,8 @@ ${(dreamGoalsRes.data || []).map(d => `- [ID:${d.id}] "${d.title}" | סטטוס:
                   board_id: { type: "string" },
                   course_id: { type: "string" },
                   is_dream: { type: "boolean" },
+                  note_id: { type: "string" },
+                  content: { type: "string" },
                   actions: { type: "array", items: { type: "object" } },
                 },
                 required: ["type"]
@@ -546,6 +565,26 @@ async function executeAction(supabase: any, userId: string, action: any): Promis
       case "update_course": {
         const { error } = await supabase.from("courses").update({ status: action.status }).eq("id", action.course_id).eq("user_id", userId);
         return error ? { success: false, error: error.message } : { success: true, type: "update_course" };
+      }
+
+      case "add_note": {
+        const { error } = await supabase.from("notes").insert({
+          user_id: userId,
+          title: action.title || "",
+          content: action.content || "",
+          color: action.color || "#fef08a",
+        });
+        if (error) console.error("add_note error:", error);
+        return error ? { success: false, error: error.message } : { success: true, type: "add_note" };
+      }
+
+      case "update_note": {
+        const updates: any = {};
+        if (action.title !== undefined) updates.title = action.title;
+        if (action.content !== undefined) updates.content = action.content;
+        if (action.color) updates.color = action.color;
+        const { error } = await supabase.from("notes").update(updates).eq("id", action.note_id).eq("user_id", userId);
+        return error ? { success: false, error: error.message } : { success: true, type: "update_note" };
       }
 
       default:
