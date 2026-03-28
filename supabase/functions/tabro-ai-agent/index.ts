@@ -272,7 +272,7 @@ ${(notesRes.data || []).map((n: any) => `- [ID:${n.id}] "${n.title}" | ${n.conte
                 type: "object",
                 description: "The action to execute",
                 properties: {
-                  type: { type: "string", enum: ["add_task", "update_task", "add_event", "update_event", "delete_event", "add_book", "update_book", "add_shopping", "update_shopping", "update_project", "toggle_project_task", "add_project_task", "update_show", "add_board_item", "update_course", "multi"] },
+                  type: { type: "string", enum: ["add_task", "update_task", "add_event", "update_event", "delete_event", "add_book", "update_book", "add_shopping", "update_shopping", "update_project", "toggle_project_task", "add_project_task", "update_show", "add_board_item", "update_course", "add_note", "update_note", "multi"] },
                   task_type: { type: "string", enum: ["work", "personal"] },
                   description: { type: "string" },
                   category: { type: "string" },
