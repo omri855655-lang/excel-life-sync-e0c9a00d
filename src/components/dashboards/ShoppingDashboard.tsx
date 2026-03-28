@@ -385,13 +385,32 @@ const ShoppingDashboard = () => {
 
   const availableSheets = [...new Set(items.map(i => i.sheet_name))];
 
+  const archiveAllItems = async (sheetName?: string) => {
+    if (!user) return;
+    const toArchive = sheetName
+      ? items.filter(i => i.sheet_name === sheetName && !i.is_dream)
+      : items.filter(i => !i.is_dream);
+    if (toArchive.length === 0) { toast.info("אין פריטים לשליחה"); return; }
+    const ids = toArchive.map(i => i.id);
+    await supabase.from("shopping_items").update({ archived: true }).in("id", ids);
+    setItems(prev => prev.filter(i => !ids.includes(i.id)));
+    toast.success(`${ids.length} פריטים נשלחו להיסטוריה`);
+  };
+
   const renderItemList = (itemList: ShoppingItem[], emptyMsg: string, showCustomInput = false) => {
+    // Only show categories that have items
+    const itemCats = [...new Set(itemList.map(i => i.category || "כללי"))];
+    // If showCustomInput, also show categories from SUPERMARKET_CATEGORIES that have catalog items
+    const cats = showCustomInput
+      ? [...new Set([...itemCats, ...SUPERMARKET_CATEGORIES.filter(c => itemList.some(i => (i.category || "כללי") === c))])]
+      : itemCats;
+
+    if (cats.length === 0 && !showCustomInput) return <p className="text-center text-muted-foreground py-6">{emptyMsg}</p>;
     if (itemList.length === 0 && !showCustomInput) return <p className="text-center text-muted-foreground py-6">{emptyMsg}</p>;
 
-    const cats = [...new Set([...itemList.map(i => i.category || "כללי"), ...(showCustomInput ? SUPERMARKET_CATEGORIES : [])])];
     return cats.map(cat => {
       const catItems = itemList.filter(i => (i.category || "כללי") === cat);
-      if (catItems.length === 0 && !showCustomInput) return null;
+      if (catItems.length === 0) return null;
       return (
         <Card key={cat}>
           <CardHeader className="py-2 px-4">
@@ -416,14 +435,6 @@ const ShoppingDashboard = () => {
                             sheet_name: "סופר",
                             is_dream: false,
                           }).then(() => {
-                            // Also save to permanent catalog
-                            const updated = { ...customCatalog };
-                            if (!updated[cat]) updated[cat] = [];
-                            if (!updated[cat].includes(title)) {
-                              updated[cat] = [...updated[cat], title];
-                              setCustomCatalog(updated);
-                              localStorage.setItem("shopping-custom-catalog", JSON.stringify(updated));
-                            }
                             setCustomItemInputs(prev => ({ ...prev, [`header-${cat}`]: "" }));
                             fetchItems();
                             toast.success(`${title} נוסף ל-${cat}`);
@@ -447,13 +458,6 @@ const ShoppingDashboard = () => {
                           sheet_name: "סופר",
                           is_dream: false,
                         }).then(() => {
-                          const updated = { ...customCatalog };
-                          if (!updated[cat]) updated[cat] = [];
-                          if (!updated[cat].includes(title)) {
-                            updated[cat] = [...updated[cat], title];
-                            setCustomCatalog(updated);
-                            localStorage.setItem("shopping-custom-catalog", JSON.stringify(updated));
-                          }
                           setCustomItemInputs(prev => ({ ...prev, [`header-${cat}`]: "" }));
                           fetchItems();
                           toast.success(`${title} נוסף ל-${cat}`);
@@ -469,66 +473,28 @@ const ShoppingDashboard = () => {
             </CardTitle>
           </CardHeader>
           <CardContent className="py-1 px-2 space-y-1">
-            {showCustomInput && getCategoryItemsList(cat).length > 0 && (
-              <div className="mb-2 rounded-lg border bg-muted/30 p-2">
-                <p className="text-[10px] text-muted-foreground mb-1">קטלוג קבוע:</p>
-                <div className="flex flex-wrap gap-1">
-                  {getCategoryItemsList(cat).map(item => {
-                    const existsInList = catItems.some(catItem => catItem.title === item);
-                    return (
-                      <Badge
-                        key={item}
-                        variant="outline"
-                        className="cursor-pointer text-[10px] hover:bg-accent"
-                        onClick={() => !existsInList && addCatalogItemToList(cat, item)}
-                      >
-                        {existsInList ? item : `+ ${item}`}
-                      </Badge>
-                    );
-                  })}
-                </div>
-              </div>
-            )}
             {catItems.map(item => (
               <div key={item.id} className={`flex items-center gap-2 p-2 rounded-lg border transition-all ${item.status === "נקנה" ? "bg-green-50 dark:bg-green-950/20 opacity-60" : "bg-card"}`}>
                 <Button size="icon" variant="ghost" className="h-6 w-6 shrink-0" onClick={() => toggleStatus(item.id, item.status)}>
                   {item.status === "נקנה" ? <Check className="h-4 w-4 text-green-600" /> : <div className="h-4 w-4 border-2 rounded" />}
                 </Button>
                 <span className={`flex-1 text-sm ${item.status === "נקנה" ? "line-through text-muted-foreground" : ""}`}>{item.title}</span>
-                {/* Quantity badge - click to edit */}
                 {editingQuantity === item.id ? (
                   <div className="flex items-center gap-1">
-                    <Input
-                      value={editQtyValue}
-                      onChange={e => setEditQtyValue(e.target.value)}
-                      className="w-12 h-6 text-[10px] px-1"
-                      placeholder="כמות"
-                      onKeyDown={e => e.key === "Enter" && updateItemQuantity(item.id)}
-                      autoFocus
-                    />
+                    <Input value={editQtyValue} onChange={e => setEditQtyValue(e.target.value)} className="w-12 h-6 text-[10px] px-1" placeholder="כמות" onKeyDown={e => e.key === "Enter" && updateItemQuantity(item.id)} autoFocus />
                     <Select value={editQtyUnit} onValueChange={setEditQtyUnit}>
-                      <SelectTrigger className="w-16 h-6 text-[10px] px-1">
-                        <SelectValue />
-                      </SelectTrigger>
-                      <SelectContent>
-                        {QUANTITY_UNITS.map(u => <SelectItem key={u} value={u}>{u}</SelectItem>)}
-                      </SelectContent>
+                      <SelectTrigger className="w-16 h-6 text-[10px] px-1"><SelectValue /></SelectTrigger>
+                      <SelectContent>{QUANTITY_UNITS.map(u => <SelectItem key={u} value={u}>{u}</SelectItem>)}</SelectContent>
                     </Select>
-                    <Button size="icon" variant="ghost" className="h-5 w-5" onClick={() => updateItemQuantity(item.id)}>
-                      <Check className="h-3 w-3" />
-                    </Button>
+                    <Button size="icon" variant="ghost" className="h-5 w-5" onClick={() => updateItemQuantity(item.id)}><Check className="h-3 w-3" /></Button>
                   </div>
                 ) : (
-                  <Badge
-                    variant="outline"
-                    className="text-[10px] cursor-pointer hover:bg-accent"
-                    onClick={() => {
-                      const parts = (item.quantity || "").split(" ");
-                      setEditQtyValue(parts[0] || "1");
-                      setEditQtyUnit(parts.slice(1).join(" ") || "יח'");
-                      setEditingQuantity(item.id);
-                    }}
-                  >
+                  <Badge variant="outline" className="text-[10px] cursor-pointer hover:bg-accent" onClick={() => {
+                    const parts = (item.quantity || "").split(" ");
+                    setEditQtyValue(parts[0] || "1");
+                    setEditQtyUnit(parts.slice(1).join(" ") || "יח'");
+                    setEditingQuantity(item.id);
+                  }}>
                     {item.quantity || "כמות"}
                   </Badge>
                 )}
@@ -537,6 +503,41 @@ const ShoppingDashboard = () => {
                 <Button size="icon" variant="ghost" className="h-6 w-6 text-destructive" onClick={() => deleteItem(item.id)}><Trash2 className="h-3 w-3" /></Button>
               </div>
             ))}
+            {/* Add permanent catalog item input at the bottom of each category */}
+            {showCustomInput && (
+              <div className="flex items-center gap-1 mt-1 p-1">
+                <Input
+                  placeholder="הוספת פריט קבוע..."
+                  value={customItemInputs[`perm-${cat}`] || ""}
+                  onChange={e => setCustomItemInputs(prev => ({ ...prev, [`perm-${cat}`]: e.target.value }))}
+                  onKeyDown={e => {
+                    if (e.key === "Enter") {
+                      const title = customItemInputs[`perm-${cat}`]?.trim();
+                      if (title) {
+                        addCustomItemToCategory(cat, title);
+                        setCustomItemInputs(prev => ({ ...prev, [`perm-${cat}`]: "" }));
+                      }
+                    }
+                  }}
+                  className="flex-1 h-7 text-xs"
+                />
+                <Button
+                  size="sm"
+                  variant="secondary"
+                  className="h-7 text-xs gap-1 shrink-0"
+                  onClick={() => {
+                    const title = customItemInputs[`perm-${cat}`]?.trim();
+                    if (title) {
+                      addCustomItemToCategory(cat, title);
+                      setCustomItemInputs(prev => ({ ...prev, [`perm-${cat}`]: "" }));
+                    }
+                  }}
+                  disabled={!customItemInputs[`perm-${cat}`]?.trim()}
+                >
+                  <Plus className="h-3 w-3" />קבוע
+                </Button>
+              </div>
+            )}
           </CardContent>
         </Card>
       );
