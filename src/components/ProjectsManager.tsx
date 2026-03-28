@@ -840,6 +840,38 @@ const ProjectsManager = () => {
           )}
         </div>
       </div>
+
+      {/* Multi-assign dialog */}
+      <Dialog open={!!assignDialogTask} onOpenChange={(open) => { if (!open) setAssignDialogTask(null); }}>
+        <DialogContent dir="rtl">
+          <DialogHeader>
+            <DialogTitle>הוסף אחראי למשימה</DialogTitle>
+          </DialogHeader>
+          <div className="space-y-3">
+            <Select value={assignMember} onValueChange={setAssignMember}>
+              <SelectTrigger><SelectValue placeholder="בחר חבר צוות" /></SelectTrigger>
+              <SelectContent>
+                {(projectMembers[assignDialogProject || ''] || []).map(m => (
+                  <SelectItem key={m.id} value={m.id}>
+                    {m.invited_display_name || m.invited_email}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+            <Input
+              placeholder="תפקיד/אחריות (אופציונלי)..."
+              value={assignResponsibility}
+              onChange={e => setAssignResponsibility(e.target.value)}
+              dir="rtl"
+            />
+          </div>
+          <DialogFooter>
+            <Button onClick={() => assignDialogTask && assignDialogProject && addTaskAssignment(assignDialogTask, assignDialogProject)} disabled={!assignMember}>
+              הוסף אחראי
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 };
