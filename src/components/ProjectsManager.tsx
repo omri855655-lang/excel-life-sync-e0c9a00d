@@ -308,6 +308,37 @@ const ProjectsManager = () => {
     setNewTaskPushToWork(prev => ({ ...prev, [projectId]: '__none__' }));
   };
 
+  const addTaskAssignment = async (taskId: string, projectId: string) => {
+    if (!assignMember || !user) return;
+    const member = (projectMembers[projectId] || []).find(m => m.id === assignMember);
+    if (!member) return;
+    const { data, error } = await supabase.from('project_task_assignments').insert({
+      project_task_id: taskId,
+      project_id: projectId,
+      user_id: user.id,
+      assignee_email: member.invited_email,
+      assignee_name: member.invited_display_name || member.invited_email,
+      responsibility: assignResponsibility.trim() || null,
+    }).select().single();
+    if (error) { toast.error('שגיאה בהקצאה'); return; }
+    setTaskAssignments(prev => ({
+      ...prev,
+      [taskId]: [...(prev[taskId] || []), data as TaskAssignment],
+    }));
+    setAssignMember('');
+    setAssignResponsibility('');
+    setAssignDialogTask(null);
+    toast.success('אחראי נוסף למשימה');
+  };
+
+  const removeTaskAssignment = async (assignmentId: string, taskId: string) => {
+    await supabase.from('project_task_assignments').delete().eq('id', assignmentId);
+    setTaskAssignments(prev => ({
+      ...prev,
+      [taskId]: (prev[taskId] || []).filter(a => a.id !== assignmentId),
+    }));
+  };
+
   const toggleTaskCompletion = async (task: ProjectTask) => {
     const { error } = await supabase
       .from('project_tasks')
