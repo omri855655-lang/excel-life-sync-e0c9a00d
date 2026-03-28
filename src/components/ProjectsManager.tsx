@@ -13,6 +13,7 @@ import { Progress } from '@/components/ui/progress';
 import { toast } from 'sonner';
 import { cn } from '@/lib/utils';
 import ProjectMembersPanel from '@/components/ProjectMembersPanel';
+import { useCustomBoards } from '@/hooks/useCustomBoards';
 
 interface Project {
   id: string;
@@ -72,6 +73,7 @@ const ProjectsManager = () => {
   const [newTaskAssignee, setNewTaskAssignee] = useState<Record<string, string>>({});
   const [newTaskNotes, setNewTaskNotes] = useState<Record<string, string>>({});
   const [newTaskPushToWork, setNewTaskPushToWork] = useState<Record<string, string | boolean>>({});
+  const { boards: customBoardsList } = useCustomBoards();
 
   useEffect(() => {
     if (user) {
