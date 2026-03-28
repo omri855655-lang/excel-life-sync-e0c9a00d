@@ -657,11 +657,16 @@ const ShoppingDashboard = () => {
             </CardContent>
           </Card>
 
-          <div className="flex items-center justify-between">
+          <div className="flex items-center justify-between flex-wrap gap-2">
             {superTotal > 0 && <div className="text-sm text-muted-foreground">סה"כ סופר: ₪{superTotal.toFixed(0)}</div>}
-            <Button variant="outline" size="sm" className="gap-1" onClick={() => { setShareSheetName("סופר"); setShareOpen(true); }}>
-              <Users className="h-3 w-3" />שתף רשימת סופר
-            </Button>
+            <div className="flex gap-2">
+              <Button variant="outline" size="sm" className="gap-1" onClick={() => archiveAllItems("סופר")}>
+                <Archive className="h-3 w-3" />שלח הכל להיסטוריה
+              </Button>
+              <Button variant="outline" size="sm" className="gap-1" onClick={() => { setShareSheetName("סופר"); setShareOpen(true); }}>
+                <Users className="h-3 w-3" />שתף רשימת סופר
+              </Button>
+            </div>
           </div>
 
           {renderItemList(supermarketItems, "רשימת הסופר ריקה. הוסף מוצרים!", true)}

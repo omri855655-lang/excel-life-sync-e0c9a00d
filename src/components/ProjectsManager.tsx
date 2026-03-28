@@ -668,6 +668,9 @@ const ProjectsManager = () => {
                                 <SelectItem value="__none__">ללא סנכרון לדשבורד</SelectItem>
                                 <SelectItem value="work">משימות עבודה</SelectItem>
                                 <SelectItem value="personal">משימות אישיות</SelectItem>
+                                {customBoardsList.map(b => (
+                                  <SelectItem key={b.id} value={`board:${b.id}`}>{b.name}</SelectItem>
+                                ))}
                               </SelectContent>
                             </Select>
                           </div>
