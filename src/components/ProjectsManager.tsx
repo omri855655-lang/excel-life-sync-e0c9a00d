@@ -232,16 +232,28 @@ const ProjectsManager = () => {
     const pushTarget = newTaskPushToWork[projectId];
     if (pushTarget && typeof pushTarget === 'string' && pushTarget !== '__none__') {
       const project = projects.find(p => p.id === projectId);
-      await supabase.from('tasks').insert({
-        user_id: user?.id,
-        description: `${project?.title || 'פרויקט'}: ${title}`,
-        task_type: pushTarget as 'work' | 'personal',
-        status: 'לא התחיל',
-        category: 'פרויקט',
-        responsible: assigneeName || null,
-        status_notes: taskNotes || null,
-        sheet_name: String(new Date().getFullYear()),
-      });
+      if (pushTarget.startsWith('board:')) {
+        const boardId = pushTarget.replace('board:', '');
+        await supabase.from('custom_board_items').insert({
+          user_id: user?.id,
+          board_id: boardId,
+          title: `${project?.title || 'פרויקט'}: ${title}`,
+          category: 'פרויקט',
+          status: 'לביצוע',
+          sheet_name: 'ראשי',
+        });
+      } else {
+        await supabase.from('tasks').insert({
+          user_id: user?.id,
+          description: `${project?.title || 'פרויקט'}: ${title}`,
+          task_type: pushTarget as 'work' | 'personal',
+          status: 'לא התחיל',
+          category: 'פרויקט',
+          responsible: assigneeName || null,
+          status_notes: taskNotes || null,
+          sheet_name: String(new Date().getFullYear()),
+        });
+      }
     }
 
     // Notify team members
