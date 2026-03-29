@@ -308,16 +308,36 @@ const ProjectsManager = () => {
     setNewTaskPushToWork(prev => ({ ...prev, [projectId]: '__none__' }));
   };
 
+  // Build full assignable list including project owner
+  const getAssignableMembers = (projectId: string): { id: string; email: string; displayName: string }[] => {
+    const project = projects.find(p => p.id === projectId);
+    const members = (projectMembers[projectId] || []).map(m => ({
+      id: m.id,
+      email: m.invited_email,
+      displayName: m.invited_display_name || m.invited_email,
+    }));
+    // Add self (owner) if not already in members
+    if (project && user && !members.some(m => m.email === user.email)) {
+      members.unshift({
+        id: '__self__',
+        email: user.email || '',
+        displayName: 'אני (בעל הפרויקט)',
+      });
+    }
+    return members;
+  };
+
   const addTaskAssignment = async (taskId: string, projectId: string) => {
     if (!assignMember || !user) return;
-    const member = (projectMembers[projectId] || []).find(m => m.id === assignMember);
+    const allMembers = getAssignableMembers(projectId);
+    const member = allMembers.find(m => m.id === assignMember);
     if (!member) return;
     const { data, error } = await supabase.from('project_task_assignments').insert({
       project_task_id: taskId,
       project_id: projectId,
       user_id: user.id,
-      assignee_email: member.invited_email,
-      assignee_name: member.invited_display_name || member.invited_email,
+      assignee_email: member.email,
+      assignee_name: member.displayName === 'אני (בעל הפרויקט)' ? (user.email?.split('@')[0] || 'אני') : member.displayName,
       responsibility: assignResponsibility.trim() || null,
     }).select().single();
     if (error) { toast.error('שגיאה בהקצאה'); return; }
@@ -705,24 +725,22 @@ const ProjectsManager = () => {
                             </Button>
                           </div>
                           <div className="flex gap-2 items-center flex-wrap">
-                            {(projectMembers[project.id] || []).length > 0 && (
-                              <Select
-                                value={newTaskAssignee[project.id] || '__none__'}
-                                onValueChange={(v) => setNewTaskAssignee(prev => ({ ...prev, [project.id]: v === '__none__' ? '' : v }))}
-                              >
-                                <SelectTrigger className="w-[160px] h-8 text-xs">
-                                  <SelectValue placeholder="הקצה לחבר צוות" />
-                                </SelectTrigger>
-                                <SelectContent>
-                                  <SelectItem value="__none__">ללא הקצאה</SelectItem>
-                                  {(projectMembers[project.id] || []).map(m => (
-                                    <SelectItem key={m.id} value={m.id}>
-                                      {m.invited_display_name || m.invited_email}
-                                    </SelectItem>
-                                  ))}
-                                </SelectContent>
-                              </Select>
-                            )}
+                            <Select
+                              value={newTaskAssignee[project.id] || '__none__'}
+                              onValueChange={(v) => setNewTaskAssignee(prev => ({ ...prev, [project.id]: v === '__none__' ? '' : v }))}
+                            >
+                              <SelectTrigger className="w-[160px] h-8 text-xs">
+                                <SelectValue placeholder="הקצה לחבר צוות" />
+                              </SelectTrigger>
+                              <SelectContent>
+                                <SelectItem value="__none__">ללא הקצאה</SelectItem>
+                                {getAssignableMembers(project.id).map(m => (
+                                  <SelectItem key={m.id} value={m.id}>
+                                    {m.displayName}
+                                  </SelectItem>
+                                ))}
+                              </SelectContent>
+                            </Select>
                             <Input
                               placeholder="תפקיד/חלק במשימה..."
                               value={newTaskNotes[project.id] || ''}
@@ -806,14 +824,12 @@ const ProjectsManager = () => {
                                         <button onClick={() => removeTaskAssignment(a.id, task.id)} className="hover:text-destructive ml-0.5">×</button>
                                       </span>
                                     ))}
-                                    {(projectMembers[project.id] || []).length > 0 && (
-                                      <button
-                                        className="text-[10px] px-1.5 py-0.5 rounded-full border border-dashed border-muted-foreground/40 text-muted-foreground hover:bg-muted"
-                                        onClick={() => { setAssignDialogTask(task.id); setAssignDialogProject(project.id); }}
-                                      >
-                                        + אחראי
-                                      </button>
-                                    )}
+                                    <button
+                                      className="text-[10px] px-1.5 py-0.5 rounded-full border border-dashed border-muted-foreground/40 text-muted-foreground hover:bg-muted"
+                                      onClick={() => { setAssignDialogTask(task.id); setAssignDialogProject(project.id); }}
+                                    >
+                                      + אחראי
+                                    </button>
                                   </div>
                                 </div>
                                 <Button
@@ -851,9 +867,9 @@ const ProjectsManager = () => {
             <Select value={assignMember} onValueChange={setAssignMember}>
               <SelectTrigger><SelectValue placeholder="בחר חבר צוות" /></SelectTrigger>
               <SelectContent>
-                {(projectMembers[assignDialogProject || ''] || []).map(m => (
+                {getAssignableMembers(assignDialogProject || '').map(m => (
                   <SelectItem key={m.id} value={m.id}>
-                    {m.invited_display_name || m.invited_email}
+                    {m.displayName}
                   </SelectItem>
                 ))}
               </SelectContent>

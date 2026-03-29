@@ -7,7 +7,7 @@ import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Plus, Trash2, ShoppingCart, Star, Check, Archive, Sparkles, MessageCircle, Users, ShoppingBasket, History, RotateCcw } from "lucide-react";
+import { Plus, Trash2, ShoppingCart, Star, Check, Archive, Sparkles, MessageCircle, Users, ShoppingBasket, History, RotateCcw, Recycle } from "lucide-react";
 import { toast } from "sonner";
 import { useDashboardChatHistory } from "@/hooks/useDashboardChatHistory";
 import AutocompleteInput from "@/components/AutocompleteInput";
@@ -223,7 +223,7 @@ const ShoppingDashboard = () => {
   }, [user]);
 
   useEffect(() => { fetchItems(); }, [fetchItems]);
-  useEffect(() => { if (activeTab === "history") fetchArchivedItems(); }, [activeTab, fetchArchivedItems]);
+  useEffect(() => { if (activeTab === "history" || activeTab === "recycle") fetchArchivedItems(); }, [activeTab, fetchArchivedItems]);
 
   const addItem = async (isDream: boolean, sheetName = "ראשי") => {
     if (!user || !newTitle.trim()) return;
@@ -250,8 +250,10 @@ const ShoppingDashboard = () => {
   };
 
   const deleteItem = async (id: string) => {
-    await supabase.from("shopping_items").delete().eq("id", id);
+    // Soft delete: move to recycle bin (archived + status "נמחק")
+    await supabase.from("shopping_items").update({ archived: true, status: "נמחק", updated_at: new Date().toISOString() }).eq("id", id);
     setItems(prev => prev.filter(i => i.id !== id));
+    toast.success("הפריט הועבר לסל המחזור");
   };
 
   const archiveItem = async (id: string) => {
@@ -314,15 +316,36 @@ const ShoppingDashboard = () => {
   };
 
   const archivedGroups = useMemo(() => {
-    const groups = archivedItems.reduce<Record<string, ShoppingItem[]>>((acc, item) => {
+    // History = archived items that were NOT deleted (status != "נמחק")
+    const historyItems = archivedItems.filter(i => i.status !== "נמחק");
+    const groups = historyItems.reduce<Record<string, ShoppingItem[]>>((acc, item) => {
       const key = new Date(item.updated_at).toLocaleDateString("he-IL");
       if (!acc[key]) acc[key] = [];
       acc[key].push(item);
       return acc;
     }, {});
-
     return Object.entries(groups).sort((a, b) => new Date(b[1][0].updated_at).getTime() - new Date(a[1][0].updated_at).getTime());
   }, [archivedItems]);
+
+  // Recycle bin items (deleted within 7 days)
+  const recycleBinItems = useMemo(() => {
+    const sevenDaysAgo = new Date();
+    sevenDaysAgo.setDate(sevenDaysAgo.getDate() - 7);
+    return archivedItems.filter(i => i.status === "נמחק" && new Date(i.updated_at) > sevenDaysAgo);
+  }, [archivedItems]);
+
+  // Auto-purge items older than 7 days from recycle bin
+  useEffect(() => {
+    if (!user) return;
+    const sevenDaysAgo = new Date();
+    sevenDaysAgo.setDate(sevenDaysAgo.getDate() - 7);
+    const toPurge = archivedItems.filter(i => i.status === "נמחק" && new Date(i.updated_at) <= sevenDaysAgo);
+    if (toPurge.length > 0) {
+      supabase.from("shopping_items").delete().in("id", toPurge.map(i => i.id)).then(() => {
+        setArchivedItems(prev => prev.filter(i => !toPurge.some(p => p.id === i.id)));
+      });
+    }
+  }, [archivedItems, user]);
 
   const restoreArchivedGroup = async (groupItems: ShoppingItem[]) => {
     if (!user || groupItems.length === 0) return;
@@ -564,6 +587,7 @@ const ShoppingDashboard = () => {
           <TabsTrigger value="supermarket" className="flex-1 gap-1"><ShoppingBasket className="h-3.5 w-3.5" />סופר ({supermarketItems.length})</TabsTrigger>
           <TabsTrigger value="dreams" className="flex-1 gap-1"><Star className="h-3.5 w-3.5" />חלומות ({dreamItems.length})</TabsTrigger>
           <TabsTrigger value="history" className="flex-1 gap-1"><History className="h-3.5 w-3.5" />היסטוריה</TabsTrigger>
+          <TabsTrigger value="recycle" className="flex-1 gap-1"><Recycle className="h-3.5 w-3.5" />סל מחזור{recycleBinItems.length > 0 ? ` (${recycleBinItems.length})` : ""}</TabsTrigger>
           <TabsTrigger value="ai" className="flex-1 gap-1"><Sparkles className="h-3.5 w-3.5" />יועץ AI</TabsTrigger>
         </TabsList>
 
@@ -627,7 +651,7 @@ const ShoppingDashboard = () => {
               {newCategory && getCategoryItemsList(newCategory).length > 0 && (
                 <div className="mt-2 p-2 rounded-lg border bg-muted/30">
                   <p className="text-[10px] text-muted-foreground mb-1">לחץ להוספה מהירה:</p>
-                  <div className="flex flex-wrap gap-1">
+                  <div className="flex flex-wrap gap-1 items-center">
                     {getCategoryItemsList(newCategory)
                       .filter(item => !supermarketItems.some(si => si.title === item && si.category === newCategory))
                       .map(item => (
@@ -651,6 +675,47 @@ const ShoppingDashboard = () => {
                           + {item}
                         </Badge>
                       ))}
+                    {/* Inline add new permanent catalog item */}
+                    {customItemInputs[`inline-${newCategory}`] !== undefined ? (
+                      <div className="flex items-center gap-1">
+                        <Input
+                          placeholder="שם מוצר חדש..."
+                          value={customItemInputs[`inline-${newCategory}`] || ""}
+                          onChange={e => setCustomItemInputs(prev => ({ ...prev, [`inline-${newCategory}`]: e.target.value }))}
+                          onKeyDown={e => {
+                            if (e.key === "Enter") {
+                              const title = customItemInputs[`inline-${newCategory}`]?.trim();
+                              if (title) {
+                                addCustomItemToCategory(newCategory, title);
+                                setCustomItemInputs(prev => ({ ...prev, [`inline-${newCategory}`]: undefined as any }));
+                              }
+                            }
+                            if (e.key === "Escape") {
+                              setCustomItemInputs(prev => ({ ...prev, [`inline-${newCategory}`]: undefined as any }));
+                            }
+                          }}
+                          className="w-28 h-6 text-[10px] px-2"
+                          autoFocus
+                        />
+                        <Button size="icon" variant="ghost" className="h-6 w-6" onClick={() => {
+                          const title = customItemInputs[`inline-${newCategory}`]?.trim();
+                          if (title) {
+                            addCustomItemToCategory(newCategory, title);
+                          }
+                          setCustomItemInputs(prev => ({ ...prev, [`inline-${newCategory}`]: undefined as any }));
+                        }}>
+                          <Check className="h-3 w-3" />
+                        </Button>
+                      </div>
+                    ) : (
+                      <Badge
+                        variant="outline"
+                        className="cursor-pointer text-[10px] border-dashed border-primary/40 text-primary hover:bg-primary/10 transition-colors"
+                        onClick={() => setCustomItemInputs(prev => ({ ...prev, [`inline-${newCategory}`]: "" }))}
+                      >
+                        + הוסף מוצר קבוע
+                      </Badge>
+                    )}
                   </div>
                 </div>
               )}
@@ -743,6 +808,47 @@ const ShoppingDashboard = () => {
                   </CardContent>
                 </Card>
               ))}
+            </div>
+          )}
+        </TabsContent>
+
+        {/* Recycle Bin */}
+        <TabsContent value="recycle" className="space-y-4">
+          <div className="flex items-center gap-2 mb-2">
+            <Recycle className="h-5 w-5 text-primary" />
+            <h3 className="font-bold text-sm">סל מחזור ({recycleBinItems.length})</h3>
+            <span className="text-xs text-muted-foreground">פריטים נמחקים לצמיתות לאחר 7 ימים</span>
+          </div>
+          {recycleBinItems.length === 0 ? (
+            <p className="text-center text-muted-foreground py-6">סל המחזור ריק</p>
+          ) : (
+            <div className="space-y-2">
+              {recycleBinItems.map(item => (
+                <div key={item.id} className="flex items-center gap-2 p-2 rounded-lg border bg-muted/30">
+                  <Trash2 className="h-4 w-4 text-muted-foreground shrink-0" />
+                  <span className="flex-1 text-sm">{item.title}</span>
+                  {item.category && <Badge variant="outline" className="text-[10px]">{item.category}</Badge>}
+                  <span className="text-[10px] text-muted-foreground">{new Date(item.updated_at).toLocaleDateString("he-IL")}</span>
+                  <Button size="sm" variant="ghost" className="h-6 text-xs gap-1" onClick={() => restoreItem(item.id)}>
+                    <RotateCcw className="h-3 w-3" />שחזר
+                  </Button>
+                  <Button size="sm" variant="ghost" className="h-6 text-xs text-destructive" onClick={async () => {
+                    await supabase.from("shopping_items").delete().eq("id", item.id);
+                    setArchivedItems(prev => prev.filter(i => i.id !== item.id));
+                    toast.success("נמחק לצמיתות");
+                  }}>
+                    <Trash2 className="h-3 w-3" />
+                  </Button>
+                </div>
+              ))}
+              <Button variant="destructive" size="sm" className="gap-1" onClick={async () => {
+                const ids = recycleBinItems.map(i => i.id);
+                await supabase.from("shopping_items").delete().in("id", ids);
+                setArchivedItems(prev => prev.filter(i => !ids.includes(i.id)));
+                toast.success("סל המחזור רוקן");
+              }}>
+                <Trash2 className="h-3 w-3" />רוקן סל מחזור
+              </Button>
             </div>
           )}
         </TabsContent>
