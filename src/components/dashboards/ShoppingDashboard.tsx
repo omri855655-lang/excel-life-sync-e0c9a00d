@@ -7,7 +7,7 @@ import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Plus, Trash2, ShoppingCart, Star, Check, Archive, Sparkles, MessageCircle, Users, ShoppingBasket, History, RotateCcw } from "lucide-react";
+import { Plus, Trash2, ShoppingCart, Star, Check, Archive, Sparkles, MessageCircle, Users, ShoppingBasket, History, RotateCcw, Recycle } from "lucide-react";
 import { toast } from "sonner";
 import { useDashboardChatHistory } from "@/hooks/useDashboardChatHistory";
 import AutocompleteInput from "@/components/AutocompleteInput";
@@ -250,8 +250,10 @@ const ShoppingDashboard = () => {
   };
 
   const deleteItem = async (id: string) => {
-    await supabase.from("shopping_items").delete().eq("id", id);
+    // Soft delete: move to recycle bin (archived + status "נמחק")
+    await supabase.from("shopping_items").update({ archived: true, status: "נמחק", updated_at: new Date().toISOString() }).eq("id", id);
     setItems(prev => prev.filter(i => i.id !== id));
+    toast.success("הפריט הועבר לסל המחזור");
   };
 
   const archiveItem = async (id: string) => {
