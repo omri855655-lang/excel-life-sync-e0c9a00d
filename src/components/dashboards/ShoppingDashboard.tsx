@@ -771,6 +771,47 @@ const ShoppingDashboard = () => {
           )}
         </TabsContent>
 
+        {/* Recycle Bin */}
+        <TabsContent value="recycle" className="space-y-4">
+          <div className="flex items-center gap-2 mb-2">
+            <Recycle className="h-5 w-5 text-primary" />
+            <h3 className="font-bold text-sm">סל מחזור ({recycleBinItems.length})</h3>
+            <span className="text-xs text-muted-foreground">פריטים נמחקים לצמיתות לאחר 7 ימים</span>
+          </div>
+          {recycleBinItems.length === 0 ? (
+            <p className="text-center text-muted-foreground py-6">סל המחזור ריק</p>
+          ) : (
+            <div className="space-y-2">
+              {recycleBinItems.map(item => (
+                <div key={item.id} className="flex items-center gap-2 p-2 rounded-lg border bg-muted/30">
+                  <Trash2 className="h-4 w-4 text-muted-foreground shrink-0" />
+                  <span className="flex-1 text-sm">{item.title}</span>
+                  {item.category && <Badge variant="outline" className="text-[10px]">{item.category}</Badge>}
+                  <span className="text-[10px] text-muted-foreground">{new Date(item.updated_at).toLocaleDateString("he-IL")}</span>
+                  <Button size="sm" variant="ghost" className="h-6 text-xs gap-1" onClick={() => restoreItem(item.id)}>
+                    <RotateCcw className="h-3 w-3" />שחזר
+                  </Button>
+                  <Button size="sm" variant="ghost" className="h-6 text-xs text-destructive" onClick={async () => {
+                    await supabase.from("shopping_items").delete().eq("id", item.id);
+                    setArchivedItems(prev => prev.filter(i => i.id !== item.id));
+                    toast.success("נמחק לצמיתות");
+                  }}>
+                    <Trash2 className="h-3 w-3" />
+                  </Button>
+                </div>
+              ))}
+              <Button variant="destructive" size="sm" className="gap-1" onClick={async () => {
+                const ids = recycleBinItems.map(i => i.id);
+                await supabase.from("shopping_items").delete().in("id", ids);
+                setArchivedItems(prev => prev.filter(i => !ids.includes(i.id)));
+                toast.success("סל המחזור רוקן");
+              }}>
+                <Trash2 className="h-3 w-3" />רוקן סל מחזור
+              </Button>
+            </div>
+          )}
+        </TabsContent>
+
         {/* AI */}
         <TabsContent value="ai" className="space-y-4">
           <Card>
