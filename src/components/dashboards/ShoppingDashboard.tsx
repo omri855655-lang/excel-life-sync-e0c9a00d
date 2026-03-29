@@ -651,7 +651,7 @@ const ShoppingDashboard = () => {
               {newCategory && getCategoryItemsList(newCategory).length > 0 && (
                 <div className="mt-2 p-2 rounded-lg border bg-muted/30">
                   <p className="text-[10px] text-muted-foreground mb-1">לחץ להוספה מהירה:</p>
-                  <div className="flex flex-wrap gap-1">
+                  <div className="flex flex-wrap gap-1 items-center">
                     {getCategoryItemsList(newCategory)
                       .filter(item => !supermarketItems.some(si => si.title === item && si.category === newCategory))
                       .map(item => (
@@ -675,6 +675,47 @@ const ShoppingDashboard = () => {
                           + {item}
                         </Badge>
                       ))}
+                    {/* Inline add new permanent catalog item */}
+                    {customItemInputs[`inline-${newCategory}`] !== undefined ? (
+                      <div className="flex items-center gap-1">
+                        <Input
+                          placeholder="שם מוצר חדש..."
+                          value={customItemInputs[`inline-${newCategory}`] || ""}
+                          onChange={e => setCustomItemInputs(prev => ({ ...prev, [`inline-${newCategory}`]: e.target.value }))}
+                          onKeyDown={e => {
+                            if (e.key === "Enter") {
+                              const title = customItemInputs[`inline-${newCategory}`]?.trim();
+                              if (title) {
+                                addCustomItemToCategory(newCategory, title);
+                                setCustomItemInputs(prev => ({ ...prev, [`inline-${newCategory}`]: undefined as any }));
+                              }
+                            }
+                            if (e.key === "Escape") {
+                              setCustomItemInputs(prev => ({ ...prev, [`inline-${newCategory}`]: undefined as any }));
+                            }
+                          }}
+                          className="w-28 h-6 text-[10px] px-2"
+                          autoFocus
+                        />
+                        <Button size="icon" variant="ghost" className="h-6 w-6" onClick={() => {
+                          const title = customItemInputs[`inline-${newCategory}`]?.trim();
+                          if (title) {
+                            addCustomItemToCategory(newCategory, title);
+                          }
+                          setCustomItemInputs(prev => ({ ...prev, [`inline-${newCategory}`]: undefined as any }));
+                        }}>
+                          <Check className="h-3 w-3" />
+                        </Button>
+                      </div>
+                    ) : (
+                      <Badge
+                        variant="outline"
+                        className="cursor-pointer text-[10px] border-dashed border-primary/40 text-primary hover:bg-primary/10 transition-colors"
+                        onClick={() => setCustomItemInputs(prev => ({ ...prev, [`inline-${newCategory}`]: "" }))}
+                      >
+                        + הוסף מוצר קבוע
+                      </Badge>
+                    )}
                   </div>
                 </div>
               )}
