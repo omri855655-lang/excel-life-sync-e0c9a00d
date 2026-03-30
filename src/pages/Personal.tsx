@@ -663,6 +663,7 @@ const Personal = () => {
       {/* AI Daily Planner floating button */}
       <AiDailyPlanner />
     </div>
+    </>
   );
 };
 

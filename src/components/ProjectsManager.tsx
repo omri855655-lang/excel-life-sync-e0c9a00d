@@ -235,10 +235,10 @@ const ProjectsManager = () => {
     const currentTasks = projectTasks[projectId] || [];
     const maxOrder = currentTasks.length > 0 ? Math.max(...currentTasks.map(t => t.sort_order)) : 0;
 
-    const assigneeMemberId = newTaskAssignee[projectId] || null;
-    const assigneeMember = assigneeMemberId ? (projectMembers[projectId]?.find(m => m.id === assigneeMemberId)) : null;
-    const assigneeName = assigneeMember?.invited_display_name || assigneeMember?.invited_email || null;
-    const assigneeEmail = assigneeMember?.invited_email || null;
+    const allAssignable = getAssignableMembers(projectId);
+    const assigneeMember = assigneeMemberId ? allAssignable.find(m => m.id === assigneeMemberId) : null;
+    const assigneeName = assigneeMember?.displayName === 'אני (בעל הפרויקט)' ? (user?.email?.split('@')[0] || 'אני') : (assigneeMember?.displayName || null);
+    const assigneeEmail = assigneeMember?.email || null;
     const taskNotes = newTaskNotes[projectId]?.trim() || null;
 
     const { data, error } = await supabase.from('project_tasks').insert({
