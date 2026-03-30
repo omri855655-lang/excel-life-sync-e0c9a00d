@@ -30,6 +30,7 @@ import ShoppingDashboard from "@/components/dashboards/ShoppingDashboard";
 import PaymentDashboard from "@/components/dashboards/PaymentDashboard";
 import ContactForm from "@/components/ContactForm";
 import NotesDashboard from "@/components/dashboards/NotesDashboard";
+import OnboardingWizard from "@/components/OnboardingWizard";
 import { FileSpreadsheet, Moon, Sun, LogOut, BookOpen, Tv, LayoutDashboard, ListTodo, Briefcase, Download, Headphones, CalendarCheck, FolderKanban, GraduationCap, CalendarDays, Focus, Settings, LayoutGrid, Trophy, ChevronLeft, ChevronRight, Share2, Apple, Target, ShoppingCart, CreditCard, MessageSquare, StickyNote } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -355,7 +356,13 @@ const Personal = () => {
     return null;
   }
 
+  const showOnboarding = !localStorage.getItem("tabro_onboarded");
+
   return (
+    <>
+    {showOnboarding && (
+      <OnboardingWizard onComplete={() => window.location.reload()} />
+    )}
     <div className={`flex flex-col h-screen bg-background`} dir={dir}>
       {/* Header */}
       <header className="flex items-center gap-3 px-4 py-3 border-b border-border bg-card shadow-sm">
@@ -656,6 +663,7 @@ const Personal = () => {
       {/* AI Daily Planner floating button */}
       <AiDailyPlanner />
     </div>
+    </>
   );
 };
 
