@@ -259,6 +259,30 @@ const ProjectsManager = () => {
       return;
     }
 
+    // Create pre-assignees
+    const preAssignees = newTaskPreAssignees[projectId] || [];
+    if (preAssignees.length > 0 && data) {
+      const allAssignableForPre = getAssignableMembers(projectId);
+      const assignInserts = preAssignees.map(pa => {
+        const member = allAssignableForPre.find(m => m.id === pa.memberId);
+        return {
+          project_task_id: data.id,
+          project_id: projectId,
+          user_id: user?.id!,
+          assignee_email: member?.email || '',
+          assignee_name: member?.displayName === 'אני (בעל הפרויקט)' ? (user?.email?.split('@')[0] || 'אני') : (member?.displayName || ''),
+          responsibility: pa.responsibility || null,
+        };
+      });
+      const { data: newAssignments } = await supabase.from('project_task_assignments').insert(assignInserts).select();
+      if (newAssignments) {
+        setTaskAssignments(prev => ({
+          ...prev,
+          [data.id]: [...(prev[data.id] || []), ...(newAssignments as TaskAssignment[])],
+        }));
+      }
+    }
+
     // Also push to selected dashboard if chosen
     const pushTarget = newTaskPushToWork[projectId];
     if (pushTarget && typeof pushTarget === 'string' && pushTarget !== '__none__') {
@@ -309,6 +333,7 @@ const ProjectsManager = () => {
     setNewTaskAssignee(prev => ({ ...prev, [projectId]: '' }));
     setNewTaskNotes(prev => ({ ...prev, [projectId]: '' }));
     setNewTaskPushToWork(prev => ({ ...prev, [projectId]: '__none__' }));
+    setNewTaskPreAssignees(prev => ({ ...prev, [projectId]: [] }));
   };
 
   // Build full assignable list including project owner
