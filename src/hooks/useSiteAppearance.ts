@@ -10,6 +10,9 @@ export interface SiteThemePreset {
 
 export const SITE_THEME_PRESETS: SiteThemePreset[] = [
   { id: "default", name: "נקי", description: "מראה בהיר ונעים עם כחול קלאסי" },
+  { id: "focus", name: "Focus", description: "עבודה עמוקה — כהה ומינימלי, בהשראת Linear ו-Arc" },
+  { id: "clarity", name: "Clarity", description: "בהיר, נקי ומסודר — בהשראת Notion ו-Things 3" },
+  { id: "flow", name: "Flow", description: "חמים ואנרגטי — בהשראת Monday.com ו-Asana" },
   { id: "paper", name: "לבן צלול", description: "מסך לבן ובהיר במיוחד עם תחושה נקייה" },
   { id: "executive", name: "אקסקיוטיב", description: "מראה בוגר, רגוע ומקצועי עם ניווט שמתאים לעבודה יומיומית" },
   { id: "corporate", name: "קורפורייט", description: "עיצוב עסקי מודרני בגוונים כהים עם דגשי זהב" },
