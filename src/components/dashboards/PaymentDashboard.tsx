@@ -381,10 +381,87 @@ ${context}
       <Tabs value={activeTab} onValueChange={setActiveTab}>
         <TabsList className="w-full flex-wrap h-auto">
           <TabsTrigger value="overview" className="flex-1">תשלומים</TabsTrigger>
+          <TabsTrigger value="budget" className="flex-1 gap-1"><PiggyBank className="h-3 w-3" />תקציב</TabsTrigger>
           <TabsTrigger value="add" className="flex-1 gap-1"><Plus className="h-3 w-3" />הוסף</TabsTrigger>
           <TabsTrigger value="guides" className="flex-1 gap-1"><BookOpen className="h-3 w-3" />מדריכים</TabsTrigger>
           <TabsTrigger value="ai" className="flex-1 gap-1"><Sparkles className="h-3 w-3" />יועץ AI</TabsTrigger>
         </TabsList>
+
+        <TabsContent value="budget" className="space-y-4">
+          <Card>
+            <CardContent className="py-4 space-y-4">
+              <h3 className="text-sm font-semibold flex items-center gap-2"><PiggyBank className="h-4 w-4" />הגדרת תקציב</h3>
+              <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <label className="text-xs text-muted-foreground">תקציב חודשי (₪)</label>
+                  <Input type="number" value={monthlyBudget || ''} onChange={(e) => { const v = Number(e.target.value) || 0; setMonthlyBudget(v); localStorage.setItem("payment-monthly-budget", String(v)); }} placeholder="0" />
+                </div>
+                <div>
+                  <label className="text-xs text-muted-foreground">תקציב שבועי (₪)</label>
+                  <Input type="number" value={weeklyBudget || ''} onChange={(e) => { const v = Number(e.target.value) || 0; setWeeklyBudget(v); localStorage.setItem("payment-weekly-budget", String(v)); }} placeholder="0" />
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+
+          {monthlyBudget > 0 && (
+            <Card className={monthBudgetLeft >= 0 ? "border-green-200 dark:border-green-800" : "border-red-200 dark:border-red-800"}>
+              <CardContent className="py-4">
+                <div className="flex justify-between items-center mb-2">
+                  <h3 className="text-sm font-semibold">תקציב חודשי</h3>
+                  <span className={`text-sm font-bold ${monthBudgetLeft >= 0 ? "text-green-600" : "text-red-600"}`}>
+                    {monthBudgetLeft >= 0 ? `נותרו ₪${monthBudgetLeft.toLocaleString()}` : `חריגה של ₪${Math.abs(monthBudgetLeft).toLocaleString()}`}
+                  </span>
+                </div>
+                <Progress value={monthPct} className="h-3 mb-1" />
+                <div className="flex justify-between text-xs text-muted-foreground">
+                  <span>₪{thisMonthExpenses.toLocaleString()} הוצאו</span>
+                  <span>₪{monthlyBudget.toLocaleString()} תקציב</span>
+                </div>
+              </CardContent>
+            </Card>
+          )}
+
+          {weeklyBudget > 0 && (
+            <Card className={weekBudgetLeft >= 0 ? "border-green-200 dark:border-green-800" : "border-red-200 dark:border-red-800"}>
+              <CardContent className="py-4">
+                <div className="flex justify-between items-center mb-2">
+                  <h3 className="text-sm font-semibold">תקציב שבועי</h3>
+                  <span className={`text-sm font-bold ${weekBudgetLeft >= 0 ? "text-green-600" : "text-red-600"}`}>
+                    {weekBudgetLeft >= 0 ? `נותרו ₪${weekBudgetLeft.toLocaleString()}` : `חריגה של ₪${Math.abs(weekBudgetLeft).toLocaleString()}`}
+                  </span>
+                </div>
+                <Progress value={weekPct} className="h-3 mb-1" />
+                <div className="flex justify-between text-xs text-muted-foreground">
+                  <span>₪{thisWeekExpenses.toLocaleString()} הוצאו</span>
+                  <span>₪{weeklyBudget.toLocaleString()} תקציב</span>
+                </div>
+              </CardContent>
+            </Card>
+          )}
+
+          {(monthlyBudget > 0 || weeklyBudget > 0) && categoryBreakdown.length > 0 && (
+            <Card>
+              <CardContent className="py-4">
+                <h3 className="text-sm font-semibold mb-3">פילוח הוצאות החודש</h3>
+                <div className="space-y-2">
+                  {categoryBreakdown.map(([cat, amt]) => {
+                    const pct = monthlyBudget > 0 ? Math.round((amt / monthlyBudget) * 100) : 0;
+                    return (
+                      <div key={cat}>
+                        <div className="flex justify-between text-sm mb-1">
+                          <span>{cat}</span>
+                          <span className="font-medium">₪{amt.toLocaleString()} {monthlyBudget > 0 && `(${pct}%)`}</span>
+                        </div>
+                        <Progress value={Math.min(pct, 100)} className="h-2" />
+                      </div>
+                    );
+                  })}
+                </div>
+              </CardContent>
+            </Card>
+          )}
+        </TabsContent>
 
         <TabsContent value="overview" className="space-y-2">
           {/* Fixed expenses */}
