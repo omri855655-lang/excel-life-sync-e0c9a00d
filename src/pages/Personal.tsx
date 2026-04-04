@@ -506,15 +506,65 @@ const Personal = () => {
     return (
       <>
         {showOnboarding && <OnboardingWizard onComplete={() => window.location.reload()} />}
-        <CompactLayout
-          tabs={flatTabItems}
-          activeTab={activeTab}
-          onTabChange={setActiveTab}
-          dir={dir}
-          header={<>{headerLeft}{headerControls}</>}
-        >
+        <CompactLayout tabs={flatTabItems} activeTab={activeTab} onTabChange={setActiveTab} dir={dir} header={<>{headerLeft}{headerControls}</>}>
           <div className="h-full">{renderContent()}</div>
         </CompactLayout>
+        <FloatingMusicMini visible={activeTab !== 'deeply'} onGoToDeeply={() => setActiveTab('deeply')} />
+        <AiDailyPlanner />
+      </>
+    );
+  }
+
+  // ---------- BOTTOM NAV LAYOUT ----------
+  if (layout === "bottom-nav") {
+    return (
+      <>
+        {showOnboarding && <OnboardingWizard onComplete={() => window.location.reload()} />}
+        <BottomNavLayout tabs={flatTabItems} activeTab={activeTab} onTabChange={setActiveTab} dir={dir} header={<>{headerLeft}{headerControls}</>}>
+          <div className="h-full">{renderContent()}</div>
+        </BottomNavLayout>
+        <FloatingMusicMini visible={activeTab !== 'deeply'} onGoToDeeply={() => setActiveTab('deeply')} />
+        <AiDailyPlanner />
+      </>
+    );
+  }
+
+  // ---------- HAMBURGER LAYOUT ----------
+  if (layout === "hamburger") {
+    return (
+      <>
+        {showOnboarding && <OnboardingWizard onComplete={() => window.location.reload()} />}
+        <HamburgerLayout tabs={flatTabItems} activeTab={activeTab} onTabChange={setActiveTab} dir={dir} header={<>{headerControls}</>}>
+          <div className="h-full">{renderContent()}</div>
+        </HamburgerLayout>
+        <FloatingMusicMini visible={activeTab !== 'deeply'} onGoToDeeply={() => setActiveTab('deeply')} />
+        <AiDailyPlanner />
+      </>
+    );
+  }
+
+  // ---------- DASHBOARD CARDS LAYOUT ----------
+  if (layout === "dashboard-cards") {
+    return (
+      <>
+        {showOnboarding && <OnboardingWizard onComplete={() => window.location.reload()} />}
+        <DashboardCardsLayout tabs={flatTabItems} activeTab={activeTab} onTabChange={setActiveTab} dir={dir} header={<>{headerLeft}{headerControls}</>}>
+          <div className="h-full">{renderContent()}</div>
+        </DashboardCardsLayout>
+        <FloatingMusicMini visible={activeTab !== 'deeply'} onGoToDeeply={() => setActiveTab('deeply')} />
+        <AiDailyPlanner />
+      </>
+    );
+  }
+
+  // ---------- SPLIT VIEW LAYOUT ----------
+  if (layout === "split-view") {
+    return (
+      <>
+        {showOnboarding && <OnboardingWizard onComplete={() => window.location.reload()} />}
+        <SplitViewLayout tabs={flatTabItems} activeTab={activeTab} onTabChange={setActiveTab} dir={dir} header={<>{headerLeft}{headerControls}</>}>
+          <div className="h-full">{renderContent()}</div>
+        </SplitViewLayout>
         <FloatingMusicMini visible={activeTab !== 'deeply'} onGoToDeeply={() => setActiveTab('deeply')} />
         <AiDailyPlanner />
       </>
