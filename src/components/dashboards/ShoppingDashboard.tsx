@@ -577,6 +577,13 @@ const ShoppingDashboard = () => {
       <div className="flex items-center gap-3 mb-4">
         <ShoppingCart className="h-6 w-6 text-primary" />
         <h2 className="text-2xl font-bold flex-1">קניות וחלומות</h2>
+        <Button variant="outline" size="sm" className="gap-1.5" onClick={() => exportToExcel(
+          items.map(i => ({ title: i.title, category: i.category || '', quantity: i.quantity || '', price: i.price, status: i.status, notes: i.notes || '' })),
+          [{ key: 'title', label: 'פריט' }, { key: 'category', label: 'קטגוריה' }, { key: 'quantity', label: 'כמות' }, { key: 'price', label: 'מחיר' }, { key: 'status', label: 'סטטוס' }, { key: 'notes', label: 'הערות' }],
+          'קניות'
+        )}>
+          <Download className="h-3.5 w-3.5" />ייצוא
+        </Button>
         <Button variant="outline" size="sm" className="gap-2" onClick={() => { setShareSheetName("ראשי"); setShareOpen(true); }}>
           <Users className="h-4 w-4" />שיתוף
         </Button>

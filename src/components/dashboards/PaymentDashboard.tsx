@@ -252,6 +252,14 @@ ${context}
       <div className="flex items-center gap-3 mb-2">
         <Wallet className="h-6 w-6 text-primary" />
         <h2 className="text-2xl font-bold">ניהול תקציב</h2>
+        <div className="flex-1" />
+        <Button variant="outline" size="sm" className="gap-1.5" onClick={() => exportToExcel(
+          payments.map(p => ({ title: p.title, amount: p.amount, type: p.payment_type === 'income' ? 'הכנסה' : 'הוצאה', category: p.category || '', paid: p.paid, due_date: p.due_date || '', recurring: p.recurring, method: p.payment_method || '' })),
+          [{ key: 'title', label: 'תיאור' }, { key: 'amount', label: 'סכום' }, { key: 'type', label: 'סוג' }, { key: 'category', label: 'קטגוריה' }, { key: 'paid', label: 'שולם' }, { key: 'due_date', label: 'תאריך' }, { key: 'recurring', label: 'קבוע' }, { key: 'method', label: 'אמצעי תשלום' }],
+          'תשלומים'
+        )}>
+          <Download className="h-3.5 w-3.5" />ייצוא
+        </Button>
       </div>
 
       {/* Hero balance card */}
