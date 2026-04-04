@@ -20,8 +20,13 @@ serve(async (req) => {
     const supabaseKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
     const supabase = createClient(supabaseUrl, supabaseKey);
 
+    // Fetch user profile for memory/personalization
+    const profileRes = await supabase.from("profiles").select("first_name, last_name, display_name, username, preferred_language").eq("user_id", userId).single();
+    const profile = profileRes.data;
+    const userName = profile?.display_name || [profile?.first_name, profile?.last_name].filter(Boolean).join(" ") || profile?.username || "";
+
     // Fetch ALL context data for the user
-    const [tasksRes, booksRes, projectsRes, eventsRes, showsRes, coursesRes, shoppingRes, podcastsRes, boardsRes, boardItemsRes, dreamGoalsRes, notesRes] = await Promise.all([
+    const [tasksRes, booksRes, projectsRes, eventsRes, showsRes, coursesRes, shoppingRes, podcastsRes, boardsRes, boardItemsRes, dreamGoalsRes, notesRes, paymentsRes] = await Promise.all([
       supabase.from("tasks").select("id, description, status, task_type, category, responsible, planned_end, sheet_name, urgent, overdue").eq("user_id", userId).eq("archived", false).limit(200),
       supabase.from("books").select("id, title, author, status, notes").eq("user_id", userId).limit(200),
       supabase.from("projects").select("id, title, description, status, target_date").eq("user_id", userId).limit(50),
@@ -34,6 +39,7 @@ serve(async (req) => {
       supabase.from("custom_board_items").select("id, title, status, category, board_id, sheet_name").eq("user_id", userId).eq("archived", false).limit(200),
       supabase.from("dream_goals").select("id, title, description, status, progress, target_date").eq("user_id", userId).eq("archived", false).limit(50),
       supabase.from("notes").select("id, title, content, pinned, color, category").eq("user_id", userId).eq("archived", false).order("updated_at", { ascending: false }).limit(50),
+      supabase.from("payment_tracking").select("id, title, amount, currency, category, payment_type, payment_method, due_date, paid, recurring, recurring_frequency, sheet_name").eq("user_id", userId).eq("archived", false).limit(200),
     ]);
 
     // Fetch project tasks for progress
@@ -55,6 +61,13 @@ serve(async (req) => {
     const boardsMap: Record<string, string> = {};
     (boardsRes.data || []).forEach((b: any) => { boardsMap[b.id] = b.name; });
 
+    // Payment calculations
+    const payments = paymentsRes.data || [];
+    const totalExpenses = payments.filter(p => p.payment_type === "expense").reduce((s, p) => s + p.amount, 0);
+    const totalIncome = payments.filter(p => p.payment_type === "income").reduce((s, p) => s + p.amount, 0);
+    const balance = totalIncome - totalExpenses;
+    const unpaidExpenses = payments.filter(p => p.payment_type === "expense" && !p.paid).reduce((s, p) => s + p.amount, 0);
+
     // Use the user's local timezone
     const userNow = new Date(new Date().toLocaleString("en-US", { timeZone: timezone }));
     const today = `${userNow.getFullYear()}-${String(userNow.getMonth() + 1).padStart(2, '0')}-${String(userNow.getDate()).padStart(2, '0')}`;
@@ -69,11 +82,11 @@ serve(async (req) => {
     const tzOffset = `${offsetSign}${String(Math.abs(offsetHours)).padStart(2, '0')}:00`;
 
     const systemPrompt = `אתה Tabro AI - עוזר חכם עם שליטה מלאה באפליקציה. אתה מדבר עברית.
-
+${userName ? `\n## המשתמש שלך: ${userName}\nתמיד זכור את השם הזה ופנה אליו בשמו כשמתאים.\n` : ''}
 ## נתוני המשתמש הנוכחיים:
 
 ### משימות עבודה (${(tasksRes.data || []).filter(t => t.task_type === 'work').length}):
-${(tasksRes.data || []).filter(t => t.task_type === 'work').map(t => `- [ID:${t.id}] "${t.description}" | סטטוס: ${t.status} | קטגוריה: ${t.category || '-'} | אחראי: ${t.responsible || '-'} | מועד: ${t.planned_end || '-'}${t.urgent ? ' 🔥דחוף' : ''}${t.overdue ? ' ⚠️באיחור' : ''} | גליון: ${t.sheet_name || '-'}`).join('\n')}
+${(tasksRes.data || []).filter(t => t.task_type === 'work').map(t => `- [ID:${t.id}] "${t.description}" | סטטוס: ${t.status} | קטגוריה: ${t.category || '-'} | אחראי: ${t.responsible || '-'} | מועד: ${t.planned_end || '-'}${t.urgent ? ' דחוף' : ''}${t.overdue ? ' באיחור' : ''} | גליון: ${t.sheet_name || '-'}`).join('\n')}
 
 ### משימות אישיות (${(tasksRes.data || []).filter(t => t.task_type === 'personal').length}):
 ${(tasksRes.data || []).filter(t => t.task_type === 'personal').map(t => `- [ID:${t.id}] "${t.description}" | סטטוס: ${t.status} | קטגוריה: ${t.category || '-'} | מועד: ${t.planned_end || '-'} | גליון: ${t.sheet_name || '-'}`).join('\n')}
@@ -88,7 +101,7 @@ ${(projectsRes.data || []).map(p => {
   const total = pTasks.length;
   const progress = total > 0 ? Math.round((completed / total) * 100) : 0;
   return `- [ID:${p.id}] "${p.title}" | סטטוס: ${p.status} | התקדמות: ${progress}% (${completed}/${total})
-  משימות: ${pTasks.map(t => `[ID:${t.id}] "${t.title}" ${t.completed ? '✅' : '⬜'}${t.assigned_email ? ` (${t.assigned_email})` : ''}`).join(', ')}`;
+  משימות: ${pTasks.map(t => `[ID:${t.id}] "${t.title}" ${t.completed ? 'V' : 'X'}${t.assigned_email ? ` (${t.assigned_email})` : ''}`).join(', ')}`;
 }).join('\n')}
 
 ### אירועי לוח זמנים (${(eventsRes.data || []).length}):
@@ -105,7 +118,7 @@ ${(coursesRes.data || []).map(c => {
 }).join('\n')}
 
 ### קניות (${(shoppingRes.data || []).length}):
-${(shoppingRes.data || []).map(s => `- [ID:${s.id}] "${s.title}" | סטטוס: ${s.status} | קטגוריה: ${s.category || '-'} | רשימה: ${s.sheet_name}${s.is_dream ? ' ⭐חלום' : ''}`).join('\n')}
+${(shoppingRes.data || []).map(s => `- [ID:${s.id}] "${s.title}" | סטטוס: ${s.status} | קטגוריה: ${s.category || '-'} | רשימה: ${s.sheet_name}${s.is_dream ? ' חלום' : ''}`).join('\n')}
 
 ### פודקאסטים (${(podcastsRes.data || []).length}):
 ${(podcastsRes.data || []).map(p => `- [ID:${p.id}] "${p.title}"${p.host ? ` - ${p.host}` : ''} | סטטוס: ${p.status}`).join('\n')}
@@ -113,7 +126,6 @@ ${(podcastsRes.data || []).map(p => `- [ID:${p.id}] "${p.title}"${p.host ? ` - $
 ### רשימות מותאמות (${(boardsRes.data || []).length}):
 ${(boardsRes.data || []).map(b => {
   const items = (boardItemsRes.data || []).filter((i: any) => i.board_id === b.id);
-  // Group by sheet_name
   const sheets = [...new Set(items.map((i: any) => i.sheet_name || 'ראשי'))];
   const sheetsStr = sheets.map(s => {
     const sheetItems = items.filter((i: any) => (i.sheet_name || 'ראשי') === s);
@@ -126,7 +138,15 @@ ${(boardsRes.data || []).map(b => {
 ${(dreamGoalsRes.data || []).map(d => `- [ID:${d.id}] "${d.title}" | סטטוס: ${d.status} | התקדמות: ${d.progress}%`).join('\n')}
 
 ### פתקים (${(notesRes.data || []).length}):
-${(notesRes.data || []).map((n: any) => `- [ID:${n.id}] "${n.title}" | ${n.content?.slice(0, 50)}${n.pinned ? ' 📌' : ''}`).join('\n')}
+${(notesRes.data || []).map((n: any) => `- [ID:${n.id}] "${n.title}" | ${n.content?.slice(0, 50)}`).join('\n')}
+
+### מצב פיננסי:
+סה"כ הכנסות: ${totalIncome.toLocaleString()} ש"ח
+סה"כ הוצאות: ${totalExpenses.toLocaleString()} ש"ח
+מאזן: ${balance.toLocaleString()} ש"ח
+לא שולם: ${unpaidExpenses.toLocaleString()} ש"ח
+תשלומים (${payments.length}):
+${payments.slice(0, 50).map(p => `- [ID:${p.id}] "${p.title}" | ${p.payment_type === 'income' ? '+' : '-'}${p.amount} ${p.currency} | ${p.paid ? 'שולם' : 'לא שולם'} | ${p.category || '-'}${p.recurring ? ' (חוזר)' : ''}`).join('\n')}
 
 התאריך היום: ${today}
 השעה עכשיו (שעון ישראל): ${currentTime}
@@ -230,6 +250,16 @@ ${(notesRes.data || []).map((n: any) => `- [ID:${n.id}] "${n.title}" | ${n.conte
 {"type":"update_note","note_id":"UUID","title":"כותרת חדשה","content":"תוכן חדש"}
 \`\`\`
 
+הוספת הוצאה/הכנסה:
+\`\`\`action
+{"type":"add_payment","title":"קנייה בסופר","amount":30,"payment_type":"expense","category":"אוכל"}
+\`\`\`
+
+עדכון תשלום (סימון כשולם):
+\`\`\`action
+{"type":"update_payment","payment_id":"UUID","paid":true}
+\`\`\`
+
 פעולות מרובות (כמה פעולות ביחד):
 \`\`\`action
 {"type":"multi","actions":[{"type":"add_task","task_type":"personal","description":"לקנות אוכל","sheet_name":"2026"},{"type":"add_event","title":"קניות","start_time":"${today}T15:00:00${tzOffset}","end_time":"${today}T16:00:00${tzOffset}","category":"אישי","color":"#a855f7"}]}
@@ -250,7 +280,10 @@ ${(notesRes.data || []).map((n: any) => `- [ID:${n.id}] "${n.title}" | ${n.conte
 12. המשימות שאתה מוסיף יסומנו כ"נוסף ע"י Tabro AI" - זה קורה אוטומטית.
 13. כשמבקשים תזכורת - צור אירוע בלוח הזמנים עם הזמן המבוקש. אם אין שעה ספציפית, שים ב-09:00 באותו יום.
 14. ימי הולדת, חגים, אירועים חוזרים - צור אירוע ביום המבוקש. לימי הולדת השתמש בקטגוריה "יום הולדת" וצבע "#ec4899". לחגים השתמש בקטגוריה "חג" וצבע "#a855f7".
-15. כשמבקשים לכתוב פתק - השתמש ב-add_note. אפשר גם לעדכן פתקים קיימים.`;
+15. כשמבקשים לכתוב פתק - השתמש ב-add_note. אפשר גם לעדכן פתקים קיימים.
+16. כשהמשתמש אומר "קניתי משהו ב-X שקל" או "הוצאתי X" - הוסף הוצאה עם add_payment. נסה לזהות את הקטגוריה המתאימה.
+17. כשהמשתמש שואל על המצב הפיננסי - ענה מנתוני התשלומים שלמעלה.
+18. אל תשתמש באימוג'ים. תענה בטקסט נקי ומקצועי.`;
 
     const messages = [
       { role: "system", content: systemPrompt },
@@ -264,7 +297,7 @@ ${(notesRes.data || []).map((n: any) => `- [ID:${n.id}] "${n.title}" | ${n.conte
         type: "function",
         function: {
           name: "execute_action",
-          description: "Execute an action in the app (add task, update task, add event, etc.)",
+          description: "Execute an action in the app (add task, update task, add event, add payment, etc.)",
           parameters: {
             type: "object",
             properties: {
@@ -272,7 +305,7 @@ ${(notesRes.data || []).map((n: any) => `- [ID:${n.id}] "${n.title}" | ${n.conte
                 type: "object",
                 description: "The action to execute",
                 properties: {
-                  type: { type: "string", enum: ["add_task", "update_task", "add_event", "update_event", "delete_event", "add_book", "update_book", "add_shopping", "update_shopping", "update_project", "toggle_project_task", "add_project_task", "update_show", "add_board_item", "update_course", "add_note", "update_note", "multi"] },
+                  type: { type: "string", enum: ["add_task", "update_task", "add_event", "update_event", "delete_event", "add_book", "update_book", "add_shopping", "update_shopping", "update_project", "toggle_project_task", "add_project_task", "update_show", "add_board_item", "update_course", "add_note", "update_note", "add_payment", "update_payment", "multi"] },
                   task_type: { type: "string", enum: ["work", "personal"] },
                   description: { type: "string" },
                   category: { type: "string" },
@@ -300,6 +333,13 @@ ${(notesRes.data || []).map((n: any) => `- [ID:${n.id}] "${n.title}" | ${n.conte
                   is_dream: { type: "boolean" },
                   note_id: { type: "string" },
                   content: { type: "string" },
+                  amount: { type: "number" },
+                  payment_type: { type: "string", enum: ["expense", "income"] },
+                  payment_method: { type: "string" },
+                  due_date: { type: "string" },
+                  paid: { type: "boolean" },
+                  recurring: { type: "boolean" },
+                  payment_id: { type: "string" },
                   actions: { type: "array", items: { type: "object" } },
                 },
                 required: ["type"]
@@ -381,7 +421,7 @@ ${(notesRes.data || []).map((n: any) => `- [ID:${n.id}] "${n.title}" | ${n.conte
     // Build response text
     let responseText = cleanContent;
     if (!responseText && actionResult?.success) {
-      responseText = "בוצע! ✅";
+      responseText = "בוצע!";
     } else if (!responseText) {
       responseText = "לא הצלחתי לענות";
     }
@@ -585,6 +625,32 @@ async function executeAction(supabase: any, userId: string, action: any): Promis
         if (action.color) updates.color = action.color;
         const { error } = await supabase.from("notes").update(updates).eq("id", action.note_id).eq("user_id", userId);
         return error ? { success: false, error: error.message } : { success: true, type: "update_note" };
+      }
+
+      case "add_payment": {
+        const { error } = await supabase.from("payment_tracking").insert({
+          user_id: userId,
+          title: action.title,
+          amount: action.amount || 0,
+          payment_type: action.payment_type || "expense",
+          category: action.category || null,
+          payment_method: action.payment_method || null,
+          due_date: action.due_date || null,
+          paid: action.paid !== undefined ? action.paid : true,
+          recurring: action.recurring || false,
+        });
+        if (error) console.error("add_payment error:", error);
+        return error ? { success: false, error: error.message } : { success: true, type: "add_payment" };
+      }
+
+      case "update_payment": {
+        const updates: any = {};
+        if (action.paid !== undefined) updates.paid = action.paid;
+        if (action.title) updates.title = action.title;
+        if (action.amount) updates.amount = action.amount;
+        if (action.category) updates.category = action.category;
+        const { error } = await supabase.from("payment_tracking").update(updates).eq("id", action.payment_id).eq("user_id", userId);
+        return error ? { success: false, error: error.message } : { success: true, type: "update_payment" };
       }
 
       default:
