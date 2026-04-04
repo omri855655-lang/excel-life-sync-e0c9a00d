@@ -167,6 +167,21 @@ const PaymentDashboard = () => {
   const wantsPercent = totalIncome > 0 ? Math.round((variableExpenses / totalIncome) * 100) : 0;
   const savingsPercent = totalIncome > 0 ? Math.round((balance / totalIncome) * 100) : 0;
 
+  // Weekly/monthly budget tracking
+  const now = new Date();
+  const startOfMonth = new Date(now.getFullYear(), now.getMonth(), 1);
+  const dayOfWeek = now.getDay();
+  const startOfWeek = new Date(now);
+  startOfWeek.setDate(now.getDate() - (dayOfWeek === 0 ? 6 : dayOfWeek - 1));
+  startOfWeek.setHours(0, 0, 0, 0);
+
+  const thisMonthExpenses = useMemo(() => payments.filter(p => p.payment_type === "expense" && new Date(p.created_at) >= startOfMonth).reduce((s, p) => s + p.amount, 0), [payments]);
+  const thisWeekExpenses = useMemo(() => payments.filter(p => p.payment_type === "expense" && new Date(p.created_at) >= startOfWeek).reduce((s, p) => s + p.amount, 0), [payments]);
+  const monthBudgetLeft = monthlyBudget - thisMonthExpenses;
+  const weekBudgetLeft = weeklyBudget - thisWeekExpenses;
+  const monthPct = monthlyBudget > 0 ? Math.min(Math.round((thisMonthExpenses / monthlyBudget) * 100), 100) : 0;
+  const weekPct = weeklyBudget > 0 ? Math.min(Math.round((thisWeekExpenses / weeklyBudget) * 100), 100) : 0;
+
   const sendAiMessage = async () => {
     if (!aiChat.trim()) return;
     const userMsg = { role: "user", content: aiChat };
