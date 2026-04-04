@@ -5,6 +5,7 @@ import { useNavigate } from "react-router-dom";
 import { useCustomBoards } from "@/hooks/useCustomBoards";
 import { useUserPreferences, DEFAULT_TABS } from "@/hooks/useUserPreferences";
 import { useSiteAppearance } from "@/hooks/useSiteAppearance";
+import { useLayoutPreference, type LayoutMode } from "@/hooks/useLayoutPreference";
 import { Switch } from "@/components/ui/switch";
 import { Label } from "@/components/ui/label";
 import { Input } from "@/components/ui/input";
