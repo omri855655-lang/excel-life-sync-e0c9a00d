@@ -159,6 +159,7 @@ const PodcastsManager = () => {
         <h2 className="text-xl font-bold">הפודקאסטים שלי</h2>
         <span className="text-sm text-muted-foreground">({podcasts.length} פודקאסטים)</span>
         <div className="flex-1" />
+        <DashboardDisplayToolbar viewMode={viewMode} themeKey={themeKey} onViewModeChange={setViewMode} onThemeChange={setTheme} />
         <Button variant="outline" size="sm" className="gap-1.5" onClick={() => exportToExcel(
           podcasts.map(p => ({ title: p.title, host: p.host || '', status: p.status || '', notes: p.notes || '' })),
           [{ key: 'title', label: 'שם הפודקאסט' }, { key: 'host', label: 'מגיש/ה' }, { key: 'status', label: 'סטטוס' }, { key: 'notes', label: 'הערות' }],

@@ -179,6 +179,7 @@ const BooksManager = () => {
         <h2 className="text-xl font-bold">הספרים שלי</h2>
         <span className="text-sm text-muted-foreground">({books.length} ספרים)</span>
         <div className="flex-1" />
+        <DashboardDisplayToolbar viewMode={viewMode} themeKey={themeKey} onViewModeChange={setViewMode} onThemeChange={setTheme} />
         <Button variant="outline" size="sm" className="gap-1.5" onClick={() => exportToExcel(
           books.map(b => ({ title: b.title, author: b.author || '', status: b.status || '', notes: b.notes || '' })),
           [{ key: 'title', label: 'שם הספר' }, { key: 'author', label: 'מחבר' }, { key: 'status', label: 'סטטוס' }, { key: 'notes', label: 'הערות' }],
