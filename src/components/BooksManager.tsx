@@ -228,113 +228,165 @@ const BooksManager = () => {
         />
       </div>
 
-      {/* Books table with scroll */}
+      {/* Content area - renders based on viewMode */}
       <div className="flex-1 min-h-0 border rounded-lg overflow-hidden">
         <div className="h-full overflow-auto">
-          <Table className="min-w-[700px] sm:min-w-[980px]">
-          <TableHeader>
-           <TableRow>
-               <TableHead className="text-right min-w-[220px] sticky right-0 bg-card z-10">שם הספר</TableHead>
-              <TableHead className="text-right">מחבר</TableHead>
-              <TableHead className="text-right">סטטוס</TableHead>
-              <TableHead className="text-right">הערות</TableHead>
-              <TableHead className="text-right">שינוי סטטוס</TableHead>
-              <TableHead className="text-right">נוצר</TableHead>
-              <TableHead className="text-right">עודכן</TableHead>
-              <TableHead className="w-[50px]"></TableHead>
-            </TableRow>
-          </TableHeader>
-          <TableBody>
-            {filteredBooks.length === 0 ? (
-              <TableRow>
-                <TableCell colSpan={8} className="text-center text-muted-foreground">
-                  {searchTerm ? 'לא נמצאו תוצאות' : 'אין ספרים עדיין'}
-                </TableCell>
-              </TableRow>
-            ) : (
-              filteredBooks.map((book) => (
-                <TableRow key={book.id}>
-                   <TableCell className="font-medium text-right min-w-[140px] sm:min-w-[220px] sticky right-0 bg-card z-10 max-w-[200px] sm:max-w-none">
-                    <Input
-                       defaultValue={book.title}
-                        className="border-0 bg-transparent p-0 h-auto text-right font-medium focus-visible:ring-1 min-w-[120px] sm:min-w-[200px] text-sm sm:text-base"
-                      dir="rtl"
-                      onBlur={(e) => {
-                        const val = e.target.value.trim();
-                        if (val && val !== book.title) {
-                          supabase.from('books').update({ title: val }).eq('id', book.id).then(() => {
-                            setBooks(prev => prev.map(b => b.id === book.id ? { ...b, title: val } : b));
-                          });
-                        }
-                      }}
-                      onKeyDown={(e) => { if (e.key === 'Enter') (e.target as HTMLInputElement).blur(); }}
-                    />
-                  </TableCell>
-                  <TableCell className="text-right">
-                    <Input
-                      defaultValue={book.author || ''}
-                      placeholder="-"
-                      className="border-0 bg-transparent p-0 h-auto text-right focus-visible:ring-1"
-                      dir="rtl"
-                      onBlur={(e) => {
-                        const val = e.target.value.trim() || null;
-                        if (val !== (book.author || null)) {
-                          supabase.from('books').update({ author: val }).eq('id', book.id).then(() => {
-                            setBooks(prev => prev.map(b => b.id === book.id ? { ...b, author: val } : b));
-                          });
-                        }
-                      }}
-                      onKeyDown={(e) => { if (e.key === 'Enter') (e.target as HTMLInputElement).blur(); }}
-                    />
-                  </TableCell>
-                  <TableCell>
-                    <Select
-                      value={book.status || 'לקרוא'}
-                      onValueChange={(value) => updateBookStatus(book.id, value)}
-                    >
-                      <SelectTrigger className="w-[120px]">
-                        <SelectValue />
-                      </SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="לקרוא">לקרוא</SelectItem>
-                        <SelectItem value="בקריאה">בקריאה</SelectItem>
-                        <SelectItem value="נקרא">נקרא</SelectItem>
-                      </SelectContent>
-                    </Select>
-                  </TableCell>
-                  <TableCell>
-                    <InlineNotesTextarea
-                      placeholder="הוסף הערות..."
-                      initialValue={book.notes}
-                      onCommit={(val) => updateBookNotes(book.id, val)}
-                      className="min-w-[150px] text-right min-h-[60px] w-full resize-y"
-                      dir="rtl"
-                    />
-                  </TableCell>
-                  <TableCell className="text-muted-foreground text-xs whitespace-nowrap">
-                    {book.status_changed_at ? formatDateTime(book.status_changed_at) : '-'}
-                  </TableCell>
-                  <TableCell className="text-muted-foreground text-xs whitespace-nowrap">
-                    {formatDateTime(book.created_at)}
-                  </TableCell>
-                  <TableCell className="text-muted-foreground text-xs whitespace-nowrap">
-                    {formatDateTime(book.updated_at)}
-                  </TableCell>
-                  <TableCell>
-                    <Button
-                      variant="ghost"
-                      size="icon"
-                      onClick={() => deleteBook(book.id)}
-                      className="text-destructive hover:text-destructive"
-                    >
-                      <Trash2 className="h-4 w-4" />
-                    </Button>
-                  </TableCell>
+          {viewMode === 'list' ? (
+            <ListView
+              items={filteredBooks.map(b => ({
+                id: b.id,
+                title: b.title,
+                subtitle: b.author,
+                status: b.status || 'לקרוא',
+                statusOptions: [{ value: 'לקרוא', label: 'לקרוא' }, { value: 'בקריאה', label: 'בקריאה' }, { value: 'נקרא', label: 'נקרא' }],
+                notes: b.notes,
+                meta: formatDateTime(b.updated_at),
+              }))}
+              emptyText={searchTerm ? 'לא נמצאו תוצאות' : 'אין ספרים עדיין'}
+              onStatusChange={updateBookStatus}
+              onDelete={deleteBook}
+            />
+          ) : viewMode === 'cards' ? (
+            <CardsView
+              items={filteredBooks.map(b => ({
+                id: b.id,
+                title: b.title,
+                subtitle: b.author,
+                status: b.status || 'לקרוא',
+                statusOptions: [{ value: 'לקרוא', label: 'לקרוא' }, { value: 'בקריאה', label: 'בקריאה' }, { value: 'נקרא', label: 'נקרא' }],
+                notes: b.notes,
+                meta: formatDateTime(b.updated_at),
+              }))}
+              emptyText={searchTerm ? 'לא נמצאו תוצאות' : 'אין ספרים עדיין'}
+              onStatusChange={updateBookStatus}
+              onDelete={deleteBook}
+            />
+          ) : viewMode === 'kanban' ? (
+            <KanbanView
+              items={filteredBooks.map(b => ({
+                id: b.id,
+                title: b.title,
+                subtitle: b.author,
+                status: b.status || 'לקרוא',
+                notes: b.notes,
+              }))}
+              columns={[
+                { value: 'לקרוא', label: 'לקרוא', color: 'bg-orange-500/15' },
+                { value: 'בקריאה', label: 'בקריאה', color: 'bg-blue-500/15' },
+                { value: 'נקרא', label: 'נקרא', color: 'bg-green-500/15' },
+              ]}
+              emptyText={searchTerm ? 'לא נמצאו תוצאות' : 'אין ספרים עדיין'}
+              onStatusChange={updateBookStatus}
+              onDelete={deleteBook}
+            />
+          ) : viewMode === 'compact' ? (
+            <CompactView
+              items={filteredBooks.map(b => ({
+                id: b.id,
+                title: b.title,
+                status: b.status || 'לקרוא',
+                subtitle: b.author,
+              }))}
+              emptyText={searchTerm ? 'לא נמצאו תוצאות' : 'אין ספרים עדיין'}
+              onDelete={deleteBook}
+            />
+          ) : (
+            /* Default: Table view */
+            <Table className="min-w-[700px] sm:min-w-[980px]">
+              <TableHeader>
+                <TableRow>
+                  <TableHead className="text-right min-w-[220px] sticky right-0 bg-card z-10">שם הספר</TableHead>
+                  <TableHead className="text-right">מחבר</TableHead>
+                  <TableHead className="text-right">סטטוס</TableHead>
+                  <TableHead className="text-right">הערות</TableHead>
+                  <TableHead className="text-right">שינוי סטטוס</TableHead>
+                  <TableHead className="text-right">נוצר</TableHead>
+                  <TableHead className="text-right">עודכן</TableHead>
+                  <TableHead className="w-[50px]"></TableHead>
                 </TableRow>
-              ))
-            )}
-          </TableBody>
-          </Table>
+              </TableHeader>
+              <TableBody>
+                {filteredBooks.length === 0 ? (
+                  <TableRow>
+                    <TableCell colSpan={8} className="text-center text-muted-foreground">
+                      {searchTerm ? 'לא נמצאו תוצאות' : 'אין ספרים עדיין'}
+                    </TableCell>
+                  </TableRow>
+                ) : (
+                  filteredBooks.map((book) => (
+                    <TableRow key={book.id}>
+                      <TableCell className="font-medium text-right min-w-[140px] sm:min-w-[220px] sticky right-0 bg-card z-10 max-w-[200px] sm:max-w-none">
+                        <Input
+                          defaultValue={book.title}
+                          className="border-0 bg-transparent p-0 h-auto text-right font-medium focus-visible:ring-1 min-w-[120px] sm:min-w-[200px] text-sm sm:text-base"
+                          dir="rtl"
+                          onBlur={(e) => {
+                            const val = e.target.value.trim();
+                            if (val && val !== book.title) {
+                              supabase.from('books').update({ title: val }).eq('id', book.id).then(() => {
+                                setBooks(prev => prev.map(b => b.id === book.id ? { ...b, title: val } : b));
+                              });
+                            }
+                          }}
+                          onKeyDown={(e) => { if (e.key === 'Enter') (e.target as HTMLInputElement).blur(); }}
+                        />
+                      </TableCell>
+                      <TableCell className="text-right">
+                        <Input
+                          defaultValue={book.author || ''}
+                          placeholder="-"
+                          className="border-0 bg-transparent p-0 h-auto text-right focus-visible:ring-1"
+                          dir="rtl"
+                          onBlur={(e) => {
+                            const val = e.target.value.trim() || null;
+                            if (val !== (book.author || null)) {
+                              supabase.from('books').update({ author: val }).eq('id', book.id).then(() => {
+                                setBooks(prev => prev.map(b => b.id === book.id ? { ...b, author: val } : b));
+                              });
+                            }
+                          }}
+                          onKeyDown={(e) => { if (e.key === 'Enter') (e.target as HTMLInputElement).blur(); }}
+                        />
+                      </TableCell>
+                      <TableCell>
+                        <Select value={book.status || 'לקרוא'} onValueChange={(value) => updateBookStatus(book.id, value)}>
+                          <SelectTrigger className="w-[120px]"><SelectValue /></SelectTrigger>
+                          <SelectContent>
+                            <SelectItem value="לקרוא">לקרוא</SelectItem>
+                            <SelectItem value="בקריאה">בקריאה</SelectItem>
+                            <SelectItem value="נקרא">נקרא</SelectItem>
+                          </SelectContent>
+                        </Select>
+                      </TableCell>
+                      <TableCell>
+                        <InlineNotesTextarea
+                          placeholder="הוסף הערות..."
+                          initialValue={book.notes}
+                          onCommit={(val) => updateBookNotes(book.id, val)}
+                          className="min-w-[150px] text-right min-h-[60px] w-full resize-y"
+                          dir="rtl"
+                        />
+                      </TableCell>
+                      <TableCell className="text-muted-foreground text-xs whitespace-nowrap">
+                        {book.status_changed_at ? formatDateTime(book.status_changed_at) : '-'}
+                      </TableCell>
+                      <TableCell className="text-muted-foreground text-xs whitespace-nowrap">
+                        {formatDateTime(book.created_at)}
+                      </TableCell>
+                      <TableCell className="text-muted-foreground text-xs whitespace-nowrap">
+                        {formatDateTime(book.updated_at)}
+                      </TableCell>
+                      <TableCell>
+                        <Button variant="ghost" size="icon" onClick={() => deleteBook(book.id)} className="text-destructive hover:text-destructive">
+                          <Trash2 className="h-4 w-4" />
+                        </Button>
+                      </TableCell>
+                    </TableRow>
+                  ))
+                )}
+              </TableBody>
+            </Table>
+          )}
         </div>
       </div>
     </div>
