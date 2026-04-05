@@ -5,7 +5,7 @@ const corsHeaders = {
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
 }
 
-const ADMIN_EMAILS = ['info@tabro.org', 'tabro855@gmail.com']
+const ADMIN_EMAILS = ['omri855655@gmail.com', 'info@tabro.org', 'tabro855@gmail.com']
 
 Deno.serve(async (req) => {
   if (req.method === 'OPTIONS') {
