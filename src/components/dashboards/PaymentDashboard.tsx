@@ -35,7 +35,7 @@ interface Payment {
   created_at: string;
 }
 
-const CATEGORIES = ["דיור", "אוכל", "תחבורה", "בילויים", "ביטוחים", "חשבונות", "קניות", "חינוך", "בריאות", "חיסכון", "משכורת", "פרילנס", "אחר"];
+const CATEGORIES = ["משכורת", "פרילנס", "דיור", "שכירות", "משכנתא", "סופר", "אוכל", "דלק", "תחבורה", "חשמל", "מים", "גז", "אינטרנט", "טלפון", "ביטוחים", "חשבונות", "קניות", "בילויים", "חינוך", "בריאות", "חיסכון", "השקעות", "אחר"];
 
 const FINANCIAL_GUIDES = [
   {
@@ -297,7 +297,7 @@ ${context}
     <div className="p-4 space-y-4 max-w-4xl mx-auto" dir="rtl">
       <div className="flex items-center gap-3 mb-2">
         <Wallet className="h-6 w-6 text-primary" />
-        <h2 className="text-2xl font-bold">ניהול תקציב</h2>
+        <h2 className="text-2xl font-bold">הכנסות והוצאות</h2>
         <div className="flex-1" />
         <Button variant="outline" size="sm" className="gap-1.5" onClick={() => exportToExcel(
           payments.map(p => ({ title: p.title, amount: p.amount, type: p.payment_type === 'income' ? 'הכנסה' : 'הוצאה', category: p.category || '', paid: p.paid, due_date: p.due_date || '', recurring: p.recurring, method: p.payment_method || '' })),
@@ -446,7 +446,7 @@ ${context}
 
       <Tabs value={activeTab} onValueChange={setActiveTab}>
         <TabsList className="w-full flex-wrap h-auto">
-          <TabsTrigger value="overview" className="flex-1">תשלומים</TabsTrigger>
+          <TabsTrigger value="overview" className="flex-1">הכנסות והוצאות</TabsTrigger>
           <TabsTrigger value="history" className="flex-1 gap-1"><History className="h-3 w-3" />היסטוריה</TabsTrigger>
           <TabsTrigger value="add" className="flex-1 gap-1"><Plus className="h-3 w-3" />הוסף</TabsTrigger>
           <TabsTrigger value="guides" className="flex-1 gap-1"><BookOpen className="h-3 w-3" />מדריכים</TabsTrigger>
