@@ -240,6 +240,7 @@ const ShowsManager = () => {
         )}>
           <Download className="h-3.5 w-3.5" />ייצוא
         </Button>
+        <FileImport onImport={handleImportShows} label="ייבוא סדרות" />
       </div>
 
       {/* Tabs: All / Series / Movies */}
