@@ -15,6 +15,10 @@ import { Badge } from '@/components/ui/badge';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import DashboardDisplayToolbar from "@/components/DashboardDisplayToolbar";
 import { useDashboardDisplay } from "@/hooks/useDashboardDisplay";
+import ListView from '@/components/views/ListView';
+import CardsView from '@/components/views/CardsView';
+import KanbanView from '@/components/views/KanbanView';
+import CompactView from '@/components/views/CompactView';
 
 interface Show {
   id: string;
@@ -368,161 +372,164 @@ const ShowsManager = () => {
         </Popover>
       </div>
 
-      {/* Shows table */}
+      {/* Content area - renders based on viewMode */}
       <div className="flex-1 min-h-0 border rounded-lg overflow-hidden">
         <div className="h-full overflow-auto">
-          <Table>
-            <TableHeader>
-              <TableRow>
-                <SortHeader field="title" label="שם" />
-                <TableHead className="text-right">סוג</TableHead>
-                <SortHeader field="category" label="קטגוריה" />
-                <SortHeader field="status" label="סטטוס" />
-                <SortHeader field="air_date" label="תאריך עלייה" />
-                <TableHead className="text-right">עונה</TableHead>
-                <TableHead className="text-right">פרק</TableHead>
-                <TableHead className="text-right">הערות</TableHead>
-                <SortHeader field="created_at" label="נוצר" />
-                <TableHead className="text-right">שינוי סטטוס</TableHead>
-                <SortHeader field="updated_at" label="עודכן" />
-                <TableHead className="w-[50px]"></TableHead>
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              {filteredAndSorted.length === 0 ? (
+          {viewMode === 'list' ? (
+            <ListView
+              items={filteredAndSorted.map(s => ({
+                id: s.id,
+                title: s.title,
+                subtitle: `${s.type || 'סדרה'}${s.category ? ` • ${s.category}` : ''}`,
+                status: s.status || 'לצפות',
+                statusOptions: [{ value: 'לצפות', label: 'לצפות' }, { value: 'בצפייה', label: 'בצפייה' }, { value: 'נצפה', label: 'נצפה' }],
+                notes: s.notes,
+                meta: s.current_season ? `ע${s.current_season} פ${s.current_episode || '?'}` : undefined,
+              }))}
+              emptyText={searchTerm ? 'לא נמצאו תוצאות' : 'אין סדרות או סרטים עדיין'}
+              onStatusChange={(id, status) => updateShow(id, { status })}
+              onDelete={deleteShow}
+            />
+          ) : viewMode === 'cards' ? (
+            <CardsView
+              items={filteredAndSorted.map(s => ({
+                id: s.id,
+                title: s.title,
+                subtitle: `${s.type || 'סדרה'}${s.category ? ` • ${s.category}` : ''}`,
+                status: s.status || 'לצפות',
+                statusOptions: [{ value: 'לצפות', label: 'לצפות' }, { value: 'בצפייה', label: 'בצפייה' }, { value: 'נצפה', label: 'נצפה' }],
+                notes: s.notes,
+                meta: s.current_season ? `ע${s.current_season} פ${s.current_episode || '?'}` : undefined,
+              }))}
+              emptyText={searchTerm ? 'לא נמצאו תוצאות' : 'אין סדרות או סרטים עדיין'}
+              onStatusChange={(id, status) => updateShow(id, { status })}
+              onDelete={deleteShow}
+            />
+          ) : viewMode === 'kanban' ? (
+            <KanbanView
+              items={filteredAndSorted.map(s => ({
+                id: s.id,
+                title: s.title,
+                subtitle: `${s.type || 'סדרה'}${s.category ? ` • ${s.category}` : ''}`,
+                status: s.status || 'לצפות',
+                notes: s.notes,
+              }))}
+              columns={[
+                { value: 'לצפות', label: 'לצפות', color: 'bg-orange-500/15' },
+                { value: 'בצפייה', label: 'בצפייה', color: 'bg-blue-500/15' },
+                { value: 'נצפה', label: 'נצפה', color: 'bg-green-500/15' },
+              ]}
+              emptyText={searchTerm ? 'לא נמצאו תוצאות' : 'אין סדרות או סרטים עדיין'}
+              onStatusChange={(id, status) => updateShow(id, { status })}
+              onDelete={deleteShow}
+            />
+          ) : viewMode === 'compact' ? (
+            <CompactView
+              items={filteredAndSorted.map(s => ({
+                id: s.id,
+                title: s.title,
+                status: s.status || 'לצפות',
+                subtitle: s.type || 'סדרה',
+              }))}
+              emptyText={searchTerm ? 'לא נמצאו תוצאות' : 'אין סדרות או סרטים עדיין'}
+              onDelete={deleteShow}
+            />
+          ) : (
+            /* Default: Table view */
+            <Table>
+              <TableHeader>
                 <TableRow>
-                  <TableCell colSpan={12} className="text-center text-muted-foreground">
-                    {searchTerm ? 'לא נמצאו תוצאות' : 'אין סדרות או סרטים עדיין'}
-                  </TableCell>
+                  <SortHeader field="title" label="שם" />
+                  <TableHead className="text-right">סוג</TableHead>
+                  <SortHeader field="category" label="קטגוריה" />
+                  <SortHeader field="status" label="סטטוס" />
+                  <SortHeader field="air_date" label="תאריך עלייה" />
+                  <TableHead className="text-right">עונה</TableHead>
+                  <TableHead className="text-right">פרק</TableHead>
+                  <TableHead className="text-right">הערות</TableHead>
+                  <SortHeader field="created_at" label="נוצר" />
+                  <TableHead className="text-right">שינוי סטטוס</TableHead>
+                  <SortHeader field="updated_at" label="עודכן" />
+                  <TableHead className="w-[50px]"></TableHead>
                 </TableRow>
-              ) : (
-                filteredAndSorted.map((show) => (
-                  <TableRow key={show.id}>
-                    <TableCell className="font-medium">
-                      <Input
-                        defaultValue={show.title}
-                        className="border-0 bg-transparent p-0 h-auto font-medium focus-visible:ring-1"
-                        dir="rtl"
-                        onBlur={(e) => {
-                          const val = e.target.value.trim();
-                          if (val && val !== show.title) updateShow(show.id, { title: val });
-                        }}
-                        onKeyDown={(e) => { if (e.key === 'Enter') (e.target as HTMLInputElement).blur(); }}
-                      />
-                    </TableCell>
-                    <TableCell>
-                      <Badge variant={show.type === 'סרט' ? 'default' : 'secondary'} className="text-xs">
-                        {show.type === 'סרט' ? <Film className="h-3 w-3 ml-1" /> : <Tv className="h-3 w-3 ml-1" />}
-                        {show.type || 'סדרה'}
-                      </Badge>
-                    </TableCell>
-                    <TableCell>
-                      <Select
-                        value={show.category || '_none'}
-                        onValueChange={(v) => updateShow(show.id, { category: v === '_none' ? null : v })}
-                      >
-                        <SelectTrigger className="w-[120px] h-8 text-xs">
-                          <SelectValue placeholder="קטגוריה" />
-                        </SelectTrigger>
-                        <SelectContent>
-                          <SelectItem value="_none">ללא</SelectItem>
-                          {allCategories.map(c => (
-                            <SelectItem key={c} value={c}>{c}</SelectItem>
-                          ))}
-                        </SelectContent>
-                      </Select>
-                    </TableCell>
-                    <TableCell>
-                      <Select
-                        value={show.status || 'לצפות'}
-                        onValueChange={(value) => updateShow(show.id, { status: value })}
-                      >
-                        <SelectTrigger className="w-[110px] h-8 text-xs">
-                          <SelectValue />
-                        </SelectTrigger>
-                        <SelectContent>
-                          <SelectItem value="לצפות">לצפות</SelectItem>
-                          <SelectItem value="בצפייה">בצפייה</SelectItem>
-                          <SelectItem value="נצפה">נצפה</SelectItem>
-                        </SelectContent>
-                      </Select>
-                    </TableCell>
-                    <TableCell>
-                      <Input
-                        type="date"
-                        defaultValue={show.air_date || ''}
-                        onBlur={(e) => {
-                          const val = e.target.value || null;
-                          if (val !== show.air_date) updateShow(show.id, { air_date: val } as any);
-                        }}
-                        className="w-[130px] h-8 text-xs"
-                      />
-                    </TableCell>
-                    <TableCell>
-                      {show.type === 'סדרה' && (
-                        <Input
-                          type="number"
-                          min="1"
-                          defaultValue={show.current_season ?? ''}
-                          onKeyDown={(e) => { if (e.key === 'Enter') (e.currentTarget as HTMLInputElement).blur(); }}
-                          onBlur={(e) => {
-                            const next = parseNullableNumber(e.target.value);
-                            if (next !== (show.current_season ?? null)) updateShow(show.id, { current_season: next });
-                          }}
-                          className="w-16 h-8"
-                          placeholder="-"
-                        />
-                      )}
-                    </TableCell>
-                    <TableCell>
-                      {show.type === 'סדרה' && (
-                        <Input
-                          type="number"
-                          min="1"
-                          defaultValue={show.current_episode ?? ''}
-                          onKeyDown={(e) => { if (e.key === 'Enter') (e.currentTarget as HTMLInputElement).blur(); }}
-                          onBlur={(e) => {
-                            const next = parseNullableNumber(e.target.value);
-                            if (next !== (show.current_episode ?? null)) updateShow(show.id, { current_episode: next });
-                          }}
-                          className="w-16 h-8"
-                          placeholder="-"
-                        />
-                      )}
-                    </TableCell>
-                    <TableCell>
-                      <InlineNotesTextarea
-                        placeholder="הוסף הערות..."
-                        initialValue={show.notes}
-                        onCommit={(val) => updateShow(show.id, { notes: val })}
-                        className="min-w-[150px] text-right min-h-[50px] w-full resize-y text-xs"
-                        dir="rtl"
-                      />
-                    </TableCell>
-                    <TableCell className="text-muted-foreground text-xs whitespace-nowrap">
-                      {formatDateTime(show.created_at)}
-                    </TableCell>
-                    <TableCell className="text-muted-foreground text-xs whitespace-nowrap">
-                      {show.status_changed_at ? formatDateTime(show.status_changed_at) : '-'}
-                    </TableCell>
-                    <TableCell className="text-muted-foreground text-xs whitespace-nowrap">
-                      {formatDateTime(show.updated_at)}
-                    </TableCell>
-                    <TableCell>
-                      <Button
-                        variant="ghost"
-                        size="icon"
-                        onClick={() => deleteShow(show.id)}
-                        className="text-destructive hover:text-destructive h-8 w-8"
-                      >
-                        <Trash2 className="h-4 w-4" />
-                      </Button>
+              </TableHeader>
+              <TableBody>
+                {filteredAndSorted.length === 0 ? (
+                  <TableRow>
+                    <TableCell colSpan={12} className="text-center text-muted-foreground">
+                      {searchTerm ? 'לא נמצאו תוצאות' : 'אין סדרות או סרטים עדיין'}
                     </TableCell>
                   </TableRow>
-                ))
-              )}
-            </TableBody>
-          </Table>
+                ) : (
+                  filteredAndSorted.map((show) => (
+                    <TableRow key={show.id}>
+                      <TableCell className="font-medium">
+                        <Input
+                          defaultValue={show.title}
+                          className="border-0 bg-transparent p-0 h-auto font-medium focus-visible:ring-1"
+                          dir="rtl"
+                          onBlur={(e) => {
+                            const val = e.target.value.trim();
+                            if (val && val !== show.title) updateShow(show.id, { title: val });
+                          }}
+                          onKeyDown={(e) => { if (e.key === 'Enter') (e.target as HTMLInputElement).blur(); }}
+                        />
+                      </TableCell>
+                      <TableCell>
+                        <Badge variant={show.type === 'סרט' ? 'default' : 'secondary'} className="text-xs">
+                          {show.type === 'סרט' ? <Film className="h-3 w-3 ml-1" /> : <Tv className="h-3 w-3 ml-1" />}
+                          {show.type || 'סדרה'}
+                        </Badge>
+                      </TableCell>
+                      <TableCell>
+                        <Select value={show.category || '_none'} onValueChange={(v) => updateShow(show.id, { category: v === '_none' ? null : v })}>
+                          <SelectTrigger className="w-[120px] h-8 text-xs"><SelectValue placeholder="קטגוריה" /></SelectTrigger>
+                          <SelectContent>
+                            <SelectItem value="_none">ללא</SelectItem>
+                            {allCategories.map(c => (<SelectItem key={c} value={c}>{c}</SelectItem>))}
+                          </SelectContent>
+                        </Select>
+                      </TableCell>
+                      <TableCell>
+                        <Select value={show.status || 'לצפות'} onValueChange={(value) => updateShow(show.id, { status: value })}>
+                          <SelectTrigger className="w-[110px] h-8 text-xs"><SelectValue /></SelectTrigger>
+                          <SelectContent>
+                            <SelectItem value="לצפות">לצפות</SelectItem>
+                            <SelectItem value="בצפייה">בצפייה</SelectItem>
+                            <SelectItem value="נצפה">נצפה</SelectItem>
+                          </SelectContent>
+                        </Select>
+                      </TableCell>
+                      <TableCell>
+                        <Input type="date" defaultValue={show.air_date || ''} onBlur={(e) => { const val = e.target.value || null; if (val !== show.air_date) updateShow(show.id, { air_date: val } as any); }} className="w-[130px] h-8 text-xs" />
+                      </TableCell>
+                      <TableCell>
+                        {show.type === 'סדרה' && (
+                          <Input type="number" min="1" defaultValue={show.current_season ?? ''} onKeyDown={(e) => { if (e.key === 'Enter') (e.currentTarget as HTMLInputElement).blur(); }} onBlur={(e) => { const next = parseNullableNumber(e.target.value); if (next !== (show.current_season ?? null)) updateShow(show.id, { current_season: next }); }} className="w-16 h-8" placeholder="-" />
+                        )}
+                      </TableCell>
+                      <TableCell>
+                        {show.type === 'סדרה' && (
+                          <Input type="number" min="1" defaultValue={show.current_episode ?? ''} onKeyDown={(e) => { if (e.key === 'Enter') (e.currentTarget as HTMLInputElement).blur(); }} onBlur={(e) => { const next = parseNullableNumber(e.target.value); if (next !== (show.current_episode ?? null)) updateShow(show.id, { current_episode: next }); }} className="w-16 h-8" placeholder="-" />
+                        )}
+                      </TableCell>
+                      <TableCell>
+                        <InlineNotesTextarea placeholder="הוסף הערות..." initialValue={show.notes} onCommit={(val) => updateShow(show.id, { notes: val })} className="min-w-[150px] text-right min-h-[50px] w-full resize-y text-xs" dir="rtl" />
+                      </TableCell>
+                      <TableCell className="text-muted-foreground text-xs whitespace-nowrap">{formatDateTime(show.created_at)}</TableCell>
+                      <TableCell className="text-muted-foreground text-xs whitespace-nowrap">{show.status_changed_at ? formatDateTime(show.status_changed_at) : '-'}</TableCell>
+                      <TableCell className="text-muted-foreground text-xs whitespace-nowrap">{formatDateTime(show.updated_at)}</TableCell>
+                      <TableCell>
+                        <Button variant="ghost" size="icon" onClick={() => deleteShow(show.id)} className="text-destructive hover:text-destructive h-8 w-8">
+                          <Trash2 className="h-4 w-4" />
+                        </Button>
+                      </TableCell>
+                    </TableRow>
+                  ))
+                )}
+              </TableBody>
+            </Table>
+          )}
         </div>
       </div>
     </div>
