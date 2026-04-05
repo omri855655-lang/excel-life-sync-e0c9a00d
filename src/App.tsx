@@ -9,6 +9,7 @@ import PinGate, { usePinGate, PinSetup } from "@/components/PinGate";
 
 import TabroAiAgent from "@/components/TabroAiAgent";
 import SkipLink from "@/components/SkipLink";
+import AccessibilityWidget from "@/components/AccessibilityWidget";
 import Landing from "./pages/Landing";
 import Personal from "./pages/Personal";
 import Auth from "./pages/Auth";
