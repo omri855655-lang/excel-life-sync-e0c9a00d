@@ -89,6 +89,7 @@ const App = () => (
           
           <SkipLink />
           <TabroAiAgent />
+          <AccessibilityWidget />
           <div id="main-content">
             <AppContent />
           </div>

@@ -1040,6 +1040,105 @@ const TaskSpreadsheetDb = ({ title, taskType, readOnly = false, showYearSelector
               </div>
             );
           }
+
+          const taskStatusOptions = [
+            { value: "טרם החל", label: "טרם החל" },
+            { value: "בטיפול", label: "בטיפול" },
+            { value: "בוצע", label: "בוצע" },
+          ];
+
+          const kanbanColumns = [
+            { value: "טרם החל", label: "טרם החל", color: "bg-muted" },
+            { value: "בטיפול", label: "בטיפול", color: "bg-amber-100 dark:bg-amber-900/30" },
+            { value: "בוצע", label: "בוצע", color: "bg-green-100 dark:bg-green-900/30" },
+          ];
+
+          // Non-table view modes
+          if (dashViewMode === "list") {
+            return (
+              <div className="p-3 overflow-auto h-full">
+                <ListView
+                  items={displayTasks.map(t => ({
+                    id: t.id,
+                    title: t.description || "(ללא תיאור)",
+                    subtitle: [t.category, t.responsible].filter(Boolean).join(" · ") || null,
+                    status: t.status,
+                    statusOptions: taskStatusOptions,
+                    notes: t.statusNotes || t.progress || null,
+                    meta: t.plannedEnd || undefined,
+                    urgent: t.urgent,
+                  }))}
+                  onStatusChange={(id, status) => handleStatusChange(id, status as Task["status"])}
+                  onDelete={readOnly ? undefined : (id) => { deleteTask(id); }}
+                  onNotesChange={readOnly ? undefined : (id, val) => updateTask(id, { statusNotes: val })}
+                  onClick={(id) => setSelectedRow(id)}
+                />
+              </div>
+            );
+          }
+
+          if (dashViewMode === "cards") {
+            return (
+              <div className="p-3 overflow-auto h-full">
+                <CardsView
+                  items={displayTasks.map(t => ({
+                    id: t.id,
+                    title: t.description || "(ללא תיאור)",
+                    subtitle: [t.category, t.responsible].filter(Boolean).join(" · ") || null,
+                    status: t.status,
+                    statusOptions: taskStatusOptions,
+                    notes: t.statusNotes || t.progress || null,
+                    meta: t.plannedEnd || undefined,
+                    urgent: t.urgent,
+                  }))}
+                  onStatusChange={(id, status) => handleStatusChange(id, status as Task["status"])}
+                  onDelete={readOnly ? undefined : (id) => { deleteTask(id); }}
+                  onNotesChange={readOnly ? undefined : (id, val) => updateTask(id, { statusNotes: val })}
+                  onClick={(id) => setSelectedRow(id)}
+                />
+              </div>
+            );
+          }
+
+          if (dashViewMode === "kanban") {
+            return (
+              <div className="p-3 overflow-auto h-full">
+                <KanbanView
+                  items={displayTasks.map(t => ({
+                    id: t.id,
+                    title: t.description || "(ללא תיאור)",
+                    subtitle: [t.category, t.responsible].filter(Boolean).join(" · ") || null,
+                    status: t.status,
+                    notes: t.statusNotes || null,
+                    urgent: t.urgent,
+                  }))}
+                  columns={kanbanColumns}
+                  onStatusChange={(id, status) => handleStatusChange(id, status as Task["status"])}
+                  onDelete={readOnly ? undefined : (id) => { deleteTask(id); }}
+                  onNotesChange={readOnly ? undefined : (id, val) => updateTask(id, { statusNotes: val })}
+                  onClick={(id) => setSelectedRow(id)}
+                />
+              </div>
+            );
+          }
+
+          if (dashViewMode === "compact") {
+            return (
+              <div className="p-3 overflow-auto h-full">
+                <CompactView
+                  items={displayTasks.map(t => ({
+                    id: t.id,
+                    title: t.description || "(ללא תיאור)",
+                    status: t.status,
+                    subtitle: t.category || null,
+                    urgent: t.urgent,
+                  }))}
+                  onDelete={readOnly ? undefined : (id) => { deleteTask(id); }}
+                  onClick={(id) => setSelectedRow(id)}
+                />
+              </div>
+            );
+          }
           
             return (
             <div ref={tableScrollRef} data-task-table className="min-h-0 h-full overflow-auto scroll-smooth">
