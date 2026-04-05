@@ -183,6 +183,7 @@ const BooksManager = () => {
         )}>
           <Download className="h-3.5 w-3.5" />ייצוא
         </Button>
+        <FileImport onImport={handleImportBooks} label="ייבוא ספרים" />
       </div>
 
       {/* Add new book */}
