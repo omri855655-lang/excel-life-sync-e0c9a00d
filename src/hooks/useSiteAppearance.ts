@@ -164,6 +164,10 @@ export function useSiteAppearance() {
   const [themeId, setThemeIdState] = useState(getStoredThemeId);
   const [mode, setModeState] = useState<SiteAppearanceMode>(getStoredMode);
   const [fontId, setFontIdState] = useState(getStoredFontId);
+  const [showHebrewDate, setShowHebrewDateState] = useState(() => {
+    if (typeof window === "undefined") return false;
+    return window.localStorage.getItem(STORAGE_HEBREW_DATE_KEY) === "true";
+  });
 
   useEffect(() => {
     initializeSiteAppearance();
