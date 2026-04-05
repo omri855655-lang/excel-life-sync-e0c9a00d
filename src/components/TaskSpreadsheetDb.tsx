@@ -960,6 +960,7 @@ const TaskSpreadsheetDb = ({ title, taskType, readOnly = false, showYearSelector
             <Download className="h-4 w-4 ml-1" />
             ייצוא
           </Button>
+          {!readOnly && <FileImport onImport={handleImportTasks} label="ייבוא משימות" />}
         </div>
       </div>
 
