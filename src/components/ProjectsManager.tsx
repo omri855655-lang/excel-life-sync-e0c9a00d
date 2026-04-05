@@ -8,13 +8,14 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogTrigger } from '@/components/ui/dialog';
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible';
-import { Plus, Trash2, Search, FolderKanban, ChevronDown, ChevronLeft, Link2, ExternalLink, CheckCircle2, Circle, Sparkles, Loader2, Flame } from 'lucide-react';
+import { Plus, Trash2, Search, FolderKanban, ChevronDown, ChevronLeft, Link2, ExternalLink, CheckCircle2, Circle, Sparkles, Loader2, Flame, Edit2, ArrowDownToLine } from 'lucide-react';
 import { Progress } from '@/components/ui/progress';
 import { toast } from 'sonner';
 import { cn } from '@/lib/utils';
 import ProjectMembersPanel from '@/components/ProjectMembersPanel';
 import { useCustomBoards } from '@/hooks/useCustomBoards';
 import TeamPerformanceDashboard from '@/components/projects/TeamPerformanceDashboard';
+import ProjectTaskDialog from '@/components/projects/ProjectTaskDialog';
 
 interface Project {
   id: string;
@@ -89,7 +90,10 @@ const ProjectsManager = () => {
   const [addLinkDialogOpen, setAddLinkDialogOpen] = useState<string | null>(null);
   const [newLink, setNewLink] = useState('');
   const [aiMilestonesLoading, setAiMilestonesLoading] = useState<string | null>(null);
-  const [aiMilestones, setAiMilestones] = useState<Record<string, { title: string; done: boolean }[]>>({});
+  const [aiMilestones, setAiMilestones] = useState<Record<string, { id?: string; title: string; done: boolean; description?: string | null }[]>>({});
+  // Task dialog
+  const [selectedTask, setSelectedTask] = useState<ProjectTask | null>(null);
+  const [taskDialogOpen, setTaskDialogOpen] = useState(false);
   const [projectMembers, setProjectMembers] = useState<Record<string, ProjectMember[]>>({});
   const [newTaskAssignee, setNewTaskAssignee] = useState<Record<string, string>>({});
   const [newTaskNotes, setNewTaskNotes] = useState<Record<string, string>>({});
@@ -492,9 +496,24 @@ const ProjectsManager = () => {
       if (error) throw error;
       const text = data?.suggestion || '';
       const lines = text.split('\n').map((l: string) => l.replace(/^\s*[-*•\d\.\)\-]+\s*/, '').trim()).filter((l: string) => l.length > 2);
-      const milestones = lines.slice(0, 10).map((title: string) => ({ title, done: false }));
-      setAiMilestones(prev => ({ ...prev, [project.id]: milestones }));
-      toast.success(`נוצרו ${milestones.length} אבני דרך`);
+      const milestones = lines.slice(0, 10).map((title: string, idx: number) => ({ title, done: false, description: null }));
+      
+      // Save to DB
+      const inserts = milestones.map((m: any, idx: number) => ({
+        project_id: project.id,
+        user_id: user?.id!,
+        title: m.title,
+        sort_order: idx,
+        status: 'pending',
+      }));
+      
+      // Delete old milestones first
+      await supabase.from('project_milestones').delete().eq('project_id', project.id).eq('user_id', user?.id!);
+      const { data: savedMs } = await supabase.from('project_milestones').insert(inserts).select();
+      
+      const saved = (savedMs || []).map((m: any) => ({ id: m.id, title: m.title, done: m.status === 'done', description: m.description }));
+      setAiMilestones(prev => ({ ...prev, [project.id]: saved }));
+      toast.success(`נוצרו ${saved.length} אבני דרך ונשמרו`);
     } catch {
       toast.error('שגיאה ביצירת אבני דרך');
     } finally {
@@ -502,11 +521,111 @@ const ProjectsManager = () => {
     }
   };
 
-  const toggleAiMilestone = (projectId: string, index: number) => {
+  // Load milestones from DB when expanding
+  const loadMilestones = async (projectId: string) => {
+    if (aiMilestones[projectId]) return;
+    const { data } = await supabase
+      .from('project_milestones')
+      .select('*')
+      .eq('project_id', projectId)
+      .order('sort_order', { ascending: true });
+    if (data && data.length > 0) {
+      setAiMilestones(prev => ({
+        ...prev,
+        [projectId]: data.map((m: any) => ({ id: m.id, title: m.title, done: m.status === 'done', description: m.description })),
+      }));
+    }
+  };
+
+  const toggleAiMilestone = async (projectId: string, index: number) => {
+    const ms = aiMilestones[projectId];
+    if (!ms) return;
+    const milestone = ms[index];
+    const newDone = !milestone.done;
     setAiMilestones(prev => ({
       ...prev,
-      [projectId]: prev[projectId].map((m, i) => i === index ? { ...m, done: !m.done } : m),
+      [projectId]: prev[projectId].map((m, i) => i === index ? { ...m, done: newDone } : m),
     }));
+    if (milestone.id) {
+      await supabase.from('project_milestones').update({ status: newDone ? 'done' : 'pending' }).eq('id', milestone.id);
+    }
+  };
+
+  const deleteMilestone = async (projectId: string, index: number) => {
+    const ms = aiMilestones[projectId];
+    if (!ms) return;
+    const milestone = ms[index];
+    if (milestone.id) {
+      await supabase.from('project_milestones').delete().eq('id', milestone.id);
+    }
+    setAiMilestones(prev => ({
+      ...prev,
+      [projectId]: prev[projectId].filter((_, i) => i !== index),
+    }));
+    toast.success('אבן דרך נמחקה');
+  };
+
+  const convertMilestoneToTask = async (projectId: string, index: number) => {
+    const ms = aiMilestones[projectId];
+    if (!ms || !user) return;
+    const milestone = ms[index];
+    const currentTasks = projectTasks[projectId] || [];
+    const maxOrder = currentTasks.length > 0 ? Math.max(...currentTasks.map(t => t.sort_order)) : 0;
+    
+    const { data, error } = await supabase.from('project_tasks').insert({
+      project_id: projectId,
+      user_id: user.id,
+      title: milestone.title,
+      description: milestone.description || null,
+      sort_order: maxOrder + 1,
+    }).select().single();
+    
+    if (error) { toast.error('שגיאה בהוספת משימה'); return; }
+    
+    setProjectTasks(prev => ({
+      ...prev,
+      [projectId]: [...(prev[projectId] || []), data as ProjectTask],
+    }));
+    toast.success(`"${milestone.title}" נוספה כמשימה`);
+  };
+
+  const convertAllMilestonesToTasks = async (projectId: string) => {
+    const ms = aiMilestones[projectId];
+    if (!ms || !user) return;
+    const currentTasks = projectTasks[projectId] || [];
+    const maxOrder = currentTasks.length > 0 ? Math.max(...currentTasks.map(t => t.sort_order)) : 0;
+    
+    const inserts = ms.filter(m => !m.done).map((m, idx) => ({
+      project_id: projectId,
+      user_id: user.id,
+      title: m.title,
+      description: m.description || null,
+      sort_order: maxOrder + idx + 1,
+    }));
+    
+    if (inserts.length === 0) { toast.info('אין אבני דרך לא מושלמות'); return; }
+    
+    const { data, error } = await supabase.from('project_tasks').insert(inserts).select();
+    if (error) { toast.error('שגיאה'); return; }
+    
+    setProjectTasks(prev => ({
+      ...prev,
+      [projectId]: [...(prev[projectId] || []), ...(data as ProjectTask[])],
+    }));
+    toast.success(`נוספו ${inserts.length} משימות`);
+  };
+
+  const handleTaskUpdate = (taskId: string, updates: Record<string, any>) => {
+    setProjectTasks(prev => {
+      const newTasks = { ...prev };
+      for (const projId of Object.keys(newTasks)) {
+        newTasks[projId] = newTasks[projId].map(t => t.id === taskId ? { ...t, ...updates } : t);
+      }
+      return newTasks;
+    });
+    if (selectedTask?.id === taskId) {
+      setSelectedTask(prev => prev ? { ...prev, ...updates } : prev);
+    }
   };
 
   const toggleExpanded = (projectId: string) => {
@@ -516,6 +635,7 @@ const ProjectsManager = () => {
         newSet.delete(projectId);
       } else {
         newSet.add(projectId);
+        loadMilestones(projectId);
       }
       return newSet;
     });
@@ -742,13 +862,24 @@ const ProjectsManager = () => {
                       {/* AI Milestones List */}
                       {aiMilestones[project.id] && aiMilestones[project.id].length > 0 && (
                         <div className="mt-2 mr-11 space-y-1">
-                          <p className="text-xs font-medium text-muted-foreground">אבני דרך מומלצות:</p>
+                          <div className="flex items-center gap-2">
+                            <p className="text-xs font-medium text-muted-foreground">אבני דרך מומלצות:</p>
+                            <Button variant="ghost" size="sm" className="h-5 text-[10px] px-1.5 gap-0.5" onClick={() => convertAllMilestonesToTasks(project.id)}>
+                              <ArrowDownToLine className="h-3 w-3" />הוסף הכל כמשימות
+                            </Button>
+                          </div>
                           {aiMilestones[project.id].map((ms, idx) => (
-                            <div key={idx} className="flex items-center gap-2 text-xs">
+                            <div key={idx} className="flex items-center gap-2 text-xs group">
                               <button onClick={() => toggleAiMilestone(project.id, idx)}>
                                 {ms.done ? <CheckCircle2 className="h-4 w-4 text-primary" /> : <Circle className="h-4 w-4 text-muted-foreground" />}
                               </button>
-                              <span className={ms.done ? 'line-through text-muted-foreground' : ''}>{ms.title}</span>
+                              <span className={cn("flex-1", ms.done && 'line-through text-muted-foreground')}>{ms.title}</span>
+                              <Button variant="ghost" size="icon" className="h-5 w-5 opacity-0 group-hover:opacity-100" onClick={() => convertMilestoneToTask(project.id, idx)} title="הוסף כמשימה">
+                                <Plus className="h-3 w-3" />
+                              </Button>
+                              <Button variant="ghost" size="icon" className="h-5 w-5 opacity-0 group-hover:opacity-100 text-destructive" onClick={() => deleteMilestone(project.id, idx)} title="מחק">
+                                <Trash2 className="h-3 w-3" />
+                              </Button>
                             </div>
                           ))}
                           <Progress
@@ -869,10 +1000,11 @@ const ProjectsManager = () => {
                               <div
                                 key={task.id}
                                 className={cn(
-                                  "flex items-center gap-2 p-2 rounded bg-background",
+                                  "flex items-center gap-2 p-2 rounded bg-background cursor-pointer hover:bg-accent/30 transition-colors",
                                   task.completed && "opacity-60",
                                   task.urgent && !task.completed && "bg-destructive/10 border border-destructive/30"
                                 )}
+                                onClick={() => { setSelectedTask(task); setTaskDialogOpen(true); }}
                               >
                                 <button onClick={() => toggleTaskCompletion(task)}>
                                   {task.completed ? (
@@ -1083,6 +1215,15 @@ const ProjectsManager = () => {
           </DialogFooter>
         </DialogContent>
       </Dialog>
+
+      {/* Project Task Dialog */}
+      <ProjectTaskDialog
+        open={taskDialogOpen}
+        onOpenChange={setTaskDialogOpen}
+        task={selectedTask}
+        members={(selectedTask ? projectMembers[selectedTask.project_id] : []) || []}
+        onUpdate={handleTaskUpdate}
+      />
     </div>
   );
 };

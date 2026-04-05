@@ -296,8 +296,15 @@ const Landing = () => {
       </section>
 
       {/* Footer */}
-      <footer className="border-t border-border/50 py-6 text-center text-sm text-muted-foreground">
-        <span className="font-medium text-foreground">Tabro</span> — מערכת ניהול אישית © {new Date().getFullYear()}
+      <footer className="border-t border-border/50 py-6 text-center text-sm text-muted-foreground space-y-2">
+        <div>
+          <span className="font-medium text-foreground">Tabro</span> — מערכת ניהול אישית © {new Date().getFullYear()}
+        </div>
+        <div className="flex justify-center gap-4 text-xs">
+          <button onClick={() => navigate("/terms")} className="hover:text-foreground transition-colors">תנאי שימוש</button>
+          <button onClick={() => navigate("/privacy")} className="hover:text-foreground transition-colors">מדיניות פרטיות</button>
+          <button onClick={() => navigate("/accessibility")} className="hover:text-foreground transition-colors">נגישות</button>
+        </div>
       </footer>
     </div>
   );

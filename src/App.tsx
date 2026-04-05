@@ -8,6 +8,7 @@ import { LanguageProvider } from "@/hooks/useLanguage";
 import PinGate, { usePinGate, PinSetup } from "@/components/PinGate";
 
 import TabroAiAgent from "@/components/TabroAiAgent";
+import SkipLink from "@/components/SkipLink";
 import Landing from "./pages/Landing";
 import Personal from "./pages/Personal";
 import Auth from "./pages/Auth";
@@ -16,6 +17,9 @@ import InstallApp from "./pages/InstallApp";
 import NotFound from "./pages/NotFound";
 import AdminDashboard from "./pages/AdminDashboard";
 import Unsubscribe from "./pages/Unsubscribe";
+import Terms from "./pages/Terms";
+import Privacy from "./pages/Privacy";
+import Accessibility from "./pages/Accessibility";
 
 const queryClient = new QueryClient();
 
@@ -65,6 +69,9 @@ const AppContent = () => {
         <Route path="/install/*" element={<InstallApp />} />
         <Route path="/Install/*" element={<InstallApp />} />
         <Route path="/unsubscribe" element={<Unsubscribe />} />
+        <Route path="/terms" element={<Terms />} />
+        <Route path="/privacy" element={<Privacy />} />
+        <Route path="/accessibility" element={<Accessibility />} />
         <Route path="*" element={<NotFound />} />
       </Routes>
     </BrowserRouter>
@@ -79,8 +86,11 @@ const App = () => (
           <Toaster />
           <Sonner />
           
+          <SkipLink />
           <TabroAiAgent />
-          <AppContent />
+          <div id="main-content">
+            <AppContent />
+          </div>
         </TooltipProvider>
       </LanguageProvider>
     </AuthProvider>
