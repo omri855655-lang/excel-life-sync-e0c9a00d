@@ -138,6 +138,26 @@ const ShowsManager = () => {
     }
   };
 
+  const handleImportShows = async (rows: Record<string, string>[]) => {
+    if (!user) return;
+    const inserts = rows.map(row => ({
+      user_id: user.id,
+      title: row['שם'] || row['title'] || Object.values(row)[0] || '',
+      type: row['סוג'] || row['type'] || 'סדרה',
+      status: row['סטטוס'] || row['status'] || 'לצפות',
+      category: row['קטגוריה'] || row['category'] || null,
+      notes: row['הערות'] || row['notes'] || null,
+    })).filter(r => r.title.trim());
+
+    const { error } = await supabase.from('shows').insert(inserts as any);
+    if (error) {
+      toast.error('שגיאה בייבוא');
+      console.error(error);
+    } else {
+      fetchShows();
+    }
+  };
+
   const addCustomCategory = () => {
     const cat = newCategoryInput.trim();
     if (!cat) return;
