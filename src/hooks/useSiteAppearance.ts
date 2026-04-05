@@ -51,6 +51,7 @@ export const SITE_THEME_PRESETS: SiteThemePreset[] = [
 const STORAGE_THEME_KEY = "site-theme-id";
 const STORAGE_MODE_KEY = "site-theme-mode";
 const STORAGE_FONT_KEY = "site-font-id";
+const STORAGE_HEBREW_DATE_KEY = "site-show-hebrew-date";
 const SITE_APPEARANCE_EVENT = "site-appearance-change";
 
 const getStoredThemeId = () => {
