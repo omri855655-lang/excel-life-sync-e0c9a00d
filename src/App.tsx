@@ -15,6 +15,7 @@ import ResetPassword from "./pages/ResetPassword";
 import InstallApp from "./pages/InstallApp";
 import NotFound from "./pages/NotFound";
 import AdminDashboard from "./pages/AdminDashboard";
+import Unsubscribe from "./pages/Unsubscribe";
 
 const queryClient = new QueryClient();
 
