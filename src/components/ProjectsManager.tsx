@@ -874,20 +874,31 @@ const ProjectsManager = () => {
                                   {task.notes && (
                                     <span className="text-[10px] text-muted-foreground block">{task.notes}</span>
                                   )}
-                                  {/* Multi-assignee chips */}
+                                  {/* Multi-assignee chips with colored dots */}
                                   <div className="flex flex-wrap gap-1 mt-1">
-                                    {task.assigned_email && (
-                                      <span className="text-[10px] px-1.5 py-0.5 rounded-full bg-primary/10 text-primary">
-                                        {(projectMembers[project.id] || []).find(m => m.invited_email === task.assigned_email)?.invited_display_name || task.assigned_email}
-                                      </span>
-                                    )}
-                                    {(taskAssignments[task.id] || []).map(a => (
-                                      <span key={a.id} className="text-[10px] px-1.5 py-0.5 rounded-full bg-accent text-accent-foreground flex items-center gap-0.5">
-                                        {a.assignee_name || a.assignee_email}
-                                        {a.responsibility && <span className="text-muted-foreground">({a.responsibility})</span>}
-                                        <button onClick={() => removeTaskAssignment(a.id, task.id)} className="hover:text-destructive ml-0.5">×</button>
-                                      </span>
-                                    ))}
+                                    {task.assigned_email && (() => {
+                                      const memberName = (projectMembers[project.id] || []).find(m => m.invited_email === task.assigned_email)?.invited_display_name || task.assigned_email;
+                                      const colorIdx = (projectMembers[project.id] || []).findIndex(m => m.invited_email === task.assigned_email);
+                                      const colors = ["bg-blue-500", "bg-emerald-500", "bg-orange-500", "bg-purple-500", "bg-pink-500", "bg-cyan-500", "bg-yellow-500", "bg-red-500"];
+                                      return (
+                                        <span className="text-[10px] px-1.5 py-0.5 rounded-full bg-primary/10 text-primary flex items-center gap-1">
+                                          <span className={cn("w-2 h-2 rounded-full shrink-0", colors[colorIdx % colors.length])} />
+                                          {memberName}
+                                        </span>
+                                      );
+                                    })()}
+                                    {(taskAssignments[task.id] || []).map((a, aIdx) => {
+                                      const colors = ["bg-blue-500", "bg-emerald-500", "bg-orange-500", "bg-purple-500", "bg-pink-500", "bg-cyan-500", "bg-yellow-500", "bg-red-500"];
+                                      const memberIdx = (projectMembers[project.id] || []).findIndex(m => m.invited_email === a.assignee_email);
+                                      return (
+                                        <span key={a.id} className="text-[10px] px-1.5 py-0.5 rounded-full bg-accent/15 text-accent-foreground flex items-center gap-1">
+                                          <span className={cn("w-2 h-2 rounded-full shrink-0", colors[(memberIdx >= 0 ? memberIdx : aIdx + 1) % colors.length])} />
+                                          {a.assignee_name || a.assignee_email}
+                                          {a.responsibility && <span className="text-muted-foreground">— {a.responsibility}</span>}
+                                          <button onClick={() => removeTaskAssignment(a.id, task.id)} className="hover:text-destructive ml-0.5">×</button>
+                                        </span>
+                                      );
+                                    })}
                                     <button
                                       className="text-[10px] px-1.5 py-0.5 rounded-full border border-dashed border-muted-foreground/40 text-muted-foreground hover:bg-muted"
                                       onClick={() => { setAssignDialogTask(task.id); setAssignDialogProject(project.id); }}

@@ -12,7 +12,7 @@ import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Lock, Shield, LayoutGrid, Plus, Trash2, X, Eye, EyeOff, Globe, Palette, Moon, Sun, Key, UserX, Bell, PanelLeft, LayoutList, Columns, Smartphone, Menu } from "lucide-react";
+import { Lock, Shield, LayoutGrid, Plus, Trash2, X, Eye, EyeOff, Globe, Palette, Moon, Sun, Key, UserX, Bell, PanelLeft, LayoutList, Columns, Smartphone, Menu, Type } from "lucide-react";
 import { toast } from "sonner";
 import { useLanguage } from "@/hooks/useLanguage";
 import TelegramSettings from "@/components/TelegramSettings";
@@ -54,7 +54,7 @@ const SettingsPanel = () => {
   const navTo = useNavigate();
   const { toggleTab, isTabVisible } = useUserPreferences();
   const { lang, setLang } = useLanguage();
-  const { themeId, mode, themes, setThemeId, setMode, customColors, setCustomColor, resetCustomColors } = useSiteAppearance();
+  const { themeId, mode, themes, setThemeId, setMode, fontId, fonts, setFontId, customColors, setCustomColor, resetCustomColors } = useSiteAppearance();
   const { layout, setLayout } = useLayoutPreference();
   const [pinEnabled, setPinEnabled] = useState(true);
   const [hasPin, setHasPin] = useState(false);
@@ -260,6 +260,29 @@ const SettingsPanel = () => {
             </div>
           </div>
 
+        </CardContent>
+      </Card>
+
+      {/* Font Card - SEPARATE */}
+      <Card>
+        <CardHeader>
+          <CardTitle className="flex items-center gap-2"><Type className="h-5 w-5" />גופן</CardTitle>
+        </CardHeader>
+        <CardContent className="space-y-3">
+          <p className="text-xs text-muted-foreground">בחר את הגופן שמתאים לך. השינוי חל על כל האתר.</p>
+          <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
+            {fonts.map((font) => (
+              <button
+                key={font.id}
+                onClick={() => setFontId(font.id)}
+                className={`p-3 rounded-lg border text-center transition-colors ${fontId === font.id ? "border-primary bg-primary/10 text-primary" : "border-border hover:bg-muted text-foreground"}`}
+                style={{ fontFamily: font.family }}
+              >
+                <div className="text-sm font-medium">{font.name}</div>
+                <div className="text-xs text-muted-foreground mt-1" style={{ fontFamily: font.family }}>אבגד Abc 123</div>
+              </button>
+            ))}
+          </div>
         </CardContent>
       </Card>
 

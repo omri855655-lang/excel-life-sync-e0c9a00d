@@ -8,6 +8,21 @@ export interface SiteThemePreset {
   description: string;
 }
 
+export interface SiteFontOption {
+  id: string;
+  name: string;
+  family: string;
+}
+
+export const SITE_FONT_OPTIONS: SiteFontOption[] = [
+  { id: "rubik", name: "Rubik", family: "'Rubik', sans-serif" },
+  { id: "heebo", name: "Heebo", family: "'Heebo', sans-serif" },
+  { id: "assistant", name: "Assistant", family: "'Assistant', sans-serif" },
+  { id: "noto", name: "Noto Sans Hebrew", family: "'Noto Sans Hebrew', sans-serif" },
+  { id: "inter", name: "Inter", family: "'Inter', sans-serif" },
+  { id: "space", name: "Space Grotesk", family: "'Space Grotesk', sans-serif" },
+];
+
 export const SITE_THEME_PRESETS: SiteThemePreset[] = [
   { id: "default", name: "נקי", description: "מראה בהיר ונעים עם כחול קלאסי" },
   { id: "focus", name: "Focus", description: "עבודה עמוקה — כהה ומינימלי, בהשראת Linear ו-Arc" },
@@ -35,6 +50,7 @@ export const SITE_THEME_PRESETS: SiteThemePreset[] = [
 
 const STORAGE_THEME_KEY = "site-theme-id";
 const STORAGE_MODE_KEY = "site-theme-mode";
+const STORAGE_FONT_KEY = "site-font-id";
 const SITE_APPEARANCE_EVENT = "site-appearance-change";
 
 const getStoredThemeId = () => {
@@ -47,6 +63,12 @@ const getStoredMode = (): SiteAppearanceMode => {
   if (typeof window === "undefined") return "light";
   const saved = window.localStorage.getItem(STORAGE_MODE_KEY);
   return saved === "dark" ? "dark" : "light";
+};
+
+const getStoredFontId = () => {
+  if (typeof window === "undefined") return "rubik";
+  const saved = window.localStorage.getItem(STORAGE_FONT_KEY);
+  return SITE_FONT_OPTIONS.some((f) => f.id === saved) ? saved! : "rubik";
 };
 
 export interface CustomColorOverrides {
@@ -89,7 +111,6 @@ const applyCustomColors = (themeId: string, customColors: Record<string, CustomC
   if (typeof document === "undefined") return;
   const overrides = customColors[themeId];
   const root = document.documentElement;
-  // Clear previous custom overrides
   root.style.removeProperty("--primary");
   root.style.removeProperty("--ring");
   root.style.removeProperty("--background");
@@ -109,12 +130,21 @@ const applyCustomColors = (themeId: string, customColors: Record<string, CustomC
   }
 };
 
+const applyFont = (fontId: string) => {
+  if (typeof document === "undefined") return;
+  const font = SITE_FONT_OPTIONS.find((f) => f.id === fontId);
+  if (font) {
+    document.documentElement.style.setProperty("--font-family", font.family);
+  }
+};
+
 export const applySiteAppearance = (themeId: string, mode: SiteAppearanceMode) => {
   if (typeof document === "undefined") return;
   const root = document.documentElement;
   root.dataset.siteTheme = themeId;
   root.classList.toggle("dark", mode === "dark");
   applyCustomColors(themeId, getStoredCustomColors());
+  applyFont(getStoredFontId());
 };
 
 export const initializeSiteAppearance = () => {
@@ -132,6 +162,7 @@ const persistSiteAppearance = (themeId: string, mode: SiteAppearanceMode) => {
 export function useSiteAppearance() {
   const [themeId, setThemeIdState] = useState(getStoredThemeId);
   const [mode, setModeState] = useState<SiteAppearanceMode>(getStoredMode);
+  const [fontId, setFontIdState] = useState(getStoredFontId);
 
   useEffect(() => {
     initializeSiteAppearance();
@@ -139,6 +170,7 @@ export function useSiteAppearance() {
     const syncAppearance = () => {
       setThemeIdState(getStoredThemeId());
       setModeState(getStoredMode());
+      setFontIdState(getStoredFontId());
     };
 
     window.addEventListener("storage", syncAppearance);
@@ -166,6 +198,13 @@ export function useSiteAppearance() {
     setModeState(nextMode);
   }, [mode, themeId]);
 
+  const setFontId = useCallback((nextFontId: string) => {
+    window.localStorage.setItem(STORAGE_FONT_KEY, nextFontId);
+    applyFont(nextFontId);
+    setFontIdState(nextFontId);
+    window.dispatchEvent(new CustomEvent(SITE_APPEARANCE_EVENT));
+  }, []);
+
   const [customColors, setCustomColorsState] = useState<Record<string, CustomColorOverrides>>(getStoredCustomColors);
 
   const setCustomColor = useCallback((token: keyof CustomColorOverrides, hex: string) => {
@@ -191,6 +230,7 @@ export function useSiteAppearance() {
 
   const currentTheme = SITE_THEME_PRESETS.find((theme) => theme.id === themeId) || SITE_THEME_PRESETS[0];
   const currentCustomColors = customColors[themeId] || {};
+  const currentFont = SITE_FONT_OPTIONS.find((f) => f.id === fontId) || SITE_FONT_OPTIONS[0];
 
   return {
     themeId,
@@ -201,6 +241,10 @@ export function useSiteAppearance() {
     setThemeId,
     setMode,
     toggleMode,
+    fontId,
+    fonts: SITE_FONT_OPTIONS,
+    currentFont,
+    setFontId,
     customColors: currentCustomColors,
     setCustomColor,
     resetCustomColors,
