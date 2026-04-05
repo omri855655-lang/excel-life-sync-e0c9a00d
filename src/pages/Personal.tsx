@@ -521,7 +521,7 @@ const Personal = () => {
     return (
       <>
         {showOnboarding && <OnboardingWizard onComplete={() => window.location.reload()} />}
-        <BottomNavLayout tabs={flatTabItems} activeTab={activeTab} onTabChange={setActiveTab} dir={dir} header={<>{headerLeft}{headerControls}</>}>
+        <BottomNavLayout tabs={flatTabItems} activeTab={activeTab} onTabChange={setActiveTab} onReorder={(ids) => { setTabOrder(ids); localStorage.setItem("tab-order", JSON.stringify(ids)); }} dir={dir} header={<>{headerLeft}{headerControls}</>}>
           <div className="min-h-full pb-20">{renderContent()}</div>
         </BottomNavLayout>
         <FloatingMusicMini visible={activeTab !== 'deeply'} onGoToDeeply={() => setActiveTab('deeply')} />
