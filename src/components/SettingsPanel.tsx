@@ -598,6 +598,20 @@ const SettingsPanel = () => {
       {/* Telegram Card */}
       <TelegramSettings />
 
+      {/* Hebrew Date Toggle */}
+      <Card>
+        <CardHeader>
+          <CardTitle className="flex items-center gap-2"><CalendarDays className="h-5 w-5" />תאריך עברי</CardTitle>
+        </CardHeader>
+        <CardContent className="space-y-3">
+          <p className="text-sm text-muted-foreground">הצג תאריך עברי בדשבורד הראשי (לפי הלוח העברי).</p>
+          <div className="flex items-center justify-between">
+            <Label>הצג תאריך עברי</Label>
+            <Switch checked={showHebrewDate} onCheckedChange={setShowHebrewDate} />
+          </div>
+        </CardContent>
+      </Card>
+
       {/* Language Card */}
       <Card>
         <CardHeader>
