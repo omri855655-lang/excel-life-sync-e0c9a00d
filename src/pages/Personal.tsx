@@ -490,6 +490,7 @@ const Personal = () => {
           tabs={flatTabItems}
           activeTab={activeTab}
           onTabChange={setActiveTab}
+          onReorder={(ids) => { setTabOrder(ids); localStorage.setItem("tab-order", JSON.stringify(ids)); }}
           dir={dir}
           header={<>{headerLeft}{headerControls}</>}
         >
