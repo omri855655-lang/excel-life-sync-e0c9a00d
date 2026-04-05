@@ -521,7 +521,7 @@ const Personal = () => {
       <>
         {showOnboarding && <OnboardingWizard onComplete={() => window.location.reload()} />}
         <BottomNavLayout tabs={flatTabItems} activeTab={activeTab} onTabChange={setActiveTab} dir={dir} header={<>{headerLeft}{headerControls}</>}>
-          <div className="h-full">{renderContent()}</div>
+          <div className="min-h-full pb-20">{renderContent()}</div>
         </BottomNavLayout>
         <FloatingMusicMini visible={activeTab !== 'deeply'} onGoToDeeply={() => setActiveTab('deeply')} />
         <AiDailyPlanner />
