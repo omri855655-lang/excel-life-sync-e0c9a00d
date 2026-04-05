@@ -90,7 +90,10 @@ const ProjectsManager = () => {
   const [addLinkDialogOpen, setAddLinkDialogOpen] = useState<string | null>(null);
   const [newLink, setNewLink] = useState('');
   const [aiMilestonesLoading, setAiMilestonesLoading] = useState<string | null>(null);
-  const [aiMilestones, setAiMilestones] = useState<Record<string, { title: string; done: boolean }[]>>({});
+  const [aiMilestones, setAiMilestones] = useState<Record<string, { id?: string; title: string; done: boolean; description?: string | null }[]>>({});
+  // Task dialog
+  const [selectedTask, setSelectedTask] = useState<ProjectTask | null>(null);
+  const [taskDialogOpen, setTaskDialogOpen] = useState(false);
   const [projectMembers, setProjectMembers] = useState<Record<string, ProjectMember[]>>({});
   const [newTaskAssignee, setNewTaskAssignee] = useState<Record<string, string>>({});
   const [newTaskNotes, setNewTaskNotes] = useState<Record<string, string>>({});
