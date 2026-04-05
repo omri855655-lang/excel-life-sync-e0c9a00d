@@ -14,6 +14,7 @@ import { toast } from 'sonner';
 import { cn } from '@/lib/utils';
 import ProjectMembersPanel from '@/components/ProjectMembersPanel';
 import { useCustomBoards } from '@/hooks/useCustomBoards';
+import TeamPerformanceDashboard from '@/components/projects/TeamPerformanceDashboard';
 
 interface Project {
   id: string;

@@ -414,6 +414,9 @@ ${context}
         </Card>
       )}
 
+      {/* Charts - Pie, Bar comparison, Trend */}
+      <BudgetCharts payments={payments as any} />
+
       <Tabs value={activeTab} onValueChange={setActiveTab}>
         <TabsList className="w-full flex-wrap h-auto">
           <TabsTrigger value="overview" className="flex-1">הכנסות והוצאות</TabsTrigger>
