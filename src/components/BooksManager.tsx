@@ -119,6 +119,25 @@ const BooksManager = () => {
     setBooks((prev) => prev.filter((b) => b.id !== id));
   };
 
+  const handleImportBooks = async (rows: Record<string, string>[]) => {
+    if (!user) return;
+    const inserts = rows.map(row => ({
+      user_id: user.id,
+      title: row['שם הספר'] || row['title'] || row['שם'] || Object.values(row)[0] || '',
+      author: row['מחבר'] || row['author'] || null,
+      status: row['סטטוס'] || row['status'] || 'לקרוא',
+      notes: row['הערות'] || row['notes'] || null,
+    })).filter(r => r.title.trim());
+
+    const { error } = await supabase.from('books').insert(inserts);
+    if (error) {
+      toast.error('שגיאה בייבוא הספרים');
+      console.error(error);
+    } else {
+      fetchBooks();
+    }
+  };
+
   const filteredBooks = books.filter(
     (book) =>
       book.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
