@@ -64,6 +64,7 @@ const TaskSpreadsheetDb = ({ title, taskType, readOnly = false, showYearSelector
   const isSharedSheet = !!fixedSheetOwnerId;
   const [sharedCollapsed, setSharedCollapsed] = useState(false);
   const { user } = useAuth();
+  const { viewMode: dashViewMode, themeKey: dashTheme, setViewMode: setDashViewMode, setTheme: setDashTheme } = useDashboardDisplay(`tasks-${taskType}`);
   const currentYear = String(new Date().getFullYear());
   const MAIN_SHEET_NAME = "ראשי";
   const [availableSheets, setAvailableSheets] = useState<string[]>([]);
