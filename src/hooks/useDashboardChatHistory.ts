@@ -15,13 +15,14 @@ export function useDashboardChatHistory(dashboardKey: string) {
   const { user } = useAuth();
   const [messages, setMessages] = useState<ChatMessage[]>([]);
   const [loaded, setLoaded] = useState(false);
+  const storageKey = `dashboard-chat-${dashboardKey}`;
 
   // Load from DB on mount
   useEffect(() => {
     if (!user) {
       // Fallback to localStorage
       try {
-        const raw = localStorage.getItem(`dashboard-chat-${dashboardKey}`);
+        const raw = localStorage.getItem(storageKey);
         if (raw) setMessages(JSON.parse(raw));
       } catch {}
       setLoaded(true);
@@ -46,10 +47,27 @@ export function useDashboardChatHistory(dashboardKey: string) {
 
   // Save to DB whenever messages change (after initial load)
   useEffect(() => {
-    if (!loaded || messages.length === 0) return;
+    if (!loaded) return;
+
+    if (messages.length === 0) {
+      if (!user) {
+        localStorage.removeItem(storageKey);
+        return;
+      }
+
+      supabase
+        .from("dashboard_chat_history")
+        .delete()
+        .eq("user_id", user.id)
+        .eq("dashboard_key", dashboardKey)
+        .then(() => {});
+      return;
+    }
+
+    const trimmedMessages = messages.slice(-50);
 
     if (!user) {
-      localStorage.setItem(`dashboard-chat-${dashboardKey}`, JSON.stringify(messages));
+      localStorage.setItem(storageKey, JSON.stringify(trimmedMessages));
       return;
     }
 
@@ -60,13 +78,13 @@ export function useDashboardChatHistory(dashboardKey: string) {
           {
             user_id: user.id,
             dashboard_key: dashboardKey,
-            messages: messages as any,
+            messages: trimmedMessages as any,
           },
           { onConflict: "user_id,dashboard_key" }
         );
     };
     save();
-  }, [messages, loaded, user, dashboardKey]);
+  }, [messages, loaded, user, dashboardKey, storageKey]);
 
   const addMessage = useCallback((msg: ChatMessage) => {
     setMessages(prev => [...prev, msg]);
@@ -81,9 +99,9 @@ export function useDashboardChatHistory(dashboardKey: string) {
         .eq("user_id", user.id)
         .eq("dashboard_key", dashboardKey);
     } else {
-      localStorage.removeItem(`dashboard-chat-${dashboardKey}`);
+      localStorage.removeItem(storageKey);
     }
-  }, [user, dashboardKey]);
+  }, [user, dashboardKey, storageKey]);
 
-  return { messages, setMessages, addMessage, clearHistory };
+  return { messages, setMessages, addMessage, clearHistory, loaded };
 }
