@@ -205,7 +205,7 @@ serve(async (req: Request): Promise<Response> => {
         Authorization: `Bearer ${RESEND_API_KEY}`,
       },
       body: JSON.stringify({
-        from: "Welcome <onboarding@resend.dev>",
+        from: "Tabro <info@tabro.org>",
         to: [user.email],
         subject,
         html: emailHtml,
