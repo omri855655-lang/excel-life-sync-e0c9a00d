@@ -58,10 +58,19 @@ interface TaskAssignment {
   responsibility: string | null;
 }
 
+const MEMBER_DOT_COLORS = ["bg-primary", "bg-accent", "bg-foreground/70", "bg-secondary-foreground/70", "bg-muted-foreground", "bg-destructive"];
+
 const formatDateTime = (dateStr: string) => {
   if (!dateStr) return '-';
   const date = new Date(dateStr);
   return date.toLocaleDateString('he-IL') + ' ' + date.toLocaleTimeString('he-IL', { hour: '2-digit', minute: '2-digit' });
+};
+
+const getTaskPriorityScore = (task: ProjectTask) => {
+  if (task.completed) return 3;
+  if (task.urgent) return 0;
+  if (task.status === 'בתהליך') return 1;
+  return 2;
 };
 
 const ProjectsManager = () => {
@@ -525,16 +534,16 @@ const ProjectsManager = () => {
     <div className="h-full flex flex-col p-4 overflow-hidden" dir="rtl">
       {/* Stats Dashboard */}
       <div className="grid grid-cols-3 gap-4 mb-4 flex-shrink-0">
-        <div className="bg-blue-500/10 border border-blue-500/30 rounded-lg p-4 text-center">
-          <div className="text-2xl font-bold text-blue-600">{activeCount}</div>
+        <div className="bg-primary/10 border border-primary/20 rounded-lg p-4 text-center">
+          <div className="text-2xl font-bold text-primary">{activeCount}</div>
           <div className="text-sm text-muted-foreground">פעילים</div>
         </div>
-        <div className="bg-green-500/10 border border-green-500/30 rounded-lg p-4 text-center">
-          <div className="text-2xl font-bold text-green-600">{completedCount}</div>
+        <div className="bg-accent/15 border border-accent/30 rounded-lg p-4 text-center">
+          <div className="text-2xl font-bold text-accent-foreground">{completedCount}</div>
           <div className="text-sm text-muted-foreground">הושלמו</div>
         </div>
-        <div className="bg-orange-500/10 border border-orange-500/30 rounded-lg p-4 text-center">
-          <div className="text-2xl font-bold text-orange-600">{onHoldCount}</div>
+        <div className="bg-muted border border-border rounded-lg p-4 text-center">
+          <div className="text-2xl font-bold text-foreground">{onHoldCount}</div>
           <div className="text-sm text-muted-foreground">בהמתנה</div>
         </div>
       </div>
@@ -590,9 +599,24 @@ const ProjectsManager = () => {
           ) : (
             <div className="divide-y divide-border">
               {filteredProjects.map((project) => {
-                const tasks = projectTasks[project.id] || [];
+                const tasks = [...(projectTasks[project.id] || [])].sort((a, b) => {
+                  const priorityDiff = getTaskPriorityScore(a) - getTaskPriorityScore(b);
+                  if (priorityDiff !== 0) return priorityDiff;
+                  return (a.sort_order ?? 0) - (b.sort_order ?? 0);
+                });
                 const completedTasks = tasks.filter(t => t.completed).length;
                 const isExpanded = expandedProjects.has(project.id);
+                const groupedTasks = getAssignableMembers(project.id).map((member) => {
+                  const items = tasks.filter((task) => {
+                    const primaryMatch = task.assigned_email === member.email;
+                    const assignmentMatch = (taskAssignments[task.id] || []).some(a => a.assignee_email === member.email);
+                    return primaryMatch || assignmentMatch;
+                  });
+                  return {
+                    ...member,
+                    items,
+                  };
+                }).filter(group => group.items.length > 0);
 
                 return (
                   <Collapsible key={project.id} open={isExpanded} onOpenChange={() => toggleExpanded(project.id)}>
@@ -842,7 +866,7 @@ const ProjectsManager = () => {
                                 className={cn(
                                   "flex items-center gap-2 p-2 rounded bg-background",
                                   task.completed && "opacity-60",
-                                  task.urgent && !task.completed && "bg-red-500/10 border border-red-500/30"
+                                  task.urgent && !task.completed && "bg-destructive/10 border border-destructive/30"
                                 )}
                               >
                                 <button onClick={() => toggleTaskCompletion(task)}>
@@ -865,7 +889,7 @@ const ProjectsManager = () => {
                                   }}
                                   title="סמן כדחוף"
                                 >
-                                  <Flame className={cn("h-4 w-4", task.urgent ? "text-red-500 fill-red-500" : "text-muted-foreground/40")} />
+                                    <Flame className={cn("h-4 w-4", task.urgent ? "text-destructive fill-destructive" : "text-muted-foreground/40")} />
                                 </button>
                                 <div className="flex-1 min-w-0">
                                   <span className={cn("block", task.completed && "line-through")}>
@@ -879,20 +903,19 @@ const ProjectsManager = () => {
                                     {task.assigned_email && (() => {
                                       const memberName = (projectMembers[project.id] || []).find(m => m.invited_email === task.assigned_email)?.invited_display_name || task.assigned_email;
                                       const colorIdx = (projectMembers[project.id] || []).findIndex(m => m.invited_email === task.assigned_email);
-                                      const colors = ["bg-blue-500", "bg-emerald-500", "bg-orange-500", "bg-purple-500", "bg-pink-500", "bg-cyan-500", "bg-yellow-500", "bg-red-500"];
                                       return (
                                         <span className="text-[10px] px-1.5 py-0.5 rounded-full bg-primary/10 text-primary flex items-center gap-1">
-                                          <span className={cn("w-2 h-2 rounded-full shrink-0", colors[colorIdx % colors.length])} />
+                                           <span className={cn("w-2 h-2 rounded-full shrink-0", MEMBER_DOT_COLORS[colorIdx % MEMBER_DOT_COLORS.length])} />
                                           {memberName}
+                                           {task.notes && <span className="text-muted-foreground">— {task.notes}</span>}
                                         </span>
                                       );
                                     })()}
                                     {(taskAssignments[task.id] || []).map((a, aIdx) => {
-                                      const colors = ["bg-blue-500", "bg-emerald-500", "bg-orange-500", "bg-purple-500", "bg-pink-500", "bg-cyan-500", "bg-yellow-500", "bg-red-500"];
                                       const memberIdx = (projectMembers[project.id] || []).findIndex(m => m.invited_email === a.assignee_email);
                                       return (
                                         <span key={a.id} className="text-[10px] px-1.5 py-0.5 rounded-full bg-accent/15 text-accent-foreground flex items-center gap-1">
-                                          <span className={cn("w-2 h-2 rounded-full shrink-0", colors[(memberIdx >= 0 ? memberIdx : aIdx + 1) % colors.length])} />
+                                           <span className={cn("w-2 h-2 rounded-full shrink-0", MEMBER_DOT_COLORS[(memberIdx >= 0 ? memberIdx : aIdx + 1) % MEMBER_DOT_COLORS.length])} />
                                           {a.assignee_name || a.assignee_email}
                                           {a.responsibility && <span className="text-muted-foreground">— {a.responsibility}</span>}
                                           <button onClick={() => removeTaskAssignment(a.id, task.id)} className="hover:text-destructive ml-0.5">×</button>
@@ -915,6 +938,48 @@ const ProjectsManager = () => {
                                 >
                                   <Trash2 className="h-3 w-3" />
                                 </Button>
+                              </div>
+                            ))}
+                          </div>
+                        )}
+
+                        {groupedTasks.length > 0 && (
+                          <div className="mt-4 space-y-2 rounded-lg border bg-background/70 p-3">
+                            <p className="text-xs font-semibold text-muted-foreground">חלוקה לפי אחראי</p>
+                            {groupedTasks.map((group, index) => (
+                              <div key={group.id} className="rounded-lg border bg-card p-2">
+                                <div className="mb-2 flex items-center gap-2 text-sm font-medium">
+                                  <span className={cn("h-2.5 w-2.5 rounded-full", MEMBER_DOT_COLORS[index % MEMBER_DOT_COLORS.length])} />
+                                  <span>{group.displayName}</span>
+                                  <span className="text-xs text-muted-foreground">({group.items.length} משימות)</span>
+                                </div>
+                                <div className="space-y-1">
+                                  {group.items.map(task => {
+                                    const directResponsibility = task.assigned_email === group.email ? task.notes : null;
+                                    const extraResponsibilities = (taskAssignments[task.id] || [])
+                                      .filter(a => a.assignee_email === group.email)
+                                      .map(a => a.responsibility)
+                                      .filter(Boolean)
+                                      .join(' • ');
+
+                                    return (
+                                      <div key={`${group.id}-${task.id}`} className="flex items-start justify-between gap-3 rounded-md bg-muted/40 px-2 py-1.5 text-xs">
+                                        <div className="min-w-0">
+                                          <div className="flex items-center gap-2">
+                                            <span className={cn(task.completed && 'line-through text-muted-foreground')}>{task.title}</span>
+                                            {task.urgent && <span className="rounded-full bg-destructive/15 px-1.5 py-0.5 text-[10px] text-destructive">דחוף</span>}
+                                          </div>
+                                          {(directResponsibility || extraResponsibilities) && (
+                                            <div className="mt-1 text-muted-foreground">
+                                              אחריות: {directResponsibility || extraResponsibilities}
+                                            </div>
+                                          )}
+                                        </div>
+                                        <span className="shrink-0 text-[10px] text-muted-foreground">{task.completed ? 'הושלם' : (task.status || 'פתוח')}</span>
+                                      </div>
+                                    );
+                                  })}
+                                </div>
                               </div>
                             ))}
                           </div>

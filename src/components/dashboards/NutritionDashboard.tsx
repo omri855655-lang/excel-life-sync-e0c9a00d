@@ -38,8 +38,8 @@ const NutritionDashboard = () => {
   const [profileOpen, setProfileOpen] = useState(false);
 
   // Persistent AI Chat
-  const { messages: nutritionMessages, setMessages: setNutritionMessages, clearHistory: clearNutrition } = useDashboardChatHistory("nutrition");
-  const { messages: sleepMessages, setMessages: setSleepMessages, clearHistory: clearSleep } = useDashboardChatHistory("sleep");
+  const { messages: nutritionMessages, setMessages: setNutritionMessages, clearHistory: clearNutrition, loaded: nutritionLoaded } = useDashboardChatHistory("nutrition");
+  const { messages: sleepMessages, setMessages: setSleepMessages, clearHistory: clearSleep, loaded: sleepLoaded } = useDashboardChatHistory("sleep");
   const [nutritionChat, setNutritionChat] = useState("");
   const [sleepChat, setSleepChat] = useState("");
   const [aiLoading, setAiLoading] = useState(false);
@@ -113,7 +113,8 @@ const NutritionDashboard = () => {
 
     if (!chat.trim()) return;
     const userMsg = { role: "user", content: chat };
-    setMessages([...messages, userMsg]);
+    const nextMessages = [...messages, userMsg];
+    setMessages(nextMessages);
     setChat("");
     setAiLoading(true);
 
@@ -132,6 +133,7 @@ const NutritionDashboard = () => {
         body: {
           taskDescription: chat,
           taskCategory: type,
+          conversationHistory: nextMessages.slice(-20),
           customPrompt: `${systemPrompt}\n\nהמשתמש שואל: ${chat}`,
         },
       });
@@ -237,7 +239,7 @@ const NutritionDashboard = () => {
               </div>
 
               <div className="border rounded-lg p-3 min-h-[250px] max-h-[500px] overflow-y-auto space-y-3">
-                {nutritionMessages.length === 0 && <p className="text-sm text-muted-foreground text-center py-8">שאל על תזונה, דיאטות, תפריטים ועוד</p>}
+                {!nutritionLoaded ? <p className="text-sm text-muted-foreground text-center py-8">טוען שיחה...</p> : nutritionMessages.length === 0 && <p className="text-sm text-muted-foreground text-center py-8">שאל על תזונה, דיאטות, תפריטים ועוד</p>}
                 {nutritionMessages.map((msg, i) => (
                   <div key={i} className={`flex ${msg.role === "user" ? "justify-end" : "justify-start"}`}>
                     <div className={`max-w-[85%] rounded-lg px-3 py-2 text-sm ${msg.role === "user" ? "bg-primary text-primary-foreground" : "bg-muted"}`}>
@@ -269,7 +271,7 @@ const NutritionDashboard = () => {
               </div>
 
               <div className="border rounded-lg p-3 min-h-[250px] max-h-[500px] overflow-y-auto space-y-3">
-                {sleepMessages.length === 0 && <p className="text-sm text-muted-foreground text-center py-8">שאל על שינה, הרגלים, מדריכים ועוד</p>}
+                {!sleepLoaded ? <p className="text-sm text-muted-foreground text-center py-8">טוען שיחה...</p> : sleepMessages.length === 0 && <p className="text-sm text-muted-foreground text-center py-8">שאל על שינה, הרגלים, מדריכים ועוד</p>}
                 {sleepMessages.map((msg, i) => (
                   <div key={i} className={`flex ${msg.role === "user" ? "justify-end" : "justify-start"}`}>
                     <div className={`max-w-[85%] rounded-lg px-3 py-2 text-sm ${msg.role === "user" ? "bg-primary text-primary-foreground" : "bg-muted"}`}>

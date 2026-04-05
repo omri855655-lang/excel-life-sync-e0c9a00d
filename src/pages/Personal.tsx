@@ -352,21 +352,6 @@ const Personal = () => {
   const canMoveActiveLeft = canMoveActive("left");
   const canMoveActiveRight = canMoveActive("right");
 
-  if (loading) {
-    return (
-      <div className="min-h-screen flex items-center justify-center bg-background">
-        <div className="animate-pulse text-muted-foreground">{t("loading")}</div>
-      </div>
-    );
-  }
-
-  if (!user) {
-    return null;
-  }
-
-  const showOnboarding = !localStorage.getItem("tabro_onboarded");
-
-  // Build flat tab items for sidebar/compact layouts
   const flatTabItems = useMemo(() => {
     const items: { id: string; icon: React.ComponentType<{ className?: string }>; label: string }[] = [];
     for (const tabId of allTabIds) {
@@ -396,6 +381,20 @@ const Personal = () => {
     }
     return items;
   }, [allTabIds, isTabVisible, sharedSheets, customBoards, t]);
+
+  if (loading) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-background">
+        <div className="animate-pulse text-muted-foreground">{t("loading")}</div>
+      </div>
+    );
+  }
+
+  if (!user) {
+    return null;
+  }
+
+  const showOnboarding = !localStorage.getItem("tabro_onboarded");
 
   // Render the active content
   const renderContent = () => {
@@ -521,7 +520,7 @@ const Personal = () => {
     return (
       <>
         {showOnboarding && <OnboardingWizard onComplete={() => window.location.reload()} />}
-        <BottomNavLayout tabs={flatTabItems} activeTab={activeTab} onTabChange={setActiveTab} dir={dir} header={<>{headerLeft}{headerControls}</>}>
+        <BottomNavLayout tabs={flatTabItems} activeTab={activeTab} onTabChange={setActiveTab} onReorder={(ids) => { setTabOrder(ids); localStorage.setItem("tab-order", JSON.stringify(ids)); }} dir={dir} header={<>{headerLeft}{headerControls}</>}>
           <div className="min-h-full pb-20">{renderContent()}</div>
         </BottomNavLayout>
         <FloatingMusicMini visible={activeTab !== 'deeply'} onGoToDeeply={() => setActiveTab('deeply')} />

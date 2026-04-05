@@ -31,7 +31,7 @@ export function FloatingMusicMini({ visible, onGoToDeeply }: FloatingMusicMiniPr
   const displayName = primaryAudio?.name || "מנגן";
 
   return (
-    <div className="fixed bottom-4 right-4 z-[9999] animate-in slide-in-from-bottom-2 fade-in duration-300">
+    <div className="fixed bottom-24 right-4 z-[9999] animate-in slide-in-from-bottom-2 fade-in duration-300 md:bottom-4">
       <div
         className="flex items-center gap-2 rounded-xl border bg-card text-card-foreground shadow-lg px-3 py-2 cursor-pointer hover:scale-105 transition-transform relative group"
         onClick={onGoToDeeply}
