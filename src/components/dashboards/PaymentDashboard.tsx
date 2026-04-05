@@ -569,7 +569,12 @@ ${context}
             </div>
           )}
 
-          {payments.length === 0 && <p className="text-center text-muted-foreground py-8">אין תשלומים עדיין. הוסף הכנסה או הוצאה כדי להתחיל!</p>}
+          {payments.length === 0 && (
+            <div className="text-center py-8 space-y-3">
+              <p className="text-muted-foreground">אין תשלומים עדיין. הוסף הכנסה או הוצאה כדי להתחיל!</p>
+              <SampleDataImport type="payments" />
+            </div>
+          )}
         </TabsContent>
 
         <TabsContent value="add">
