@@ -9,6 +9,7 @@ import { PieChart, Pie, Cell, ResponsiveContainer, BarChart, Bar, XAxis, YAxis, 
 import TasksDashboards from '@/components/dashboard/TasksDashboards';
 import ProductivityDashboard from '@/components/dashboard/ProductivityDashboard';
 import CheckedItemsArchive from '@/components/CheckedItemsArchive';
+import SampleDataImport from '@/components/SampleDataImport';
 
 interface Stats {
   totalBooks: number;
