@@ -390,6 +390,33 @@ export type Database = {
         }
         Relationships: []
       }
+      dashboard_chat_history: {
+        Row: {
+          created_at: string
+          dashboard_key: string
+          id: string
+          messages: Json
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          dashboard_key: string
+          id?: string
+          messages?: Json
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          dashboard_key?: string
+          id?: string
+          messages?: Json
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       dream_goals: {
         Row: {
           ai_roadmap: Json | null
