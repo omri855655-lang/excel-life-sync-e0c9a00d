@@ -38,9 +38,9 @@ const NutritionDashboard = () => {
   const [profileLoaded, setProfileLoaded] = useState(false);
   const [profileOpen, setProfileOpen] = useState(false);
 
-  // Persistent AI Chat
-  const { messages: nutritionMessages, setMessages: setNutritionMessages, clearHistory: clearNutrition, loaded: nutritionLoaded } = useDashboardChatHistory("nutrition");
-  const { messages: sleepMessages, setMessages: setSleepMessages, clearHistory: clearSleep, loaded: sleepLoaded } = useDashboardChatHistory("sleep");
+  // Persistent AI Chat with archive
+  const nutritionChat = useDashboardChatHistory("nutrition");
+  const sleepChatHistory = useDashboardChatHistory("sleep");
   const [nutritionChat, setNutritionChat] = useState("");
   const [sleepChat, setSleepChat] = useState("");
   const [aiLoading, setAiLoading] = useState(false);
