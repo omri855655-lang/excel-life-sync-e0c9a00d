@@ -427,6 +427,17 @@ const TaskSpreadsheetDb = ({ title, taskType, readOnly = false, showYearSelector
     link.click();
   };
 
+  const handleImportTasks = async (rows: Record<string, string>[]) => {
+    if (!user) return;
+    for (const row of rows) {
+      const desc = row['תיאור'] || row['משימה'] || row['description'] || row['title'] || Object.values(row)[0] || '';
+      if (!desc.trim()) continue;
+      await addTask(desc.trim(), effectiveSheet ?? undefined);
+      // Update extra fields if available
+    }
+    refetch();
+  };
+
   const completedCount = tasks.filter((t) => t.status === "בוצע").length;
   const pendingCount = tasks.filter((t) => t.status === "טרם החל").length;
   const inProgressCount = tasks.filter((t) => t.status === "בטיפול").length;
