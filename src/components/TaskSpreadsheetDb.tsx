@@ -968,6 +968,28 @@ const TaskSpreadsheetDb = ({ title, taskType, readOnly = false, showYearSelector
             ייצוא
           </Button>
           {!readOnly && <FileImport onImport={handleImportTasks} label="ייבוא משימות" />}
+          {/* View mode buttons */}
+          <div className="flex items-center border rounded-md overflow-hidden h-8">
+            {([
+              { mode: "table" as DashboardViewMode, icon: Grid3X3, label: "טבלה" },
+              { mode: "list" as DashboardViewMode, icon: ListIcon, label: "רשימה" },
+              { mode: "cards" as DashboardViewMode, icon: LayoutGrid, label: "כרטיסים" },
+              { mode: "kanban" as DashboardViewMode, icon: CreditCard, label: "קנבן" },
+              { mode: "compact" as DashboardViewMode, icon: AlignJustify, label: "קומפקט" },
+            ]).map(({ mode, icon: Icon, label }) => (
+              <button
+                key={mode}
+                onClick={() => setDashViewMode(mode)}
+                className={cn(
+                  "px-2 h-full flex items-center gap-1 text-xs transition-colors",
+                  dashViewMode === mode ? "bg-primary text-primary-foreground" : "hover:bg-muted"
+                )}
+                title={label}
+              >
+                <Icon className="h-3.5 w-3.5" />
+              </button>
+            ))}
+          </div>
           {/* Dashboard display controls */}
           <Popover>
             <PopoverTrigger asChild>
