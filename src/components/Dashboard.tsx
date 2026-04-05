@@ -119,14 +119,17 @@ const Dashboard = () => {
 
   return (
     <div className="p-4 space-y-6">
-      {/* Hebrew & Gregorian Date */}
+      {/* Date & Time */}
       <Card className="bg-gradient-to-br from-primary/5 to-accent/5 border-primary/20">
         <CardContent className="py-4 text-center">
-          <div className="flex items-center justify-center gap-2 mb-1">
-            <CalendarDays className="h-5 w-5 text-primary" />
-            <span className="text-lg font-bold text-foreground">{hebrewDate.display}</span>
-          </div>
+          {showHebrewDate && (
+            <div className="flex items-center justify-center gap-2 mb-1">
+              <CalendarDays className="h-5 w-5 text-primary" />
+              <span className="text-lg font-bold text-foreground">{hebrewDate.display}</span>
+            </div>
+          )}
           <p className="text-sm text-muted-foreground">{gregorianDate}</p>
+          <p className="text-xs text-muted-foreground mt-1">{timeStr}</p>
         </CardContent>
       </Card>
 
