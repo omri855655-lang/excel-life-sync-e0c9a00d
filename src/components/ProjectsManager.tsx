@@ -866,7 +866,7 @@ const ProjectsManager = () => {
                                 className={cn(
                                   "flex items-center gap-2 p-2 rounded bg-background",
                                   task.completed && "opacity-60",
-                                  task.urgent && !task.completed && "bg-red-500/10 border border-red-500/30"
+                                  task.urgent && !task.completed && "bg-destructive/10 border border-destructive/30"
                                 )}
                               >
                                 <button onClick={() => toggleTaskCompletion(task)}>
@@ -889,7 +889,7 @@ const ProjectsManager = () => {
                                   }}
                                   title="סמן כדחוף"
                                 >
-                                  <Flame className={cn("h-4 w-4", task.urgent ? "text-red-500 fill-red-500" : "text-muted-foreground/40")} />
+                                    <Flame className={cn("h-4 w-4", task.urgent ? "text-destructive fill-destructive" : "text-muted-foreground/40")} />
                                 </button>
                                 <div className="flex-1 min-w-0">
                                   <span className={cn("block", task.completed && "line-through")}>
