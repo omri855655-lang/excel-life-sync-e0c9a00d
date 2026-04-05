@@ -635,6 +635,7 @@ const ProjectsManager = () => {
         newSet.delete(projectId);
       } else {
         newSet.add(projectId);
+        loadMilestones(projectId);
       }
       return newSet;
     });
