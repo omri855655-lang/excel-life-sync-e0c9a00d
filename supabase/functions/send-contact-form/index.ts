@@ -52,7 +52,7 @@ Deno.serve(async (req) => {
         'Authorization': `Bearer ${resendKey}`,
       },
       body: JSON.stringify({
-        from: 'Tabro Contact <onboarding@resend.dev>',
+        from: 'Tabro <info@tabro.org>',
         to: ADMIN_EMAILS,
         subject: `[פנייה] ${categoryLabels[category] || ''} - ${subject || 'ללא נושא'}`,
         html: emailBody,
