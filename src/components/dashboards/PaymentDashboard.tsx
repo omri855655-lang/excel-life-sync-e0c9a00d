@@ -16,6 +16,7 @@ import SampleDataImport from "@/components/SampleDataImport";
 import { toast } from "sonner";
 import { format } from "date-fns";
 import { useDashboardChatHistory } from "@/hooks/useDashboardChatHistory";
+import AiChatPanel from "@/components/AiChatPanel";
 
 interface Payment {
   id: string;
@@ -86,7 +87,7 @@ const PaymentDashboard = () => {
   const [newRecurring, setNewRecurring] = useState(false);
   const [activeTab, setActiveTab] = useState("overview");
   const [aiChat, setAiChat] = useState("");
-  const { messages: aiMessages, setMessages: setAiMessages, clearHistory: clearAiHistory } = useDashboardChatHistory("payments");
+  const aiChatHistory = useDashboardChatHistory("payments");
   const [aiLoading, setAiLoading] = useState(false);
   const [expandedGuide, setExpandedGuide] = useState<string | null>(null);
   const [selectedHistoryMonth, setSelectedHistoryMonth] = useState("");
@@ -207,11 +208,10 @@ const PaymentDashboard = () => {
     return `${months[parseInt(m) - 1]} ${y}`;
   };
 
-  const sendAiMessage = async () => {
-    if (!aiChat.trim()) return;
-    const userMsg = { role: "user", content: aiChat };
-    setAiMessages(prev => [...prev, userMsg]);
-    setAiChat("");
+  const sendAiMessage = async (chatInput: string) => {
+    if (!chatInput.trim()) return;
+    const userMsg = { role: "user", content: chatInput };
+    aiChatHistory.setMessages(prev => [...prev, userMsg]);
     setAiLoading(true);
 
     try {
@@ -229,7 +229,8 @@ const PaymentDashboard = () => {
 
       const { data, error } = await supabase.functions.invoke("task-ai-helper", {
         body: {
-          taskDescription: aiChat,
+          taskDescription: chatInput,
+          conversationHistory: [...aiChatHistory.messages, userMsg].slice(-20),
           customPrompt: `אתה יועץ פיננסי חכם ומקצועי. הנה המצב הפיננסי המפורט של המשתמש:
 ${context}
 
@@ -244,51 +245,19 @@ ${context}
 
 השתמש באימוג'ים. דבר בעברית. ציין שזו המלצה בלבד ולא ייעוץ מקצועי.
 
-המשתמש שואל: ${aiChat}`,
+המשתמש שואל: ${chatInput}`,
         },
       });
       if (error) throw error;
-      setAiMessages(prev => [...prev, { role: "assistant", content: data?.suggestion || "אין תשובה" }]);
+      aiChatHistory.setMessages(prev => [...prev, { role: "assistant", content: data?.suggestion || "אין תשובה" }]);
     } catch {
-      setAiMessages(prev => [...prev, { role: "assistant", content: "שגיאה בקבלת תשובה" }]);
+      aiChatHistory.setMessages(prev => [...prev, { role: "assistant", content: "שגיאה בקבלת תשובה" }]);
     }
     setAiLoading(false);
   };
 
-  const getMonthlyInsight = async () => {
-    setAiLoading(true);
-    const prompt = "תן לי סיכום חודשי מפורט: מה הייתי צריך לשפר, מה עשיתי טוב, ומה הצעדים הבאים שלי. תתייחס להוצאות הגדולות ביותר ותציע איך לחסוך.";
-    setAiMessages(prev => [...prev, { role: "user", content: prompt }]);
-    setAiChat(prompt);
-    // Trigger sendAiMessage logic
-    const userMsg = { role: "user", content: prompt };
-    setAiMessages(prev => {
-      // Remove last duplicate
-      const filtered = prev.filter(m => m.content !== prompt);
-      return [...filtered, userMsg];
-    });
-    
-    try {
-      const catBreakdown = categoryBreakdown.map(([cat, amt]) => `${cat}: ₪${amt.toLocaleString()}`).join(", ");
-      const { data, error } = await supabase.functions.invoke("task-ai-helper", {
-        body: {
-          taskDescription: prompt,
-          customPrompt: `אתה יועץ פיננסי. נתח את החודש:
-הכנסות: ₪${totalIncome.toLocaleString()}, הוצאות: ₪${totalExpenses.toLocaleString()}, מאזן: ₪${balance.toLocaleString()}
-קבועות: ₪${fixedExpenses.toLocaleString()}, משתנות: ₪${variableExpenses.toLocaleString()}
-קטגוריות: ${catBreakdown}
-50/30/20: צרכים ${needsPercent}%, רצונות ${wantsPercent}%, חיסכון ${savingsPercent}%
-
-תן סיכום חודשי: ✅ מה טוב, ⚠️ מה צריך שיפור, 💡 צעדים הבאים. השתמש באימוג'ים. עברית. ציין שזו המלצה בלבד.`,
-        },
-      });
-      if (error) throw error;
-      setAiMessages(prev => [...prev, { role: "assistant", content: data?.suggestion || "אין תשובה" }]);
-    } catch {
-      setAiMessages(prev => [...prev, { role: "assistant", content: "שגיאה" }]);
-    }
-    setAiChat("");
-    setAiLoading(false);
+  const getMonthlyInsight = () => {
+    sendAiMessage("תן לי סיכום חודשי מפורט: מה הייתי צריך לשפר, מה עשיתי טוב, ומה הצעדים הבאים שלי. תתייחס להוצאות הגדולות ביותר ותציע איך לחסוך.");
   };
 
   if (loading) return <div className="p-6 text-center text-muted-foreground">טוען...</div>;
@@ -703,37 +672,23 @@ ${context}
         </TabsContent>
 
         <TabsContent value="ai">
-          <Card>
-            <CardHeader className="py-3">
-              <div className="flex items-center justify-between">
-                <CardTitle className="text-base flex items-center gap-2"><Sparkles className="h-5 w-5" />יועץ פיננסי AI</CardTitle>
-                <div className="flex gap-1">
-                  <Button size="sm" variant="outline" onClick={getMonthlyInsight} disabled={aiLoading} className="text-xs gap-1">
-                    <BarChart3 className="h-3 w-3" />סיכום חודשי
-                  </Button>
-                  {aiMessages.length > 0 && <Button size="sm" variant="ghost" onClick={clearAiHistory} className="text-xs">נקה</Button>}
-                </div>
-              </div>
-            </CardHeader>
-            <CardContent className="space-y-3">
-              <p className="text-sm text-muted-foreground">שאל על תקציב, חיסכון, השקעות, או בקש סיכום חודשי. ⚠️ המלצה בלבד, לא ייעוץ מקצועי.</p>
-              <div className="border rounded-lg p-3 min-h-[200px] max-h-[400px] overflow-y-auto space-y-3">
-                {aiMessages.length === 0 && <p className="text-sm text-muted-foreground text-center py-8">לחץ "סיכום חודשי" לקבל ניתוח מלא, או שאל שאלה...</p>}
-                {aiMessages.map((msg, i) => (
-                  <div key={i} className={`flex ${msg.role === "user" ? "justify-end" : "justify-start"}`}>
-                    <div className={`max-w-[85%] rounded-lg px-3 py-2 text-sm ${msg.role === "user" ? "bg-primary text-primary-foreground" : "bg-muted"}`}>
-                      <p className="whitespace-pre-wrap">{msg.content}</p>
-                    </div>
-                  </div>
-                ))}
-                {aiLoading && <div className="text-sm text-muted-foreground animate-pulse">מנתח את הנתונים שלך...</div>}
-              </div>
-              <div className="flex gap-2">
-                <Input placeholder="שאל שאלה על הכסף שלך..." value={aiChat} onChange={e => setAiChat(e.target.value)} onKeyDown={e => e.key === "Enter" && sendAiMessage()} />
-                <Button onClick={sendAiMessage} disabled={aiLoading}><MessageCircle className="h-4 w-4" /></Button>
-              </div>
-            </CardContent>
-          </Card>
+          <AiChatPanel
+            title="יועץ פיננסי AI"
+            messages={aiChatHistory.messages}
+            loaded={aiChatHistory.loaded}
+            aiLoading={aiLoading}
+            archive={aiChatHistory.archive}
+            onSend={sendAiMessage}
+            onClearAndArchive={aiChatHistory.clearAndArchive}
+            onLoadConversation={aiChatHistory.loadConversation}
+            placeholder="שאל שאלה על הכסף שלך..."
+            emptyText="לחץ 'סיכום חודשי' לקבל ניתוח מלא, או שאל שאלה..."
+            extraActions={
+              <Button size="sm" variant="outline" onClick={getMonthlyInsight} disabled={aiLoading} className="text-xs gap-1 h-7">
+                <BarChart3 className="h-3 w-3" />סיכום חודשי
+              </Button>
+            }
+          />
         </TabsContent>
       </Tabs>
     </div>

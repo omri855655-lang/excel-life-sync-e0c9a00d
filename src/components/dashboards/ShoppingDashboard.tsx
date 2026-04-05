@@ -13,6 +13,7 @@ import { toast } from "sonner";
 import { useDashboardChatHistory } from "@/hooks/useDashboardChatHistory";
 import AutocompleteInput from "@/components/AutocompleteInput";
 import ShoppingShareDialog from "@/components/dashboards/ShoppingShareDialog";
+import AiChatPanel from "@/components/AiChatPanel";
 
 interface ShoppingItem {
   id: string;
@@ -162,7 +163,7 @@ const ShoppingDashboard = () => {
   const [newPrice, setNewPrice] = useState("");
   const [activeTab, setActiveTab] = useState("shopping");
   const [aiChat, setAiChat] = useState("");
-  const { messages: aiMessages, setMessages: setAiMessages, clearHistory: clearAiHistory } = useDashboardChatHistory("shopping");
+  const aiChatHistory = useDashboardChatHistory("shopping");
   const [aiLoading, setAiLoading] = useState(false);
   const [shareOpen, setShareOpen] = useState(false);
   const [shareSheetName, setShareSheetName] = useState("ראשי");
@@ -375,12 +376,10 @@ const ShoppingDashboard = () => {
     toast.success(`שוחזרו ${groupItems.length} פריטים לרשימה`);
   };
 
-  const sendAiMessage = async () => {
-    if (!aiChat.trim()) return;
-    const userMsg = { role: "user", content: aiChat };
-    const newMessages = [...aiMessages, userMsg];
-    setAiMessages(newMessages);
-    setAiChat("");
+  const sendAiMessage = async (chatInput: string) => {
+    if (!chatInput.trim()) return;
+    const userMsg = { role: "user", content: chatInput };
+    aiChatHistory.setMessages(prev => [...prev, userMsg]);
     setAiLoading(true);
     try {
       const dreamItems = items.filter(i => i.is_dream);
@@ -389,15 +388,16 @@ const ShoppingDashboard = () => {
       const context = `רשימת קניות: ${shoppingItems.map(i => `${i.title} (${i.status})`).join(", ")}. רשימת סופר: ${superItems.map(i => `${i.title} (${i.status}${i.category ? ", " + i.category : ""})`).join(", ")}. רשימת חלומות: ${dreamItems.map(i => `${i.title} (מחיר: ${i.price || "לא ידוע"})`).join(", ")}.`;
       const { data, error } = await supabase.functions.invoke("task-ai-helper", {
         body: {
-          taskDescription: aiChat,
+          taskDescription: chatInput,
           taskCategory: "shopping",
-          customPrompt: `אתה יועץ קניות חכם. עזור למשתמש עם רשימת הקניות, הסופר והחלומות שלו. ${context}\n\nהמשתמש שואל: ${aiChat}`,
+          conversationHistory: [...aiChatHistory.messages, userMsg].slice(-20),
+          customPrompt: `אתה יועץ קניות חכם. עזור למשתמש עם רשימת הקניות, הסופר והחלומות שלו. ${context}\n\nהמשתמש שואל: ${chatInput}`,
         },
       });
       if (error) throw error;
-      setAiMessages(prev => [...prev, { role: "assistant", content: data?.suggestion || "אין תשובה" }]);
+      aiChatHistory.setMessages(prev => [...prev, { role: "assistant", content: data?.suggestion || "אין תשובה" }]);
     } catch {
-      setAiMessages(prev => [...prev, { role: "assistant", content: "שגיאה בתקשורת עם AI" }]);
+      aiChatHistory.setMessages(prev => [...prev, { role: "assistant", content: "שגיאה בתקשורת עם AI" }]);
     }
     setAiLoading(false);
   };
@@ -863,27 +863,18 @@ const ShoppingDashboard = () => {
 
         {/* AI */}
         <TabsContent value="ai" className="space-y-4">
-          <Card>
-            <CardHeader className="py-3"><CardTitle className="text-base flex items-center gap-2 justify-between"><div className="flex items-center gap-2"><Sparkles className="h-5 w-5 text-primary" />יועץ קניות AI</div>{aiMessages.length > 0 && <Button variant="ghost" size="sm" className="text-xs h-6" onClick={clearAiHistory}><Trash2 className="h-3 w-3 mr-1" />נקה</Button>}</CardTitle></CardHeader>
-            <CardContent className="space-y-3">
-              <p className="text-sm text-muted-foreground">שאל אותי על תקציב, חלופות זולות, איפה הכי משתלם, או איך לחסוך.</p>
-              <div className="border rounded-lg p-3 min-h-[200px] max-h-[400px] overflow-y-auto space-y-3">
-                {aiMessages.length === 0 && <p className="text-sm text-muted-foreground text-center py-8">התחל שיחה...</p>}
-                {aiMessages.map((msg, i) => (
-                  <div key={i} className={`flex ${msg.role === "user" ? "justify-end" : "justify-start"}`}>
-                    <div className={`max-w-[80%] rounded-lg px-3 py-2 text-sm ${msg.role === "user" ? "bg-primary text-primary-foreground" : "bg-muted"}`}>
-                      <p className="whitespace-pre-wrap">{msg.content}</p>
-                    </div>
-                  </div>
-                ))}
-                {aiLoading && <div className="text-sm text-muted-foreground animate-pulse">חושב...</div>}
-              </div>
-              <div className="flex gap-2">
-                <Input placeholder="שאל שאלה..." value={aiChat} onChange={e => setAiChat(e.target.value)} onKeyDown={e => e.key === "Enter" && sendAiMessage()} />
-                <Button onClick={sendAiMessage} disabled={aiLoading}><MessageCircle className="h-4 w-4" /></Button>
-              </div>
-            </CardContent>
-          </Card>
+          <AiChatPanel
+            title="יועץ קניות AI"
+            messages={aiChatHistory.messages}
+            loaded={aiChatHistory.loaded}
+            aiLoading={aiLoading}
+            archive={aiChatHistory.archive}
+            onSend={sendAiMessage}
+            onClearAndArchive={aiChatHistory.clearAndArchive}
+            onLoadConversation={aiChatHistory.loadConversation}
+            placeholder="שאל שאלה..."
+            emptyText="שאל על תקציב, חלופות זולות, איפה הכי משתלם..."
+          />
         </TabsContent>
       </Tabs>
 
