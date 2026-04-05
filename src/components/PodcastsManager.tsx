@@ -207,113 +207,165 @@ const PodcastsManager = () => {
         />
       </div>
 
-      {/* Podcasts table with scroll */}
+      {/* Content area - renders based on viewMode */}
       <div className="flex-1 min-h-0 border rounded-lg overflow-hidden">
         <div className="h-full overflow-auto">
-          <Table>
-          <TableHeader>
-            <TableRow>
-              <TableHead className="text-right">שם הפודקאסט</TableHead>
-              <TableHead className="text-right">מגיש/ה</TableHead>
-              <TableHead className="text-right">סטטוס</TableHead>
-              <TableHead className="text-right">הערות</TableHead>
-              <TableHead className="text-right">שינוי סטטוס</TableHead>
-              <TableHead className="text-right">נוצר</TableHead>
-              <TableHead className="text-right">עודכן</TableHead>
-              <TableHead className="w-[50px]"></TableHead>
-            </TableRow>
-          </TableHeader>
-          <TableBody>
-            {filteredPodcasts.length === 0 ? (
-              <TableRow>
-                <TableCell colSpan={8} className="text-center text-muted-foreground">
-                  {searchTerm ? 'לא נמצאו תוצאות' : 'אין פודקאסטים עדיין'}
-                </TableCell>
-              </TableRow>
-            ) : (
-              filteredPodcasts.map((podcast) => (
-                <TableRow key={podcast.id}>
-                  <TableCell className="font-medium">
-                    <Input
-                      defaultValue={podcast.title}
-                      className="border-0 bg-transparent p-0 h-auto font-medium focus-visible:ring-1"
-                      dir="rtl"
-                      onBlur={(e) => {
-                        const val = e.target.value.trim();
-                        if (val && val !== podcast.title) {
-                          supabase.from('podcasts').update({ title: val }).eq('id', podcast.id).then(() => {
-                            setPodcasts(prev => prev.map(p => p.id === podcast.id ? { ...p, title: val } : p));
-                          });
-                        }
-                      }}
-                      onKeyDown={(e) => { if (e.key === 'Enter') (e.target as HTMLInputElement).blur(); }}
-                    />
-                  </TableCell>
-                  <TableCell>
-                    <Input
-                      defaultValue={podcast.host || ''}
-                      placeholder="-"
-                      className="border-0 bg-transparent p-0 h-auto focus-visible:ring-1"
-                      dir="rtl"
-                      onBlur={(e) => {
-                        const val = e.target.value.trim() || null;
-                        if (val !== (podcast.host || null)) {
-                          supabase.from('podcasts').update({ host: val }).eq('id', podcast.id).then(() => {
-                            setPodcasts(prev => prev.map(p => p.id === podcast.id ? { ...p, host: val } : p));
-                          });
-                        }
-                      }}
-                      onKeyDown={(e) => { if (e.key === 'Enter') (e.target as HTMLInputElement).blur(); }}
-                    />
-                  </TableCell>
-                  <TableCell>
-                    <Select
-                      value={podcast.status || 'להאזין'}
-                      onValueChange={(value) => updatePodcastStatus(podcast.id, value)}
-                    >
-                      <SelectTrigger className="w-[120px]">
-                        <SelectValue />
-                      </SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="להאזין">להאזין</SelectItem>
-                        <SelectItem value="בהאזנה">בהאזנה</SelectItem>
-                        <SelectItem value="נשמע">נשמע</SelectItem>
-                      </SelectContent>
-                    </Select>
-                  </TableCell>
-                  <TableCell>
-                    <InlineNotesTextarea
-                      placeholder="הוסף הערות..."
-                      initialValue={podcast.notes}
-                      onCommit={(val) => updatePodcastNotes(podcast.id, val)}
-                      className="min-w-[150px] text-right min-h-[60px] w-full resize-y"
-                      dir="rtl"
-                    />
-                  </TableCell>
-                  <TableCell className="text-muted-foreground text-xs whitespace-nowrap">
-                    {podcast.status_changed_at ? formatDateTime(podcast.status_changed_at) : '-'}
-                  </TableCell>
-                  <TableCell className="text-muted-foreground text-xs whitespace-nowrap">
-                    {formatDateTime(podcast.created_at)}
-                  </TableCell>
-                  <TableCell className="text-muted-foreground text-xs whitespace-nowrap">
-                    {formatDateTime(podcast.updated_at)}
-                  </TableCell>
-                  <TableCell>
-                    <Button
-                      variant="ghost"
-                      size="icon"
-                      onClick={() => deletePodcast(podcast.id)}
-                      className="text-destructive hover:text-destructive"
-                    >
-                      <Trash2 className="h-4 w-4" />
-                    </Button>
-                  </TableCell>
+          {viewMode === 'list' ? (
+            <ListView
+              items={filteredPodcasts.map(p => ({
+                id: p.id,
+                title: p.title,
+                subtitle: p.host,
+                status: p.status || 'להאזין',
+                statusOptions: [{ value: 'להאזין', label: 'להאזין' }, { value: 'בהאזנה', label: 'בהאזנה' }, { value: 'נשמע', label: 'נשמע' }],
+                notes: p.notes,
+                meta: formatDateTime(p.updated_at),
+              }))}
+              emptyText={searchTerm ? 'לא נמצאו תוצאות' : 'אין פודקאסטים עדיין'}
+              onStatusChange={updatePodcastStatus}
+              onDelete={deletePodcast}
+            />
+          ) : viewMode === 'cards' ? (
+            <CardsView
+              items={filteredPodcasts.map(p => ({
+                id: p.id,
+                title: p.title,
+                subtitle: p.host,
+                status: p.status || 'להאזין',
+                statusOptions: [{ value: 'להאזין', label: 'להאזין' }, { value: 'בהאזנה', label: 'בהאזנה' }, { value: 'נשמע', label: 'נשמע' }],
+                notes: p.notes,
+                meta: formatDateTime(p.updated_at),
+              }))}
+              emptyText={searchTerm ? 'לא נמצאו תוצאות' : 'אין פודקאסטים עדיין'}
+              onStatusChange={updatePodcastStatus}
+              onDelete={deletePodcast}
+            />
+          ) : viewMode === 'kanban' ? (
+            <KanbanView
+              items={filteredPodcasts.map(p => ({
+                id: p.id,
+                title: p.title,
+                subtitle: p.host,
+                status: p.status || 'להאזין',
+                notes: p.notes,
+              }))}
+              columns={[
+                { value: 'להאזין', label: 'להאזין', color: 'bg-orange-500/15' },
+                { value: 'בהאזנה', label: 'בהאזנה', color: 'bg-blue-500/15' },
+                { value: 'נשמע', label: 'נשמע', color: 'bg-green-500/15' },
+              ]}
+              emptyText={searchTerm ? 'לא נמצאו תוצאות' : 'אין פודקאסטים עדיין'}
+              onStatusChange={updatePodcastStatus}
+              onDelete={deletePodcast}
+            />
+          ) : viewMode === 'compact' ? (
+            <CompactView
+              items={filteredPodcasts.map(p => ({
+                id: p.id,
+                title: p.title,
+                status: p.status || 'להאזין',
+                subtitle: p.host,
+              }))}
+              emptyText={searchTerm ? 'לא נמצאו תוצאות' : 'אין פודקאסטים עדיין'}
+              onDelete={deletePodcast}
+            />
+          ) : (
+            /* Default: Table view */
+            <Table>
+              <TableHeader>
+                <TableRow>
+                  <TableHead className="text-right">שם הפודקאסט</TableHead>
+                  <TableHead className="text-right">מגיש/ה</TableHead>
+                  <TableHead className="text-right">סטטוס</TableHead>
+                  <TableHead className="text-right">הערות</TableHead>
+                  <TableHead className="text-right">שינוי סטטוס</TableHead>
+                  <TableHead className="text-right">נוצר</TableHead>
+                  <TableHead className="text-right">עודכן</TableHead>
+                  <TableHead className="w-[50px]"></TableHead>
                 </TableRow>
-              ))
-            )}
-          </TableBody>
-          </Table>
+              </TableHeader>
+              <TableBody>
+                {filteredPodcasts.length === 0 ? (
+                  <TableRow>
+                    <TableCell colSpan={8} className="text-center text-muted-foreground">
+                      {searchTerm ? 'לא נמצאו תוצאות' : 'אין פודקאסטים עדיין'}
+                    </TableCell>
+                  </TableRow>
+                ) : (
+                  filteredPodcasts.map((podcast) => (
+                    <TableRow key={podcast.id}>
+                      <TableCell className="font-medium">
+                        <Input
+                          defaultValue={podcast.title}
+                          className="border-0 bg-transparent p-0 h-auto font-medium focus-visible:ring-1"
+                          dir="rtl"
+                          onBlur={(e) => {
+                            const val = e.target.value.trim();
+                            if (val && val !== podcast.title) {
+                              supabase.from('podcasts').update({ title: val }).eq('id', podcast.id).then(() => {
+                                setPodcasts(prev => prev.map(p => p.id === podcast.id ? { ...p, title: val } : p));
+                              });
+                            }
+                          }}
+                          onKeyDown={(e) => { if (e.key === 'Enter') (e.target as HTMLInputElement).blur(); }}
+                        />
+                      </TableCell>
+                      <TableCell>
+                        <Input
+                          defaultValue={podcast.host || ''}
+                          placeholder="-"
+                          className="border-0 bg-transparent p-0 h-auto focus-visible:ring-1"
+                          dir="rtl"
+                          onBlur={(e) => {
+                            const val = e.target.value.trim() || null;
+                            if (val !== (podcast.host || null)) {
+                              supabase.from('podcasts').update({ host: val }).eq('id', podcast.id).then(() => {
+                                setPodcasts(prev => prev.map(p => p.id === podcast.id ? { ...p, host: val } : p));
+                              });
+                            }
+                          }}
+                          onKeyDown={(e) => { if (e.key === 'Enter') (e.target as HTMLInputElement).blur(); }}
+                        />
+                      </TableCell>
+                      <TableCell>
+                        <Select value={podcast.status || 'להאזין'} onValueChange={(value) => updatePodcastStatus(podcast.id, value)}>
+                          <SelectTrigger className="w-[120px]"><SelectValue /></SelectTrigger>
+                          <SelectContent>
+                            <SelectItem value="להאזין">להאזין</SelectItem>
+                            <SelectItem value="בהאזנה">בהאזנה</SelectItem>
+                            <SelectItem value="נשמע">נשמע</SelectItem>
+                          </SelectContent>
+                        </Select>
+                      </TableCell>
+                      <TableCell>
+                        <InlineNotesTextarea
+                          placeholder="הוסף הערות..."
+                          initialValue={podcast.notes}
+                          onCommit={(val) => updatePodcastNotes(podcast.id, val)}
+                          className="min-w-[150px] text-right min-h-[60px] w-full resize-y"
+                          dir="rtl"
+                        />
+                      </TableCell>
+                      <TableCell className="text-muted-foreground text-xs whitespace-nowrap">
+                        {podcast.status_changed_at ? formatDateTime(podcast.status_changed_at) : '-'}
+                      </TableCell>
+                      <TableCell className="text-muted-foreground text-xs whitespace-nowrap">
+                        {formatDateTime(podcast.created_at)}
+                      </TableCell>
+                      <TableCell className="text-muted-foreground text-xs whitespace-nowrap">
+                        {formatDateTime(podcast.updated_at)}
+                      </TableCell>
+                      <TableCell>
+                        <Button variant="ghost" size="icon" onClick={() => deletePodcast(podcast.id)} className="text-destructive hover:text-destructive">
+                          <Trash2 className="h-4 w-4" />
+                        </Button>
+                      </TableCell>
+                    </TableRow>
+                  ))
+                )}
+              </TableBody>
+            </Table>
+          )}
         </div>
       </div>
     </div>
