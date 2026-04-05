@@ -39,10 +39,10 @@ const NutritionDashboard = () => {
   const [profileOpen, setProfileOpen] = useState(false);
 
   // Persistent AI Chat with archive
-  const nutritionChat = useDashboardChatHistory("nutrition");
+  const nutritionChatHistory = useDashboardChatHistory("nutrition");
   const sleepChatHistory = useDashboardChatHistory("sleep");
-  const [nutritionChat, setNutritionChat] = useState("");
-  const [sleepChat, setSleepChat] = useState("");
+  const [nutritionInput, setNutritionInput] = useState("");
+  const [sleepInput, setSleepInput] = useState("");
   const [aiLoading, setAiLoading] = useState(false);
 
   // Fetch health profile
