@@ -263,6 +263,29 @@ const SettingsPanel = () => {
         </CardContent>
       </Card>
 
+      {/* Font Card - SEPARATE */}
+      <Card>
+        <CardHeader>
+          <CardTitle className="flex items-center gap-2"><Type className="h-5 w-5" />גופן</CardTitle>
+        </CardHeader>
+        <CardContent className="space-y-3">
+          <p className="text-xs text-muted-foreground">בחר את הגופן שמתאים לך. השינוי חל על כל האתר.</p>
+          <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
+            {fonts.map((font) => (
+              <button
+                key={font.id}
+                onClick={() => setFontId(font.id)}
+                className={`p-3 rounded-lg border text-center transition-colors ${fontId === font.id ? "border-primary bg-primary/10 text-primary" : "border-border hover:bg-muted text-foreground"}`}
+                style={{ fontFamily: font.family }}
+              >
+                <div className="text-sm font-medium">{font.name}</div>
+                <div className="text-xs text-muted-foreground mt-1" style={{ fontFamily: font.family }}>אבגד Abc 123</div>
+              </button>
+            ))}
+          </div>
+        </CardContent>
+      </Card>
+
       {/* Layout Card - SEPARATE */}
       <Card>
         <CardHeader>
