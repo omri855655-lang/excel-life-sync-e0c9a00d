@@ -58,7 +58,7 @@ interface TaskAssignment {
   responsibility: string | null;
 }
 
-const MEMBER_DOT_COLORS = ["bg-blue-500", "bg-emerald-500", "bg-orange-500", "bg-purple-500", "bg-pink-500", "bg-cyan-500", "bg-yellow-500", "bg-red-500"];
+const MEMBER_DOT_COLORS = ["bg-primary", "bg-accent", "bg-foreground/70", "bg-secondary-foreground/70", "bg-muted-foreground", "bg-destructive"];
 
 const formatDateTime = (dateStr: string) => {
   if (!dateStr) return '-';
@@ -534,16 +534,16 @@ const ProjectsManager = () => {
     <div className="h-full flex flex-col p-4 overflow-hidden" dir="rtl">
       {/* Stats Dashboard */}
       <div className="grid grid-cols-3 gap-4 mb-4 flex-shrink-0">
-        <div className="bg-blue-500/10 border border-blue-500/30 rounded-lg p-4 text-center">
-          <div className="text-2xl font-bold text-blue-600">{activeCount}</div>
+        <div className="bg-primary/10 border border-primary/20 rounded-lg p-4 text-center">
+          <div className="text-2xl font-bold text-primary">{activeCount}</div>
           <div className="text-sm text-muted-foreground">פעילים</div>
         </div>
-        <div className="bg-green-500/10 border border-green-500/30 rounded-lg p-4 text-center">
-          <div className="text-2xl font-bold text-green-600">{completedCount}</div>
+        <div className="bg-accent/15 border border-accent/30 rounded-lg p-4 text-center">
+          <div className="text-2xl font-bold text-accent-foreground">{completedCount}</div>
           <div className="text-sm text-muted-foreground">הושלמו</div>
         </div>
-        <div className="bg-orange-500/10 border border-orange-500/30 rounded-lg p-4 text-center">
-          <div className="text-2xl font-bold text-orange-600">{onHoldCount}</div>
+        <div className="bg-muted border border-border rounded-lg p-4 text-center">
+          <div className="text-2xl font-bold text-foreground">{onHoldCount}</div>
           <div className="text-sm text-muted-foreground">בהמתנה</div>
         </div>
       </div>
