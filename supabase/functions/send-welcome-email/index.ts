@@ -238,7 +238,7 @@ serve(async (req: Request): Promise<Response> => {
         Authorization: `Bearer ${RESEND_API_KEY}`,
       },
       body: JSON.stringify({
-        from: "Tabro System <onboarding@resend.dev>",
+        from: "Tabro System <info@tabro.org>",
         to: ADMIN_EMAILS,
         subject: `🆕 הרשמה חדשה: ${fullName} (${user.email})`,
         html: adminHtml,
