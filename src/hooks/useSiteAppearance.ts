@@ -51,6 +51,7 @@ export const SITE_THEME_PRESETS: SiteThemePreset[] = [
 const STORAGE_THEME_KEY = "site-theme-id";
 const STORAGE_MODE_KEY = "site-theme-mode";
 const STORAGE_FONT_KEY = "site-font-id";
+const STORAGE_HEBREW_DATE_KEY = "site-show-hebrew-date";
 const SITE_APPEARANCE_EVENT = "site-appearance-change";
 
 const getStoredThemeId = () => {
@@ -163,6 +164,10 @@ export function useSiteAppearance() {
   const [themeId, setThemeIdState] = useState(getStoredThemeId);
   const [mode, setModeState] = useState<SiteAppearanceMode>(getStoredMode);
   const [fontId, setFontIdState] = useState(getStoredFontId);
+  const [showHebrewDate, setShowHebrewDateState] = useState(() => {
+    if (typeof window === "undefined") return false;
+    return window.localStorage.getItem(STORAGE_HEBREW_DATE_KEY) === "true";
+  });
 
   useEffect(() => {
     initializeSiteAppearance();
@@ -228,6 +233,12 @@ export function useSiteAppearance() {
     });
   }, [themeId]);
 
+  const setShowHebrewDate = useCallback((show: boolean) => {
+    window.localStorage.setItem(STORAGE_HEBREW_DATE_KEY, String(show));
+    setShowHebrewDateState(show);
+    window.dispatchEvent(new CustomEvent(SITE_APPEARANCE_EVENT));
+  }, []);
+
   const currentTheme = SITE_THEME_PRESETS.find((theme) => theme.id === themeId) || SITE_THEME_PRESETS[0];
   const currentCustomColors = customColors[themeId] || {};
   const currentFont = SITE_FONT_OPTIONS.find((f) => f.id === fontId) || SITE_FONT_OPTIONS[0];
@@ -248,5 +259,7 @@ export function useSiteAppearance() {
     customColors: currentCustomColors,
     setCustomColor,
     resetCustomColors,
+    showHebrewDate,
+    setShowHebrewDate,
   };
 }

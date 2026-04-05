@@ -6,6 +6,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { BookOpen, Tv, CheckCircle, Clock, Eye, TrendingUp, LayoutGrid, CalendarDays } from 'lucide-react';
 import { getHebrewDate } from '@/lib/hebrewDate';
 import { PieChart, Pie, Cell, ResponsiveContainer, BarChart, Bar, XAxis, YAxis, Tooltip, Legend } from 'recharts';
+import { useSiteAppearance } from '@/hooks/useSiteAppearance';
 import TasksDashboards from '@/components/dashboard/TasksDashboards';
 import ProductivityDashboard from '@/components/dashboard/ProductivityDashboard';
 import CheckedItemsArchive from '@/components/CheckedItemsArchive';
@@ -107,9 +108,11 @@ const Dashboard = () => {
     { name: 'סדרות/סרטים', total: stats.totalShows, completed: stats.showsWatched },
   ];
 
+  const { showHebrewDate } = useSiteAppearance();
   const hebrewDate = getHebrewDate(new Date());
   const today = new Date();
   const gregorianDate = today.toLocaleDateString("he-IL", { weekday: "long", day: "numeric", month: "long", year: "numeric" });
+  const timeStr = today.toLocaleTimeString("he-IL", { hour: "2-digit", minute: "2-digit" });
 
   if (loading) {
     return <div className="p-8 text-center text-muted-foreground">טוען נתונים...</div>;
@@ -117,14 +120,17 @@ const Dashboard = () => {
 
   return (
     <div className="p-4 space-y-6">
-      {/* Hebrew & Gregorian Date */}
+      {/* Date & Time */}
       <Card className="bg-gradient-to-br from-primary/5 to-accent/5 border-primary/20">
         <CardContent className="py-4 text-center">
-          <div className="flex items-center justify-center gap-2 mb-1">
-            <CalendarDays className="h-5 w-5 text-primary" />
-            <span className="text-lg font-bold text-foreground">{hebrewDate.display}</span>
-          </div>
+          {showHebrewDate && (
+            <div className="flex items-center justify-center gap-2 mb-1">
+              <CalendarDays className="h-5 w-5 text-primary" />
+              <span className="text-lg font-bold text-foreground">{hebrewDate.display}</span>
+            </div>
+          )}
           <p className="text-sm text-muted-foreground">{gregorianDate}</p>
+          <p className="text-xs text-muted-foreground mt-1">{timeStr}</p>
         </CardContent>
       </Card>
 

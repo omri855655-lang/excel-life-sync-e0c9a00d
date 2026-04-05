@@ -88,7 +88,7 @@ const STATIC_TABS: TabDef[] = [
   { id: "nutrition", icon: Apple, label: "תזונה ושינה", visibilityKey: "nutrition" },
   { id: "dreams", icon: Target, label: "מפת חלומות", visibilityKey: "dreams" },
   { id: "shopping", icon: ShoppingCart, label: "קניות", visibilityKey: "shopping" },
-  { id: "payments", icon: CreditCard, label: "תשלומים", visibilityKey: "payments" },
+  { id: "payments", icon: CreditCard, label: "הכנסות והוצאות", visibilityKey: "payments" },
   { id: "notes", icon: StickyNote, label: "פתקים", visibilityKey: "notes" },
   { id: "sharing", icon: Share2, label: "שיתופים" },
   { id: "contact", icon: MessageSquare, label: "contactForm" },
@@ -476,7 +476,7 @@ const Personal = () => {
 
   const headerLeft = (
     <>
-      <FileSpreadsheet className="h-6 w-6 text-primary" />
+      <span className="text-2xl font-black text-primary tracking-tight">T</span>
       <h1 className="text-xl font-bold text-foreground">{t("personalArea")}</h1>
     </>
   );
