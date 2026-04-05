@@ -13,6 +13,8 @@ import { toast } from 'sonner';
 import InlineNotesTextarea from '@/components/InlineNotesTextarea';
 import { Badge } from '@/components/ui/badge';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
+import DashboardDisplayToolbar from "@/components/DashboardDisplayToolbar";
+import { useDashboardDisplay } from "@/hooks/useDashboardDisplay";
 
 interface Show {
   id: string;
@@ -53,6 +55,7 @@ type SortDir = 'asc' | 'desc';
 const DEFAULT_CATEGORIES = ['דרמה', 'קומדיה', 'אקשן', 'מתח', 'דוקומנטרי', 'מדע בדיוני', 'אנימציה', 'רומנטי', 'פשע', 'אימה'];
 
 const ShowsManager = () => {
+  const { viewMode, themeKey, setViewMode, setTheme } = useDashboardDisplay("shows");
   const { user } = useAuth();
   const [shows, setShows] = useState<Show[]>([]);
   const [loading, setLoading] = useState(true);
@@ -233,6 +236,7 @@ const ShowsManager = () => {
         <h2 className="text-xl font-bold">הסדרות והסרטים שלי</h2>
         <span className="text-sm text-muted-foreground">({shows.length} פריטים)</span>
         <div className="flex-1" />
+        <DashboardDisplayToolbar viewMode={viewMode} themeKey={themeKey} onViewModeChange={setViewMode} onThemeChange={setTheme} />
         <Button variant="outline" size="sm" className="gap-1.5" onClick={() => exportToExcel(
           shows.map(s => ({ title: s.title, type: s.type || '', status: s.status || '', category: s.category || '', season: s.current_season, episode: s.current_episode, notes: s.notes || '' })),
           [{ key: 'title', label: 'שם' }, { key: 'type', label: 'סוג' }, { key: 'status', label: 'סטטוס' }, { key: 'category', label: 'קטגוריה' }, { key: 'season', label: 'עונה' }, { key: 'episode', label: 'פרק' }, { key: 'notes', label: 'הערות' }],

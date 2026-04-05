@@ -14,6 +14,8 @@ import { toast } from "sonner";
 import { format } from "date-fns";
 import { useDashboardChatHistory } from "@/hooks/useDashboardChatHistory";
 import AiChatPanel from "@/components/AiChatPanel";
+import DashboardDisplayToolbar from "@/components/DashboardDisplayToolbar";
+import { useDashboardDisplay } from "@/hooks/useDashboardDisplay";
 
 interface HealthProfile {
   age: number | null;
@@ -28,6 +30,7 @@ interface HealthProfile {
 }
 
 const NutritionDashboard = () => {
+  const { viewMode, themeKey, setViewMode, setTheme } = useDashboardDisplay("nutrition");
   const { user } = useAuth();
   const [activeTab, setActiveTab] = useState("nutrition");
   const [profile, setProfile] = useState<HealthProfile>({
@@ -166,9 +169,11 @@ const NutritionDashboard = () => {
 
   return (
     <div className="p-4 space-y-4 max-w-4xl mx-auto" dir="rtl">
-      <div className="flex items-center gap-3 mb-4">
+      <div className="flex items-center gap-3 mb-4 flex-wrap">
         <Apple className="h-6 w-6 text-primary" />
         <h2 className="text-2xl font-bold">תזונה ושינה</h2>
+        <div className="flex-1" />
+        <DashboardDisplayToolbar viewMode={viewMode} themeKey={themeKey} onViewModeChange={setViewMode} onThemeChange={setTheme} />
       </div>
 
       {/* Health Profile Collapsible */}

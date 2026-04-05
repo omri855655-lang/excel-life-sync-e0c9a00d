@@ -14,6 +14,8 @@ import { useDashboardChatHistory } from "@/hooks/useDashboardChatHistory";
 import AutocompleteInput from "@/components/AutocompleteInput";
 import ShoppingShareDialog from "@/components/dashboards/ShoppingShareDialog";
 import AiChatPanel from "@/components/AiChatPanel";
+import DashboardDisplayToolbar from "@/components/DashboardDisplayToolbar";
+import { useDashboardDisplay } from "@/hooks/useDashboardDisplay";
 
 interface ShoppingItem {
   id: string;
@@ -152,6 +154,7 @@ const CATEGORY_ITEMS: Record<string, string[]> = {
 };
 
 const ShoppingDashboard = () => {
+  const { viewMode, themeKey, setViewMode, setTheme } = useDashboardDisplay("shopping");
   const { user } = useAuth();
   const [items, setItems] = useState<ShoppingItem[]>([]);
   const [archivedItems, setArchivedItems] = useState<ShoppingItem[]>([]);
@@ -574,9 +577,10 @@ const ShoppingDashboard = () => {
 
   return (
     <div className="p-4 space-y-4 max-w-4xl mx-auto" dir="rtl">
-      <div className="flex items-center gap-3 mb-4">
+      <div className="flex items-center gap-3 mb-4 flex-wrap">
         <ShoppingCart className="h-6 w-6 text-primary" />
         <h2 className="text-2xl font-bold flex-1">קניות וחלומות</h2>
+        <DashboardDisplayToolbar viewMode={viewMode} themeKey={themeKey} onViewModeChange={setViewMode} onThemeChange={setTheme} />
         <Button variant="outline" size="sm" className="gap-1.5" onClick={() => exportToExcel(
           items.map(i => ({ title: i.title, category: i.category || '', quantity: i.quantity || '', price: i.price, status: i.status, notes: i.notes || '' })),
           [{ key: 'title', label: 'פריט' }, { key: 'category', label: 'קטגוריה' }, { key: 'quantity', label: 'כמות' }, { key: 'price', label: 'מחיר' }, { key: 'status', label: 'סטטוס' }, { key: 'notes', label: 'הערות' }],
