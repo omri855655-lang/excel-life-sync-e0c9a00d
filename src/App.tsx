@@ -64,6 +64,7 @@ const AppContent = () => {
         <Route path="/creator-admin" element={<AdminDashboard />} />
         <Route path="/install/*" element={<InstallApp />} />
         <Route path="/Install/*" element={<InstallApp />} />
+        <Route path="/unsubscribe" element={<Unsubscribe />} />
         <Route path="*" element={<NotFound />} />
       </Routes>
     </BrowserRouter>
