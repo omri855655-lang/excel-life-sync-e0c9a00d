@@ -87,7 +87,7 @@ const PaymentDashboard = () => {
   const [newRecurring, setNewRecurring] = useState(false);
   const [activeTab, setActiveTab] = useState("overview");
   const [aiChat, setAiChat] = useState("");
-  const { messages: aiMessages, setMessages: setAiMessages, clearHistory: clearAiHistory } = useDashboardChatHistory("payments");
+  const aiChatHistory = useDashboardChatHistory("payments");
   const [aiLoading, setAiLoading] = useState(false);
   const [expandedGuide, setExpandedGuide] = useState<string | null>(null);
   const [selectedHistoryMonth, setSelectedHistoryMonth] = useState("");
