@@ -507,7 +507,7 @@ const Personal = () => {
       <>
         {showOnboarding && <OnboardingWizard onComplete={() => window.location.reload()} />}
         <CompactLayout tabs={flatTabItems} activeTab={activeTab} onTabChange={setActiveTab} dir={dir} header={<>{headerLeft}{headerControls}</>}>
-          <div className="h-full">{renderContent()}</div>
+          <div className="min-h-full pb-8">{renderContent()}</div>
         </CompactLayout>
         <FloatingMusicMini visible={activeTab !== 'deeply'} onGoToDeeply={() => setActiveTab('deeply')} />
         <AiDailyPlanner />
