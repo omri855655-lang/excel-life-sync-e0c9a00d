@@ -14,6 +14,8 @@ import { useDashboardChatHistory } from "@/hooks/useDashboardChatHistory";
 import AutocompleteInput from "@/components/AutocompleteInput";
 import ShoppingShareDialog from "@/components/dashboards/ShoppingShareDialog";
 import AiChatPanel from "@/components/AiChatPanel";
+import DashboardDisplayToolbar from "@/components/DashboardDisplayToolbar";
+import { useDashboardDisplay } from "@/hooks/useDashboardDisplay";
 
 interface ShoppingItem {
   id: string;

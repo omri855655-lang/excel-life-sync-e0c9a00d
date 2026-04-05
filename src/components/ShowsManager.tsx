@@ -13,6 +13,8 @@ import { toast } from 'sonner';
 import InlineNotesTextarea from '@/components/InlineNotesTextarea';
 import { Badge } from '@/components/ui/badge';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
+import DashboardDisplayToolbar from "@/components/DashboardDisplayToolbar";
+import { useDashboardDisplay } from "@/hooks/useDashboardDisplay";
 
 interface Show {
   id: string;
