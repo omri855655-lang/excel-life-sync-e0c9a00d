@@ -86,8 +86,11 @@ const App = () => (
           <Toaster />
           <Sonner />
           
+          <SkipLink />
           <TabroAiAgent />
-          <AppContent />
+          <div id="main-content">
+            <AppContent />
+          </div>
         </TooltipProvider>
       </LanguageProvider>
     </AuthProvider>
