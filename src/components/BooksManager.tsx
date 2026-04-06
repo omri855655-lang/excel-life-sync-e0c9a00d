@@ -38,6 +38,7 @@ const formatDateTime = (dateStr: string) => {
 const BooksManager = () => {
   const { viewMode, themeKey, setViewMode, setTheme } = useDashboardDisplay("books");
   const { user } = useAuth();
+  const { softDelete } = useRecycleBin();
   const [books, setBooks] = useState<Book[]>([]);
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState('');
