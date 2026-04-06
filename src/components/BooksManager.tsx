@@ -7,6 +7,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Plus, Trash2, Search, BookOpen, Download } from 'lucide-react';
 import FileImport from '@/components/FileImport';
+import { useRecycleBin } from '@/hooks/useRecycleBin';
 import { exportToExcel } from '@/lib/exportToExcel';
 import { toast } from 'sonner';
 import InlineNotesTextarea from '@/components/InlineNotesTextarea';
