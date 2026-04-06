@@ -1,82 +1,127 @@
 
-# תוכנית: תצוגות עובדות + עריכה בכל מצב + נגישות ישראלית + הסרת סימן Lovable
 
-## מה נמצא בבדיקה
+# תוכנית מקיפה: סל מחזור + דיאלוג פרטים + רוסית + חיבור מייל אישי
 
-### בעיות שזוהו:
-1. **תצוגות לא עובדות בדשבורד משימות** — `TaskSpreadsheetDb` יש לו סרגל "עיצוב" אבל תמיד מרנדר טבלה בלבד. ה-`dashViewMode` נשמר אבל לא משמש לרינדור.
-2. **תצוגות לא עובדות בקניות/תשלומים/תזונה** — אותה בעיה: יש toolbar אבל רק טבלה מוצגת.
-3. **אי אפשר לערוך בתצוגות אחרות** — ב-ListView, CardsView, KanbanView, CompactView אין אפשרות לערוך הערות, לשנות שם, לעדכן שדות וכו'. רק בטבלה אפשר.
-4. **שם הטאב "סדרות"** — צריך להיות "סדרות וסרטים".
-5. **אין כפתור נגישות צף** — לפי תקן ישראלי (ת"י 5568) צריך כפתור ♿ צף קבוע שפותח תפריט נגישות (הגדלת גופן, ניגודיות, השבתת אנימציות וכו').
-6. **סימן Lovable** — ניתן להסתיר אותו (דורש תוכנית Pro).
+## סיכום
+יישום 4 פיצ'רים מרכזיים: סל מחזור גלובלי, דיאלוג עריכת פריט, שפה רוסית מלאה, וחיבור מייל אישי (Gmail/Outlook/IMAP) עם ניתוח AI.
 
 ---
 
-## שלבי יישום
+## שלב 1 — סל מחזור גלובלי
 
-### שלב 1 — הוספת עריכה לקומפוננטות תצוגה
-עדכון `ListView`, `CardsView`, `KanbanView`, `CompactView` כך שיתמכו ב:
-- עריכת הערות inline (onNotesChange callback)
-- עריכת כותרת inline (onTitleChange callback)
-- שינוי סטטוס (כבר קיים בחלקם)
-- אופציונלי: כל שדה נוסף שרלוונטי לסוג הדשבורד
+**מיגרציה:**
+```text
+recycle_bin table:
+  id, user_id, source_table, source_id,
+  item_data (jsonb), deleted_at, expires_at (7 days)
+  + RLS policy for authenticated users
+```
 
-### שלב 2 — תצוגות עובדות בדשבורד משימות
-עדכון `TaskSpreadsheetDb.tsx`:
-- לייבא ListView, CardsView, KanbanView, CompactView
-- במקום לרנדר תמיד טבלה, לבדוק `dashViewMode` ולרנדר בהתאם
-- למפות משימות לפורמט של כל קומפוננטת תצוגה
-- סטטוסים לקנבן: טרם החל / בטיפול / בוצע
-- לשמור על כל הפונקציונליות: עריכה, מחיקה, שינוי סטטוס
+**קבצים חדשים:**
+- `src/hooks/useRecycleBin.ts` — softDelete, restore, fetchAll, cleanupExpired
+- `src/components/RecycleBin.tsx` — תצוגה לפי מקור, שחזור, מחיקה לצמיתות
 
-### שלב 3 — תצוגות עובדות בקניות/תשלומים/תזונה
-- `ShoppingDashboard.tsx` — רינדור מותנה לפי viewMode
-- `PaymentDashboard.tsx` — רינדור מותנה לפי viewMode
-- `NutritionDashboard.tsx` — רינדור מותנה לפי viewMode
-
-### שלב 4 — שינוי שם טאב
-- `useLanguage.tsx`: שינוי `shows: "סדרות"` ל-`shows: "סדרות וסרטים"` (בעברית בלבד, שאר השפות בהתאם)
-
-### שלב 5 — כפתור נגישות צף (תקן ישראלי)
-יצירת `AccessibilityWidget.tsx`:
-- כפתור ♿ צף קבוע בפינה שמאלית תחתונה
-- בלחיצה נפתח תפריט עם:
-  - הגדלת/הקטנת גופן
-  - ניגודיות גבוהה
-  - השבתת אנימציות
-  - סמן מוגדל
-  - הדגשת קישורים
-  - קישור לדף הצהרת הנגישות
-- שמירת העדפות ב-localStorage
-- הוספה ב-`App.tsx` כך שמופיע בכל דף
-
-### שלב 6 — הסרת סימן Lovable
-- שימוש ב-`set_badge_visibility` להסתרת הסימן (דורש תוכנית Pro — אם אין Pro, אודיע)
+**קבצים מעודכנים (מחיקה רכה):**
+- `BooksManager.tsx`, `ShowsManager.tsx`, `PodcastsManager.tsx`
+- `TaskSpreadsheetDb.tsx`, `ProjectsManager.tsx`, `CoursesManager.tsx`
+- `CustomBoardManager.tsx`
+- `SettingsPanel.tsx` — טאב סל מחזור
 
 ---
 
-## קבצים שישתנו
-- `src/components/views/ListView.tsx` — הוספת onNotesChange, onTitleChange
-- `src/components/views/CardsView.tsx` — הוספת onNotesChange, onTitleChange
-- `src/components/views/KanbanView.tsx` — הוספת onNotesChange
-- `src/components/views/CompactView.tsx` — הוספת onClick עם עריכה
-- `src/components/TaskSpreadsheetDb.tsx` — רינדור מותנה לפי dashViewMode
-- `src/components/dashboards/ShoppingDashboard.tsx` — רינדור מותנה
-- `src/components/dashboards/PaymentDashboard.tsx` — רינדור מותנה
-- `src/components/dashboards/NutritionDashboard.tsx` — רינדור מותנה
-- `src/hooks/useLanguage.tsx` — שם טאב "סדרות וסרטים"
-- **חדש**: `src/components/AccessibilityWidget.tsx`
-- `src/App.tsx` — הוספת AccessibilityWidget
-- `src/index.css` — CSS classes לנגישות (font-size, contrast, cursor)
+## שלב 2 — דיאלוג פרטים מלאים (ItemDetailDialog)
+
+**קובץ חדש:** `src/components/ItemDetailDialog.tsx`
+- שם (editable), סטטוס (select), הערות (textarea), subtitle
+- כפתור שמירה + מחיקה
+
+**עדכון:** CompactView, ListView, CardsView — onClick פותח דיאלוג
 
 ---
 
-## לגבי משימות ישנות שלא בוצעו
-מהבדיקה, הנה מה שביקשת בעבר ועדיין לא עובד באמת:
-1. ✅ ספרים/סדרות/פודקאסטים — תצוגות עובדות (נעשה)
-2. ❌ משימות — תצוגות לא עובדות (יתוקן כאן)
-3. ❌ קניות/תשלומים/תזונה — תצוגות לא עובדות (יתוקן כאן)
-4. ❌ עריכה בתצוגות שאינן טבלה — לא קיימת (יתוקן כאן)
-5. ❌ כפתור נגישות ישראלי — לא קיים (יתוקן כאן)
+## שלב 3 — רוסית (שפה שישית)
+
+- `useLanguage.tsx` — הוספת `"ru"` ל-type Language + תרגום מלא ~120 מפתחות
+- `SettingsPanel.tsx` — "Русский" בבחירת שפה
+- `OnboardingWizard.tsx` — רוסית ברשימת השפות
+
+---
+
+## שלב 4 — חיבור מייל אישי (Gmail/Outlook/IMAP)
+
+### מבנה טכני
+
+**מיגרציות DB:**
+```text
+email_connections table:
+  id, user_id, provider (gmail/outlook/imap),
+  access_token (encrypted), refresh_token (encrypted),
+  email_address, settings (jsonb), connected_at, last_sync
+
+email_analyses table:
+  id, user_id, connection_id, email_subject, email_from,
+  email_date, category (payment/task/shopping/bill/personal),
+  suggested_action (jsonb), analysis_depth,
+  is_processed, created_at
+```
+
+**Edge Functions חדשות:**
+- `email-oauth-callback/index.ts` — טיפול ב-OAuth callback מ-Gmail/Outlook
+- `email-sync/index.ts` — סנכרון מיילים חדשים (IMAP/Gmail API/Outlook API)
+- `email-analyze/index.ts` — שליחת מיילים ל-AI לסיווג + הצעת פעולות
+
+**קבצים חדשים בצד לקוח:**
+- `src/components/EmailIntegration.tsx` — דף ראשי: חיבור חשבון + תצוגת תובנות
+- `src/components/EmailConnectionDialog.tsx` — חיבור Gmail/Outlook/IMAP
+- `src/components/EmailInsightsWidget.tsx` — ווידג'ט לדשבורד ראשי
+- `src/hooks/useEmailIntegration.ts` — hook לניהול חיבורים וסנכרון
+
+**זרימת OAuth:**
+1. משתמש לוחץ "חבר Gmail" → redirect ל-Google OAuth
+2. Google מחזיר code → Edge Function מחליף ל-tokens
+3. tokens נשמרים מוצפנים ב-DB
+4. סנכרון ראשוני → ניתוח AI → תובנות מוצגות
+
+**יכולות AI:**
+- סיווג אוטומטי: תשלומים, משימות, קניות, חשבונות, אישי
+- הצעת פעולות: "חשבונית — להוסיף להוצאות?"
+- סיכום שבועי: "47 מיילים: 12 תשלומים, 8 משימות..."
+- עומק ניתוח לבחירת המשתמש (נושא / נושא+גוף)
+
+**שילוב בממשק:**
+- טאב "מייל" בסרגל העליון (ניתן להסתרה)
+- ווידג'ט בדשבורד הראשי עם תובנות
+- הגדרות חיבור ב-Settings
+
+---
+
+## סיכום קבצים
+
+### מיגרציות (2):
+1. `recycle_bin` + RLS
+2. `email_connections` + `email_analyses` + RLS
+
+### קבצים חדשים (8):
+- `src/hooks/useRecycleBin.ts`
+- `src/components/RecycleBin.tsx`
+- `src/components/ItemDetailDialog.tsx`
+- `src/components/EmailIntegration.tsx`
+- `src/components/EmailConnectionDialog.tsx`
+- `src/components/EmailInsightsWidget.tsx`
+- `src/hooks/useEmailIntegration.ts`
+- `supabase/functions/email-oauth-callback/index.ts`
+- `supabase/functions/email-sync/index.ts`
+- `supabase/functions/email-analyze/index.ts`
+
+### קבצים מעודכנים (13):
+- `useLanguage.tsx` — רוסית מלאה
+- `SettingsPanel.tsx` — סל מחזור + רוסית + הגדרות מייל
+- `OnboardingWizard.tsx` — רוסית
+- `BooksManager.tsx`, `ShowsManager.tsx`, `PodcastsManager.tsx` — softDelete
+- `TaskSpreadsheetDb.tsx`, `ProjectsManager.tsx`, `CoursesManager.tsx`, `CustomBoardManager.tsx` — softDelete
+- `CompactView.tsx`, `ListView.tsx`, `CardsView.tsx` — ItemDetailDialog
+- `Personal.tsx` — טאב מייל
+
+### סודות נדרשים:
+- OAuth עבור Gmail/Outlook דורש Client ID ו-Client Secret מ-Google Cloud Console ו-Azure Portal. אבקש מהמשתמש להגדיר אותם לפני יישום שלב 4.
 
