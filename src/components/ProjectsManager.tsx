@@ -12,6 +12,7 @@ import { Plus, Trash2, Search, FolderKanban, ChevronDown, ChevronLeft, Link2, Ex
 import { Progress } from '@/components/ui/progress';
 import { toast } from 'sonner';
 import { cn } from '@/lib/utils';
+import { useRecycleBin } from '@/hooks/useRecycleBin';
 import ProjectMembersPanel from '@/components/ProjectMembersPanel';
 import { useCustomBoards } from '@/hooks/useCustomBoards';
 import TeamPerformanceDashboard from '@/components/projects/TeamPerformanceDashboard';
@@ -80,6 +81,7 @@ const getTaskPriorityScore = (task: ProjectTask) => {
 
 const ProjectsManager = () => {
   const { user } = useAuth();
+  const { softDelete } = useRecycleBin();
   const [projects, setProjects] = useState<Project[]>([]);
   const [projectTasks, setProjectTasks] = useState<Record<string, ProjectTask[]>>({});
   const [loading, setLoading] = useState(true);
@@ -237,15 +239,13 @@ const ProjectsManager = () => {
   };
 
   const deleteProject = async (id: string) => {
-    const { error } = await supabase.from('projects').delete().eq('id', id);
-
-    if (error) {
-      toast.error('שגיאה במחיקת הפרויקט');
-      return;
+    const project = projects.find(p => p.id === id);
+    if (!project) return;
+    const success = await softDelete('projects', id, project);
+    if (success) {
+      toast.success('הפרויקט הועבר לסל המחזור');
+      setProjects((prev) => prev.filter((p) => p.id !== id));
     }
-
-    toast.success('הפרויקט נמחק');
-    setProjects((prev) => prev.filter((p) => p.id !== id));
   };
 
   const addProjectTask = async (projectId: string) => {

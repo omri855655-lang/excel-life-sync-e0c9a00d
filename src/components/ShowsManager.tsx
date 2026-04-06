@@ -9,6 +9,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Plus, Trash2, Search, Tv, Film, ArrowUpDown, Tag, X, CalendarPlus, Download } from 'lucide-react';
 import FileImport from '@/components/FileImport';
 import { exportToExcel } from '@/lib/exportToExcel';
+import { useRecycleBin } from '@/hooks/useRecycleBin';
 import { toast } from 'sonner';
 import InlineNotesTextarea from '@/components/InlineNotesTextarea';
 import { Badge } from '@/components/ui/badge';
@@ -61,6 +62,7 @@ const DEFAULT_CATEGORIES = ['דרמה', 'קומדיה', 'אקשן', 'מתח', '�
 const ShowsManager = () => {
   const { viewMode, themeKey, setViewMode, setTheme } = useDashboardDisplay("shows");
   const { user } = useAuth();
+  const { softDelete } = useRecycleBin();
   const [shows, setShows] = useState<Show[]>([]);
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState('');
@@ -136,11 +138,11 @@ const ShowsManager = () => {
   };
 
   const deleteShow = async (id: string) => {
-    const { error } = await supabase.from('shows').delete().eq('id', id);
-    if (error) {
-      toast.error('שגיאה במחיקה');
-    } else {
-      toast.success('נמחק בהצלחה');
+    const show = shows.find(s => s.id === id);
+    if (!show) return;
+    const success = await softDelete('shows', id, show);
+    if (success) {
+      toast.success('הועבר לסל המחזור');
       setShows((prev) => prev.filter((s) => s.id !== id));
     }
   };

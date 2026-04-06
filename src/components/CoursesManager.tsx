@@ -11,6 +11,7 @@ import { Plus, Trash2, Search, GraduationCap, ChevronDown, ChevronLeft, Sparkles
 import { Progress } from '@/components/ui/progress';
 import { toast } from 'sonner';
 import { cn } from '@/lib/utils';
+import { useRecycleBin } from '@/hooks/useRecycleBin';
 import InlineNotesTextarea from '@/components/InlineNotesTextarea';
 import { extractLessonsFromSyllabus } from '@/components/courses/syllabusLessonParser';
 
@@ -47,6 +48,7 @@ const formatDateTime = (dateStr: string) => {
 
 const CoursesManager = () => {
   const { user } = useAuth();
+  const { softDelete } = useRecycleBin();
   const [courses, setCourses] = useState<Course[]>([]);
   const [courseLessons, setCourseLessons] = useState<Record<string, CourseLesson[]>>({});
   const [loading, setLoading] = useState(true);
@@ -148,15 +150,13 @@ const CoursesManager = () => {
   };
 
   const deleteCourse = async (id: string) => {
-    const { error } = await supabase.from('courses').delete().eq('id', id);
-
-    if (error) {
-      toast.error('שגיאה במחיקת הקורס');
-      return;
+    const course = courses.find(c => c.id === id);
+    if (!course) return;
+    const success = await softDelete('courses', id, course);
+    if (success) {
+      toast.success('הקורס הועבר לסל המחזור');
+      setCourses((prev) => prev.filter((c) => c.id !== id));
     }
-
-    toast.success('הקורס נמחק');
-    setCourses((prev) => prev.filter((c) => c.id !== id));
   };
 
   const saveSyllabus = async (courseId: string) => {

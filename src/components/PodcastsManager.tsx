@@ -8,6 +8,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Plus, Trash2, Search, Headphones, Download } from 'lucide-react';
 import { exportToExcel } from '@/lib/exportToExcel';
 import { toast } from 'sonner';
+import { useRecycleBin } from '@/hooks/useRecycleBin';
 import InlineNotesTextarea from '@/components/InlineNotesTextarea';
 import DashboardDisplayToolbar from "@/components/DashboardDisplayToolbar";
 import { useDashboardDisplay } from "@/hooks/useDashboardDisplay";
@@ -36,6 +37,7 @@ const formatDateTime = (dateStr: string) => {
 const PodcastsManager = () => {
   const { viewMode, themeKey, setViewMode, setTheme } = useDashboardDisplay("podcasts");
   const { user } = useAuth();
+  const { softDelete } = useRecycleBin();
   const [podcasts, setPodcasts] = useState<Podcast[]>([]);
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState('');
@@ -114,15 +116,13 @@ const PodcastsManager = () => {
   };
 
   const deletePodcast = async (id: string) => {
-    const { error } = await supabase.from('podcasts').delete().eq('id', id);
-
-    if (error) {
-      toast.error('שגיאה במחיקת הפודקאסט');
-      return;
+    const podcast = podcasts.find(p => p.id === id);
+    if (!podcast) return;
+    const success = await softDelete('podcasts', id, podcast);
+    if (success) {
+      toast.success('הפודקאסט הועבר לסל המחזור');
+      setPodcasts((prev) => prev.filter((p) => p.id !== id));
     }
-
-    toast.success('הפודקאסט נמחק');
-    setPodcasts((prev) => prev.filter((p) => p.id !== id));
   };
 
   const filteredPodcasts = podcasts.filter(

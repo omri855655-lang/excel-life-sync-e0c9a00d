@@ -31,6 +31,7 @@ import ShoppingDashboard from "@/components/dashboards/ShoppingDashboard";
 import PaymentDashboard from "@/components/dashboards/PaymentDashboard";
 import ContactForm from "@/components/ContactForm";
 import NotesDashboard from "@/components/dashboards/NotesDashboard";
+import EmailIntegration from "@/components/EmailIntegration";
 import OnboardingWizard from "@/components/OnboardingWizard";
 import SidebarLayout from "@/components/layouts/SidebarLayout";
 import CompactLayout from "@/components/layouts/CompactLayout";
@@ -38,7 +39,7 @@ import BottomNavLayout from "@/components/layouts/BottomNavLayout";
 import HamburgerLayout from "@/components/layouts/HamburgerLayout";
 import DashboardCardsLayout from "@/components/layouts/DashboardCardsLayout";
 import SplitViewLayout from "@/components/layouts/SplitViewLayout";
-import { FileSpreadsheet, Moon, Sun, LogOut, BookOpen, Tv, LayoutDashboard, ListTodo, Briefcase, Download, Headphones, CalendarCheck, FolderKanban, GraduationCap, CalendarDays, Focus, Settings, LayoutGrid, Trophy, ChevronLeft, ChevronRight, Share2, Apple, Target, ShoppingCart, CreditCard, MessageSquare, StickyNote } from "lucide-react";
+import { FileSpreadsheet, Moon, Sun, LogOut, BookOpen, Tv, LayoutDashboard, ListTodo, Briefcase, Download, Headphones, CalendarCheck, FolderKanban, GraduationCap, CalendarDays, Focus, Settings, LayoutGrid, Trophy, ChevronLeft, ChevronRight, Share2, Apple, Target, ShoppingCart, CreditCard, MessageSquare, StickyNote, Mail } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { toast } from "sonner";
@@ -90,6 +91,7 @@ const STATIC_TABS: TabDef[] = [
   { id: "shopping", icon: ShoppingCart, label: "קניות", visibilityKey: "shopping" },
   { id: "payments", icon: CreditCard, label: "הכנסות והוצאות", visibilityKey: "payments" },
   { id: "notes", icon: StickyNote, label: "פתקים", visibilityKey: "notes" },
+  { id: "email", icon: Mail, label: "email", visibilityKey: "email" },
   { id: "sharing", icon: Share2, label: "שיתופים" },
   { id: "contact", icon: MessageSquare, label: "contactForm" },
   { id: "settings", icon: Settings, label: "settings" },
@@ -417,6 +419,7 @@ const Personal = () => {
       case "shopping": return <ShoppingDashboard />;
       case "payments": return <PaymentDashboard />;
       case "notes": return <NotesDashboard />;
+      case "email": return <EmailIntegration />;
       case "sharing": return <SharingManagement />;
       case "contact": return <ContactForm />;
       default:

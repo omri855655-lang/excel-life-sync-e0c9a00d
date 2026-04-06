@@ -7,6 +7,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Plus, Trash2, Search, BookOpen, Download } from 'lucide-react';
 import FileImport from '@/components/FileImport';
+import { useRecycleBin } from '@/hooks/useRecycleBin';
 import { exportToExcel } from '@/lib/exportToExcel';
 import { toast } from 'sonner';
 import InlineNotesTextarea from '@/components/InlineNotesTextarea';
@@ -37,6 +38,7 @@ const formatDateTime = (dateStr: string) => {
 const BooksManager = () => {
   const { viewMode, themeKey, setViewMode, setTheme } = useDashboardDisplay("books");
   const { user } = useAuth();
+  const { softDelete } = useRecycleBin();
   const [books, setBooks] = useState<Book[]>([]);
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState('');
@@ -115,15 +117,13 @@ const BooksManager = () => {
   };
 
   const deleteBook = async (id: string) => {
-    const { error } = await supabase.from('books').delete().eq('id', id);
-
-    if (error) {
-      toast.error('שגיאה במחיקת הספר');
-      return;
+    const book = books.find(b => b.id === id);
+    if (!book) return;
+    const success = await softDelete('books', id, book);
+    if (success) {
+      toast.success('הספר הועבר לסל המחזור');
+      setBooks((prev) => prev.filter((b) => b.id !== id));
     }
-
-    toast.success('הספר נמחק');
-    setBooks((prev) => prev.filter((b) => b.id !== id));
   };
 
   const handleImportBooks = async (rows: Record<string, string>[]) => {

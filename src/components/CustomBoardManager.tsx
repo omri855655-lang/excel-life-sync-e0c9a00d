@@ -10,6 +10,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { Plus, Trash2, Edit2, Check, X, LayoutGrid, List, Palette, Grid3X3, Clock, AlignJustify, CreditCard, Archive, ArchiveRestore, FolderPlus, FileText, ChevronDown, ChevronUp, Tag } from "lucide-react";
 import { toast } from "sonner";
 import { Textarea } from "@/components/ui/textarea";
+import { useRecycleBin } from "@/hooks/useRecycleBin";
 import { type BoardTheme, BOARD_THEMES } from "@/hooks/useCustomBoards";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -121,6 +122,7 @@ const KanbanColumn = ({
 /* ───────── Main Component ───────── */
 const CustomBoardManager = ({ boardId, boardName, statuses, theme = "default", onThemeChange }: CustomBoardManagerProps) => {
   const { user } = useAuth();
+  const { softDelete } = useRecycleBin();
   const [items, setItems] = useState<BoardItem[]>([]);
   const [loading, setLoading] = useState(true);
   const [newTitle, setNewTitle] = useState("");
@@ -180,8 +182,14 @@ const CustomBoardManager = ({ boardId, boardName, statuses, theme = "default", o
   };
 
   const deleteItem = async (id: string) => {
-    const { error } = await supabase.from("custom_board_items").delete().eq("id", id);
-    if (error) { toast.error("שגיאה במחיקה"); return; }
+    const item = items.find(i => i.id === id);
+    if (item) {
+      const success = await softDelete('custom_board_items', id, item);
+      if (!success) return;
+    } else {
+      const { error } = await supabase.from("custom_board_items").delete().eq("id", id);
+      if (error) { toast.error("שגיאה במחיקה"); return; }
+    }
     fetchItems();
   };
 
