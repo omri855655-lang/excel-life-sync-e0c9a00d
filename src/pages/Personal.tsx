@@ -31,6 +31,7 @@ import ShoppingDashboard from "@/components/dashboards/ShoppingDashboard";
 import PaymentDashboard from "@/components/dashboards/PaymentDashboard";
 import ContactForm from "@/components/ContactForm";
 import NotesDashboard from "@/components/dashboards/NotesDashboard";
+import EmailIntegration from "@/components/EmailIntegration";
 import OnboardingWizard from "@/components/OnboardingWizard";
 import SidebarLayout from "@/components/layouts/SidebarLayout";
 import CompactLayout from "@/components/layouts/CompactLayout";
