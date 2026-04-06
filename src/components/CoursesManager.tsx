@@ -11,6 +11,7 @@ import { Plus, Trash2, Search, GraduationCap, ChevronDown, ChevronLeft, Sparkles
 import { Progress } from '@/components/ui/progress';
 import { toast } from 'sonner';
 import { cn } from '@/lib/utils';
+import { useRecycleBin } from '@/hooks/useRecycleBin';
 import InlineNotesTextarea from '@/components/InlineNotesTextarea';
 import { extractLessonsFromSyllabus } from '@/components/courses/syllabusLessonParser';
 
