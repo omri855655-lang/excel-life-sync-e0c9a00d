@@ -419,6 +419,7 @@ const Personal = () => {
       case "shopping": return <ShoppingDashboard />;
       case "payments": return <PaymentDashboard />;
       case "notes": return <NotesDashboard />;
+      case "email": return <EmailIntegration />;
       case "sharing": return <SharingManagement />;
       case "contact": return <ContactForm />;
       default:

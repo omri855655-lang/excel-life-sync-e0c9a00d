@@ -116,15 +116,13 @@ const PodcastsManager = () => {
   };
 
   const deletePodcast = async (id: string) => {
-    const { error } = await supabase.from('podcasts').delete().eq('id', id);
-
-    if (error) {
-      toast.error('שגיאה במחיקת הפודקאסט');
-      return;
+    const podcast = podcasts.find(p => p.id === id);
+    if (!podcast) return;
+    const success = await softDelete('podcasts', id, podcast);
+    if (success) {
+      toast.success('הפודקאסט הועבר לסל המחזור');
+      setPodcasts((prev) => prev.filter((p) => p.id !== id));
     }
-
-    toast.success('הפודקאסט נמחק');
-    setPodcasts((prev) => prev.filter((p) => p.id !== id));
   };
 
   const filteredPodcasts = podcasts.filter(

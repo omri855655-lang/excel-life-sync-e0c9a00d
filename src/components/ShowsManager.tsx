@@ -138,11 +138,11 @@ const ShowsManager = () => {
   };
 
   const deleteShow = async (id: string) => {
-    const { error } = await supabase.from('shows').delete().eq('id', id);
-    if (error) {
-      toast.error('שגיאה במחיקה');
-    } else {
-      toast.success('נמחק בהצלחה');
+    const show = shows.find(s => s.id === id);
+    if (!show) return;
+    const success = await softDelete('shows', id, show);
+    if (success) {
+      toast.success('הועבר לסל המחזור');
       setShows((prev) => prev.filter((s) => s.id !== id));
     }
   };

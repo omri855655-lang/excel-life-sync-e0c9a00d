@@ -182,8 +182,14 @@ const CustomBoardManager = ({ boardId, boardName, statuses, theme = "default", o
   };
 
   const deleteItem = async (id: string) => {
-    const { error } = await supabase.from("custom_board_items").delete().eq("id", id);
-    if (error) { toast.error("שגיאה במחיקה"); return; }
+    const item = items.find(i => i.id === id);
+    if (item) {
+      const success = await softDelete('custom_board_items', id, item);
+      if (!success) return;
+    } else {
+      const { error } = await supabase.from("custom_board_items").delete().eq("id", id);
+      if (error) { toast.error("שגיאה במחיקה"); return; }
+    }
     fetchItems();
   };
 

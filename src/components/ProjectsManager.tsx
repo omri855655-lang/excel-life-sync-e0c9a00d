@@ -239,15 +239,13 @@ const ProjectsManager = () => {
   };
 
   const deleteProject = async (id: string) => {
-    const { error } = await supabase.from('projects').delete().eq('id', id);
-
-    if (error) {
-      toast.error('שגיאה במחיקת הפרויקט');
-      return;
+    const project = projects.find(p => p.id === id);
+    if (!project) return;
+    const success = await softDelete('projects', id, project);
+    if (success) {
+      toast.success('הפרויקט הועבר לסל המחזור');
+      setProjects((prev) => prev.filter((p) => p.id !== id));
     }
-
-    toast.success('הפרויקט נמחק');
-    setProjects((prev) => prev.filter((p) => p.id !== id));
   };
 
   const addProjectTask = async (projectId: string) => {
