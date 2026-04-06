@@ -122,6 +122,7 @@ const KanbanColumn = ({
 /* ───────── Main Component ───────── */
 const CustomBoardManager = ({ boardId, boardName, statuses, theme = "default", onThemeChange }: CustomBoardManagerProps) => {
   const { user } = useAuth();
+  const { softDelete } = useRecycleBin();
   const [items, setItems] = useState<BoardItem[]>([]);
   const [loading, setLoading] = useState(true);
   const [newTitle, setNewTitle] = useState("");
