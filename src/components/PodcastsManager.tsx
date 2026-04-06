@@ -37,6 +37,7 @@ const formatDateTime = (dateStr: string) => {
 const PodcastsManager = () => {
   const { viewMode, themeKey, setViewMode, setTheme } = useDashboardDisplay("podcasts");
   const { user } = useAuth();
+  const { softDelete } = useRecycleBin();
   const [podcasts, setPodcasts] = useState<Podcast[]>([]);
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState('');
