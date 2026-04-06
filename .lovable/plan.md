@@ -1,13 +1,9 @@
 
-
-# תוכנית מקיפה: סל מחזור + דיאלוג פרטים + רוסית + חיבור מייל אישי
-
-## סיכום
-יישום 4 פיצ'רים מרכזיים: סל מחזור גלובלי, דיאלוג עריכת פריט, שפה רוסית מלאה, וחיבור מייל אישי (Gmail/Outlook/IMAP) עם ניתוח AI.
+# תוכנית מקיפה: 5 שיפורים מרכזיים
 
 ---
 
-## שלב 1 — סל מחזור גלובלי
+## שיפור 1 — סל מחזור גלובלי
 
 **מיגרציה:**
 ```text
@@ -29,27 +25,34 @@ recycle_bin table:
 
 ---
 
-## שלב 2 — דיאלוג פרטים מלאים (ItemDetailDialog)
+## שיפור 2 — דיאלוג פרטים מלאים (ItemDetailDialog)
 
 **קובץ חדש:** `src/components/ItemDetailDialog.tsx`
 - שם (editable), סטטוס (select), הערות (textarea), subtitle
 - כפתור שמירה + מחיקה
+- תמיכה מלאה בכל השפות (כפתורים, labels, placeholders)
 
 **עדכון:** CompactView, ListView, CardsView — onClick פותח דיאלוג
 
 ---
 
-## שלב 3 — רוסית (שפה שישית)
+## שיפור 3 — לוקליזציה מלאה ל-6 שפות
 
-- `useLanguage.tsx` — הוספת `"ru"` ל-type Language + תרגום מלא ~120 מפתחות
+**המטרה:** כל שפה מקבלת ממשק מלא ומושלם כמו העברית — אף מפתח לא חסר.
+
+**שפות:** עברית (he), אנגלית (en), ספרדית (es), סינית (zh), ערבית (ar), רוסית (ru — חדשה)
+
+**מה ייעשה:**
+- `useLanguage.tsx` — סריקה מלאה של כל ~120+ מפתחות תרגום, השלמת חסרים בכל שפה
+- הוספת `"ru"` ל-type Language + תרגום מלא לרוסית
+- וידוא שכל מפתח חדש (סל מחזור, דיאלוג פרטים, מייל, תצוגות) מתורגם לכל 6 השפות
 - `SettingsPanel.tsx` — "Русский" בבחירת שפה
 - `OnboardingWizard.tsx` — רוסית ברשימת השפות
+- בדיקת RTL/LTR: עברית וערבית RTL, שאר LTR
 
 ---
 
-## שלב 4 — חיבור מייל אישי (Gmail/Outlook/IMAP)
-
-### מבנה טכני
+## שיפור 4 — חיבור מייל אישי (Gmail/Outlook/IMAP)
 
 **מיגרציות DB:**
 ```text
@@ -66,32 +69,34 @@ email_analyses table:
 ```
 
 **Edge Functions חדשות:**
-- `email-oauth-callback/index.ts` — טיפול ב-OAuth callback מ-Gmail/Outlook
-- `email-sync/index.ts` — סנכרון מיילים חדשים (IMAP/Gmail API/Outlook API)
-- `email-analyze/index.ts` — שליחת מיילים ל-AI לסיווג + הצעת פעולות
+- `email-oauth-callback/index.ts` — OAuth callback מ-Gmail/Outlook
+- `email-sync/index.ts` — סנכרון מיילים (IMAP/Gmail API/Outlook API)
+- `email-analyze/index.ts` — ניתוח AI לסיווג + הצעות פעולה
 
 **קבצים חדשים בצד לקוח:**
-- `src/components/EmailIntegration.tsx` — דף ראשי: חיבור חשבון + תצוגת תובנות
-- `src/components/EmailConnectionDialog.tsx` — חיבור Gmail/Outlook/IMAP
-- `src/components/EmailInsightsWidget.tsx` — ווידג'ט לדשבורד ראשי
-- `src/hooks/useEmailIntegration.ts` — hook לניהול חיבורים וסנכרון
+- `src/components/EmailIntegration.tsx` — דף ראשי
+- `src/components/EmailConnectionDialog.tsx` — חיבור חשבון
+- `src/components/EmailInsightsWidget.tsx` — ווידג'ט דשבורד
+- `src/hooks/useEmailIntegration.ts` — hook לניהול
 
-**זרימת OAuth:**
-1. משתמש לוחץ "חבר Gmail" → redirect ל-Google OAuth
-2. Google מחזיר code → Edge Function מחליף ל-tokens
-3. tokens נשמרים מוצפנים ב-DB
-4. סנכרון ראשוני → ניתוח AI → תובנות מוצגות
+**יכולות AI:** סיווג אוטומטי, הצעת פעולות, סיכום שבועי, עומק ניתוח לבחירה
 
-**יכולות AI:**
-- סיווג אוטומטי: תשלומים, משימות, קניות, חשבונות, אישי
-- הצעת פעולות: "חשבונית — להוסיף להוצאות?"
-- סיכום שבועי: "47 מיילים: 12 תשלומים, 8 משימות..."
-- עומק ניתוח לבחירת המשתמש (נושא / נושא+גוף)
+**שילוב:** טאב "מייל", ווידג'ט בדשבורד, הגדרות ב-Settings — הכל מתורגם ל-6 שפות
 
-**שילוב בממשק:**
-- טאב "מייל" בסרגל העליון (ניתן להסתרה)
-- ווידג'ט בדשבורד הראשי עם תובנות
-- הגדרות חיבור ב-Settings
+---
+
+## שיפור 5 — תצוגות עובדות בכל הדשבורדים
+
+**הבעיה:** סרגל "עיצוב" קיים אבל תמיד מוצגת טבלה בלבד — viewMode לא משפיע.
+
+**מה ייעשה:**
+- `TaskSpreadsheetDb.tsx` — רינדור מותנה לפי dashViewMode (טבלה / רשימה / כרטיסים / קנבן / קומפקט)
+- `ShoppingDashboard.tsx` — רינדור מותנה לפי viewMode
+- `PaymentDashboard.tsx` — רינדור מותנה לפי viewMode
+- `NutritionDashboard.tsx` — רינדור מותנה לפי viewMode
+- כל תצוגה תומכת בעריכה: שם, הערות, סטטוס — לא רק בטבלה
+- סטטוסים לקנבן: טרם החל / בטיפול / בוצע (מותאם לכל דשבורד)
+- הכל מתורגם ל-6 שפות
 
 ---
 
@@ -101,7 +106,7 @@ email_analyses table:
 1. `recycle_bin` + RLS
 2. `email_connections` + `email_analyses` + RLS
 
-### קבצים חדשים (8):
+### קבצים חדשים (~11):
 - `src/hooks/useRecycleBin.ts`
 - `src/components/RecycleBin.tsx`
 - `src/components/ItemDetailDialog.tsx`
@@ -113,15 +118,18 @@ email_analyses table:
 - `supabase/functions/email-sync/index.ts`
 - `supabase/functions/email-analyze/index.ts`
 
-### קבצים מעודכנים (13):
-- `useLanguage.tsx` — רוסית מלאה
+### קבצים מעודכנים (~17):
+- `useLanguage.tsx` — לוקליזציה מלאה ל-6 שפות (כל מפתח, כולל חדשים)
 - `SettingsPanel.tsx` — סל מחזור + רוסית + הגדרות מייל
 - `OnboardingWizard.tsx` — רוסית
 - `BooksManager.tsx`, `ShowsManager.tsx`, `PodcastsManager.tsx` — softDelete
-- `TaskSpreadsheetDb.tsx`, `ProjectsManager.tsx`, `CoursesManager.tsx`, `CustomBoardManager.tsx` — softDelete
+- `TaskSpreadsheetDb.tsx` — softDelete + תצוגות עובדות
+- `ProjectsManager.tsx`, `CoursesManager.tsx`, `CustomBoardManager.tsx` — softDelete
 - `CompactView.tsx`, `ListView.tsx`, `CardsView.tsx` — ItemDetailDialog
+- `ShoppingDashboard.tsx`, `PaymentDashboard.tsx`, `NutritionDashboard.tsx` — תצוגות עובדות
 - `Personal.tsx` — טאב מייל
 
 ### סודות נדרשים:
-- OAuth עבור Gmail/Outlook דורש Client ID ו-Client Secret מ-Google Cloud Console ו-Azure Portal. אבקש מהמשתמש להגדיר אותם לפני יישום שלב 4.
-
+- OAuth עבור Gmail: Client ID + Client Secret (מ-Google Cloud Console)
+- OAuth עבור Outlook: Client ID + Client Secret (מ-Azure Portal)
+- ייבקשו מהמשתמש לפני יישום שלב 4

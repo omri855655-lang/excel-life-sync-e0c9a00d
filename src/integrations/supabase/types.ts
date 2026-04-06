@@ -498,6 +498,98 @@ export type Database = {
         }
         Relationships: []
       }
+      email_analyses: {
+        Row: {
+          analysis_depth: string | null
+          category: string | null
+          connection_id: string
+          created_at: string
+          email_date: string | null
+          email_from: string | null
+          email_subject: string | null
+          id: string
+          is_processed: boolean | null
+          suggested_action: Json | null
+          user_id: string
+        }
+        Insert: {
+          analysis_depth?: string | null
+          category?: string | null
+          connection_id: string
+          created_at?: string
+          email_date?: string | null
+          email_from?: string | null
+          email_subject?: string | null
+          id?: string
+          is_processed?: boolean | null
+          suggested_action?: Json | null
+          user_id: string
+        }
+        Update: {
+          analysis_depth?: string | null
+          category?: string | null
+          connection_id?: string
+          created_at?: string
+          email_date?: string | null
+          email_from?: string | null
+          email_subject?: string | null
+          id?: string
+          is_processed?: boolean | null
+          suggested_action?: Json | null
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "email_analyses_connection_id_fkey"
+            columns: ["connection_id"]
+            isOneToOne: false
+            referencedRelation: "email_connections"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      email_connections: {
+        Row: {
+          access_token: string | null
+          connected_at: string
+          created_at: string
+          email_address: string
+          id: string
+          last_sync: string | null
+          provider: string
+          refresh_token: string | null
+          settings: Json | null
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          access_token?: string | null
+          connected_at?: string
+          created_at?: string
+          email_address: string
+          id?: string
+          last_sync?: string | null
+          provider?: string
+          refresh_token?: string | null
+          settings?: Json | null
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          access_token?: string | null
+          connected_at?: string
+          created_at?: string
+          email_address?: string
+          id?: string
+          last_sync?: string | null
+          provider?: string
+          refresh_token?: string | null
+          settings?: Json | null
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       email_send_log: {
         Row: {
           created_at: string
@@ -1311,6 +1403,36 @@ export type Database = {
           id?: string
           title?: string
           updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
+      recycle_bin: {
+        Row: {
+          deleted_at: string
+          expires_at: string
+          id: string
+          item_data: Json
+          source_id: string
+          source_table: string
+          user_id: string
+        }
+        Insert: {
+          deleted_at?: string
+          expires_at?: string
+          id?: string
+          item_data: Json
+          source_id: string
+          source_table: string
+          user_id: string
+        }
+        Update: {
+          deleted_at?: string
+          expires_at?: string
+          id?: string
+          item_data?: Json
+          source_id?: string
+          source_table?: string
           user_id?: string
         }
         Relationships: []

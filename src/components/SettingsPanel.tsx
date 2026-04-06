@@ -12,11 +12,12 @@ import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Lock, Shield, LayoutGrid, Plus, Trash2, X, Eye, EyeOff, Globe, Palette, Moon, Sun, Key, UserX, Bell, PanelLeft, LayoutList, Columns, Smartphone, Menu, Type, CalendarDays } from "lucide-react";
+import { Lock, Shield, LayoutGrid, Plus, Trash2, X, Eye, EyeOff, Globe, Palette, Moon, Sun, Key, UserX, Bell, PanelLeft, LayoutList, Columns, Smartphone, Menu, Type, CalendarDays, Recycle } from "lucide-react";
 import { toast } from "sonner";
 import { useLanguage } from "@/hooks/useLanguage";
 import TelegramSettings from "@/components/TelegramSettings";
 import NotificationSettings from "@/components/NotificationSettings";
+import RecycleBin from "@/components/RecycleBin";
 
 const ChangePasswordForm = () => {
   const [currentPw, setCurrentPw] = useState("");
@@ -603,9 +604,13 @@ const SettingsPanel = () => {
             <Button variant={lang === "es" ? "default" : "outline"} onClick={() => setLang("es" as any)} className="flex-1 min-w-[80px]">Español</Button>
             <Button variant={lang === "zh" ? "default" : "outline"} onClick={() => setLang("zh" as any)} className="flex-1 min-w-[80px]">中文</Button>
             <Button variant={lang === "ar" ? "default" : "outline"} onClick={() => setLang("ar" as any)} className="flex-1 min-w-[80px]">العربية</Button>
+            <Button variant={lang === "ru" ? "default" : "outline"} onClick={() => setLang("ru" as any)} className="flex-1 min-w-[80px]">Русский</Button>
           </div>
         </CardContent>
       </Card>
+
+      {/* Recycle Bin */}
+      <RecycleBin />
     </div>
   );
 };
