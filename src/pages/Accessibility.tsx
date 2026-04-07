@@ -1,51 +1,54 @@
 import { Button } from '@/components/ui/button';
 import { useNavigate } from 'react-router-dom';
-import { ArrowRight } from 'lucide-react';
+import { ArrowRight, ArrowLeft } from 'lucide-react';
+import { useLanguage } from '@/hooks/useLanguage';
 
 const Accessibility = () => {
   const navigate = useNavigate();
+  const { t, dir, lang } = useLanguage();
+  const isRtl = dir === 'rtl';
+  const BackIcon = isRtl ? ArrowRight : ArrowLeft;
+
+  const features = [
+    t('a11yFeatureKeyboard'),
+    t('a11yFeatureRtl'),
+    t('a11yFeatureHeadings'),
+    t('a11yFeatureAria'),
+    t('a11yFeatureContrast'),
+    t('a11yFeatureSkip'),
+    t('a11yFeatureTheme'),
+    t('a11yFeatureForms'),
+  ];
+
   return (
-    <div className="min-h-screen bg-background" dir="rtl">
+    <div className="min-h-screen bg-background" dir={dir}>
       <div className="max-w-3xl mx-auto px-4 py-12 space-y-6">
         <Button variant="ghost" onClick={() => navigate(-1)} className="gap-1 mb-4">
-          <ArrowRight className="h-4 w-4" />חזרה
+          <BackIcon className="h-4 w-4" />{t('back')}
         </Button>
-        <h1 className="text-3xl font-bold">הצהרת נגישות</h1>
-        <p className="text-sm text-muted-foreground">עדכון אחרון: {new Date().toLocaleDateString('he-IL')}</p>
+        <h1 className="text-3xl font-bold">{t('accessibilityStatement')}</h1>
+        <p className="text-sm text-muted-foreground">{t('lastUpdated')}: {new Date().toLocaleDateString(lang === 'he' ? 'he-IL' : lang === 'ar' ? 'ar-SA' : lang === 'zh' ? 'zh-CN' : lang === 'ru' ? 'ru-RU' : lang === 'es' ? 'es-ES' : 'en-US')}</p>
 
         <section className="space-y-3">
-          <h2 className="text-xl font-semibold">מחויבות לנגישות</h2>
-          <p className="text-sm leading-relaxed text-muted-foreground">
-            אנו מחויבים להנגיש את מערכת Tabro לכלל האוכלוסייה, כולל אנשים עם מוגבלויות, בהתאם לתקן הישראלי (ת"י 5568) ולהנחיות WCAG 2.1 ברמה AA.
-          </p>
+          <h2 className="text-xl font-semibold">{t('a11yCommitment')}</h2>
+          <p className="text-sm leading-relaxed text-muted-foreground">{t('a11yCommitmentText')}</p>
         </section>
 
         <section className="space-y-3">
-          <h2 className="text-xl font-semibold">מה עשינו</h2>
+          <h2 className="text-xl font-semibold">{t('a11yWhatWeDid')}</h2>
           <ul className="list-disc list-inside text-sm leading-relaxed text-muted-foreground space-y-1">
-            <li>תמיכה מלאה בניווט מקלדת</li>
-            <li>תמיכה ב-RTL (ימין לשמאל) לעברית</li>
-            <li>היררכיית כותרות תקינה (H1-H6)</li>
-            <li>תוויות ARIA באלמנטים אינטראקטיביים</li>
-            <li>ניגודיות צבעים מספקת</li>
-            <li>כפתור "דלג לתוכן" (Skip Link) לניווט מהיר</li>
-            <li>מצב כהה ובהיר לנוחות צפייה</li>
-            <li>טפסים עם תוויות ברורות והודעות שגיאה</li>
+            {features.map((f, i) => <li key={i}>{f}</li>)}
           </ul>
         </section>
 
         <section className="space-y-3">
-          <h2 className="text-xl font-semibold">מגבלות ידועות</h2>
-          <p className="text-sm leading-relaxed text-muted-foreground">
-            ייתכנו רכיבים מסוימים שעדיין אינם מונגשים באופן מלא. אנו עובדים באופן שוטף על שיפור הנגישות.
-          </p>
+          <h2 className="text-xl font-semibold">{t('a11yLimitations')}</h2>
+          <p className="text-sm leading-relaxed text-muted-foreground">{t('a11yLimitationsText')}</p>
         </section>
 
         <section className="space-y-3">
-          <h2 className="text-xl font-semibold">יצירת קשר</h2>
-          <p className="text-sm leading-relaxed text-muted-foreground">
-            נתקלת בבעיית נגישות? נשמח לשמוע ממך. ניתן לפנות דרך טופס יצירת הקשר באתר.
-          </p>
+          <h2 className="text-xl font-semibold">{t('a11yContact')}</h2>
+          <p className="text-sm leading-relaxed text-muted-foreground">{t('a11yContactText')}</p>
         </section>
       </div>
     </div>

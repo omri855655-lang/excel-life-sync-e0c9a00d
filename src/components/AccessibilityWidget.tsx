@@ -1,6 +1,7 @@
 import { useState, useEffect, useCallback } from 'react';
 import { Button } from '@/components/ui/button';
 import { X, Plus, Minus, Eye, MousePointer, Link2, Pause } from 'lucide-react';
+import { useLanguage } from '@/hooks/useLanguage';
 
 const STORAGE_KEY = 'a11y-prefs';
 
@@ -21,6 +22,7 @@ const defaultPrefs: A11yPrefs = {
 };
 
 const AccessibilityWidget = () => {
+  const { t, dir } = useLanguage();
   const [open, setOpen] = useState(false);
   const [prefs, setPrefs] = useState<A11yPrefs>(() => {
     try {
@@ -57,12 +59,11 @@ const AccessibilityWidget = () => {
 
   return (
     <>
-      {/* Floating button */}
       <button
         onClick={() => setOpen(!open)}
         className="fixed bottom-4 left-4 z-[9999] w-12 h-12 rounded-full bg-primary text-primary-foreground shadow-lg flex items-center justify-center hover:scale-110 transition-transform focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2"
-        aria-label="תפריט נגישות"
-        title="נגישות"
+        aria-label={t('accessibilitySettings')}
+        title={t('accessibilitySettings')}
       >
         <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="w-6 h-6">
           <circle cx="12" cy="4.5" r="2.5" />
@@ -71,67 +72,45 @@ const AccessibilityWidget = () => {
         </svg>
       </button>
 
-      {/* Panel */}
       {open && (
-        <div className="fixed bottom-20 left-4 z-[9999] w-72 rounded-xl border bg-card shadow-2xl p-4 space-y-3" dir="rtl">
+        <div className="fixed bottom-20 left-4 z-[9999] w-72 rounded-xl border bg-card shadow-2xl p-4 space-y-3" dir={dir}>
           <div className="flex items-center justify-between">
-            <h3 className="font-bold text-sm">הגדרות נגישות</h3>
+            <h3 className="font-bold text-sm">{t('accessibilitySettings')}</h3>
             <Button variant="ghost" size="icon" className="h-6 w-6" onClick={() => setOpen(false)}><X className="h-4 w-4" /></Button>
           </div>
 
-          {/* Font size */}
           <div className="flex items-center justify-between">
-            <span className="text-sm">גודל גופן</span>
+            <span className="text-sm">{t('fontSize')}</span>
             <div className="flex items-center gap-1">
-              <Button variant="outline" size="icon" className="h-7 w-7" onClick={() => update({ fontSize: Math.max(80, prefs.fontSize - 10) })} aria-label="הקטן גופן">
+              <Button variant="outline" size="icon" className="h-7 w-7" onClick={() => update({ fontSize: Math.max(80, prefs.fontSize - 10) })} aria-label={t('reduceFontSize')}>
                 <Minus className="h-3 w-3" />
               </Button>
               <span className="text-xs w-10 text-center font-medium">{prefs.fontSize}%</span>
-              <Button variant="outline" size="icon" className="h-7 w-7" onClick={() => update({ fontSize: Math.min(150, prefs.fontSize + 10) })} aria-label="הגדל גופן">
+              <Button variant="outline" size="icon" className="h-7 w-7" onClick={() => update({ fontSize: Math.min(150, prefs.fontSize + 10) })} aria-label={t('increaseFontSize')}>
                 <Plus className="h-3 w-3" />
               </Button>
             </div>
           </div>
 
-          {/* High contrast */}
-          <button
-            onClick={() => update({ highContrast: !prefs.highContrast })}
-            className={`w-full flex items-center gap-2 px-3 py-2 rounded-lg text-sm transition-colors ${prefs.highContrast ? 'bg-primary/10 text-primary font-medium' : 'hover:bg-muted'}`}
-          >
-            <Eye className="h-4 w-4" />
-            <span>ניגודיות גבוהה</span>
+          <button onClick={() => update({ highContrast: !prefs.highContrast })} className={`w-full flex items-center gap-2 px-3 py-2 rounded-lg text-sm transition-colors ${prefs.highContrast ? 'bg-primary/10 text-primary font-medium' : 'hover:bg-muted'}`}>
+            <Eye className="h-4 w-4" /><span>{t('highContrast')}</span>
           </button>
 
-          {/* Disable animations */}
-          <button
-            onClick={() => update({ disableAnimations: !prefs.disableAnimations })}
-            className={`w-full flex items-center gap-2 px-3 py-2 rounded-lg text-sm transition-colors ${prefs.disableAnimations ? 'bg-primary/10 text-primary font-medium' : 'hover:bg-muted'}`}
-          >
-            <Pause className="h-4 w-4" />
-            <span>השבת אנימציות</span>
+          <button onClick={() => update({ disableAnimations: !prefs.disableAnimations })} className={`w-full flex items-center gap-2 px-3 py-2 rounded-lg text-sm transition-colors ${prefs.disableAnimations ? 'bg-primary/10 text-primary font-medium' : 'hover:bg-muted'}`}>
+            <Pause className="h-4 w-4" /><span>{t('disableAnimations')}</span>
           </button>
 
-          {/* Big cursor */}
-          <button
-            onClick={() => update({ bigCursor: !prefs.bigCursor })}
-            className={`w-full flex items-center gap-2 px-3 py-2 rounded-lg text-sm transition-colors ${prefs.bigCursor ? 'bg-primary/10 text-primary font-medium' : 'hover:bg-muted'}`}
-          >
-            <MousePointer className="h-4 w-4" />
-            <span>סמן מוגדל</span>
+          <button onClick={() => update({ bigCursor: !prefs.bigCursor })} className={`w-full flex items-center gap-2 px-3 py-2 rounded-lg text-sm transition-colors ${prefs.bigCursor ? 'bg-primary/10 text-primary font-medium' : 'hover:bg-muted'}`}>
+            <MousePointer className="h-4 w-4" /><span>{t('bigCursor')}</span>
           </button>
 
-          {/* Highlight links */}
-          <button
-            onClick={() => update({ highlightLinks: !prefs.highlightLinks })}
-            className={`w-full flex items-center gap-2 px-3 py-2 rounded-lg text-sm transition-colors ${prefs.highlightLinks ? 'bg-primary/10 text-primary font-medium' : 'hover:bg-muted'}`}
-          >
-            <Link2 className="h-4 w-4" />
-            <span>הדגש קישורים</span>
+          <button onClick={() => update({ highlightLinks: !prefs.highlightLinks })} className={`w-full flex items-center gap-2 px-3 py-2 rounded-lg text-sm transition-colors ${prefs.highlightLinks ? 'bg-primary/10 text-primary font-medium' : 'hover:bg-muted'}`}>
+            <Link2 className="h-4 w-4" /><span>{t('highlightLinks')}</span>
           </button>
 
           <div className="flex items-center justify-between pt-1 border-t">
-            <Button variant="ghost" size="sm" className="text-xs" onClick={reset}>איפוס</Button>
-            <a href="/accessibility" className="text-xs text-primary hover:underline">הצהרת נגישות</a>
+            <Button variant="ghost" size="sm" className="text-xs" onClick={reset}>{t('reset')}</Button>
+            <a href="/accessibility" className="text-xs text-primary hover:underline">{t('accessibilityStatement')}</a>
           </div>
         </div>
       )}
