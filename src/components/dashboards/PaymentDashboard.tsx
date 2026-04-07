@@ -1,4 +1,6 @@
 import { useState, useEffect, useCallback, useMemo } from "react";
+import CreditCardConnect from "@/components/dashboards/CreditCardConnect";
+import CreditCardImport from "@/components/dashboards/CreditCardImport";
 import { useAuth } from "@/hooks/useAuth";
 import { supabase } from "@/integrations/supabase/client";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
