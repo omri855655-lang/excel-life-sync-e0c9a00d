@@ -700,6 +700,11 @@ ${context}
             }
           />
         </TabsContent>
+
+        <TabsContent value="credit-cards" className="space-y-4">
+          <CreditCardConnect />
+          <CreditCardImport />
+        </TabsContent>
       </Tabs>
     </div>
   );
