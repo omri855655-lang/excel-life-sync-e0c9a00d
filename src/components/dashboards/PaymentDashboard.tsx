@@ -149,9 +149,9 @@ const PaymentDashboard = () => {
       due_date: newDueDate || null,
       recurring: newRecurring,
     });
-    if (error) { toast.error("שגיאה"); return; }
+    if (error) { toast.error(t("error" as any)); return; }
     setNewTitle(""); setNewAmount(""); setNewCategory(""); setNewMethod(""); setNewDueDate("");
-    toast.success(newType === "income" ? "הכנסה נוספה ✅" : "הוצאה נוספה");
+    toast.success(newType === "income" ? t("incomeAdded" as any) : t("expenseAdded" as any));
     fetchPayments();
   };
 
