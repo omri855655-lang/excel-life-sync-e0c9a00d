@@ -291,11 +291,11 @@ ${context}
       {/* Hero balance card */}
       <Card className={`${balance >= 0 ? "bg-gradient-to-br from-green-50 to-emerald-50 dark:from-green-950/30 dark:to-emerald-950/30 border-green-200" : "bg-gradient-to-br from-red-50 to-rose-50 dark:from-red-950/30 dark:to-rose-950/30 border-red-200"}`}>
         <CardContent className="py-6 text-center">
-          <p className="text-sm text-muted-foreground mb-1">סה״כ נותר</p>
+          <p className="text-sm text-muted-foreground mb-1">{t("totalRemaining" as any)}</p>
           <p className={`text-4xl font-bold ${balance >= 0 ? "text-green-600" : "text-red-600"}`}>
             ₪{Math.abs(balance).toLocaleString()}
           </p>
-          <p className="text-xs text-muted-foreground mt-1">{balance >= 0 ? "מצוין! יש לך עודף 👏" : "שים לב - ההוצאות עולות על ההכנסות ⚠️"}</p>
+          <p className="text-xs text-muted-foreground mt-1">{balance >= 0 ? t("excellentSurplus" as any) : t("warningOverspend" as any)}</p>
           <div className="flex justify-center gap-6 mt-4">
             <div className="text-center">
               <TrendingUp className="h-4 w-4 text-green-500 mx-auto mb-1" />
