@@ -64,6 +64,23 @@ const translations = {
     guideDisclaimer: "⚠️ הערה", guideDisclaimerText: "כל המידע כאן הוא לצרכי למידה בלבד ואינו מהווה ייעוץ השקעות מקצועי.",
     // Months
     january: "ינואר", february: "פברואר", march: "מרץ", april: "אפריל", may: "מאי", june: "יוני", july: "יולי", august: "אוגוסט", september: "ספטמבר", october: "אוקטובר", november: "נובמבר", december: "דצמבר",
+    // Settings panel
+    personalDetails: "פרטים אישיים", personalDetailsDesc: "השם שלך יוצג בגליונות משותפים כדי שאחרים ידעו מי הוסיף או עדכן משימות.", firstName: "שם פרטי", lastName: "שם משפחה",
+    designAndColors: "עיצוב וצבעים", designDesc: "אפשר לבחור ערכת צבעים לכל האתר ולעבור בין מראה בהיר וכהה.", colorScheme: "ערכת צבעים", displayMode: "מצב תצוגה", light: "בהיר", dark: "כהה",
+    font: "גופן", fontDesc: "בחר את הגופן שמתאים לך. השינוי חל על כל האתר.",
+    interfaceLayout: "מבנה ממשק", layoutDesc: "בחר את סגנון הניווט שהכי נוח לך. השינוי מיידי.",
+    layoutTabs: "לשוניות", layoutTabsDesc: "סרגל עליון קלאסי", layoutSidebar: "סרגל צד", layoutSidebarDesc: "תפריט צד מתקפל", layoutCompact: "קומפקטי", layoutCompactDesc: "תפריטים נפתחים", layoutBottomNav: "סרגל תחתון", layoutBottomNavDesc: "ניווט מסך קטן", layoutHamburger: "המבורגר", layoutHamburgerDesc: "תפריט נפתח", layoutCards: "כרטיסיות", layoutCardsDesc: "דשבורד ראשי", layoutSplitView: "פאנל כפול", layoutSplitViewDesc: "ניווט + תוכן",
+    customColorsTitle: "התאמת צבעים אישית", customColorsDesc: "שנה צבעים ספציפיים לעיצוב הנוכחי. השינויים נשמרים אוטומטית.", primaryColor: "צבע ראשי", backgroundColor: "צבע רקע", cardColor: "צבע כרטיס", resetToDefault: "איפוס לברירת מחדל",
+    pinActivated: "קוד גישה הופעל", pinDeactivated: "קוד גישה בוטל", pinUpdated: "קוד הגישה עודכן בהצלחה!", settingsError: "שגיאה בעדכון ההגדרות",
+    changePasswordTitle: "שינוי סיסמה", passwordMinLength: "סיסמה חייבת להכיל לפחות 6 תווים", changing: "משנה...",
+    deleteAccount: "מחיקת חשבון", deleteAccountDesc: "מחיקת החשבון תסיר את כל הנתונים שלך לצמיתות. פעולה זו אינה ניתנת לביטול.", deleteMyAccount: "מחק את החשבון שלי", deleteConfirmFirst: "⚠️ פעולה זו תמחק את כל הנתונים שלך לצמיתות. לא ניתן לבטל פעולה זו.\n\nהאם להמשיך?", deleteConfirmFinal: "אישור אחרון - האם אתה בטוח שברצונך למחוק את החשבון? תישלח הודעת אימייל לאישור סופי.", deleteEmailSent: "נשלח אימייל אישור מחיקה לכתובת המייל שלך. לחץ על הקישור באימייל כדי לאשר.", deleteEmailSentShort: "לאחר לחיצה, תישלח הודעת אימייל עם קישור אישור. רק לאחר לחיצה על הקישור החשבון יימחק.", deleteRequestError: "שגיאה בשליחת בקשת מחיקה",
+    customListsDashboards: "רשימות ודשבורדים מותאמים אישית", customListsDesc: "צור קטגוריות רשימות ודשבורדים מותאמים לעקוב אחר כל דבר שתרצה (למידה, כושר, מתכונים ועוד). הן יופיעו כלשוניות בסרגל העליון.", displayedInDashboardBadge: "מוצג בדשבורד", nameChanged: "שם שונה",
+    templateTasks: "רשימת משימות (כולל דשבורד)", templateTodo: "רשימת To-Do", templateShopping: "רשימת קניות", templateTracking: "קטגוריית רשימות", templateLearning: "רשימת למידה/קריאה", templateKanban: "קנבן", templateCustom: "מותאם אישית",
+    createCategory: "צור קטגוריה", addListDashboard: "הוסף קטגוריית רשימות/דשבורד חדש", enterName: "יש להזין שם", enterStatus: "יש להזין לפחות סטטוס אחד", dashboardAdded: "הדשבורד נוסף בהצלחה!", dashboardCreateError: "שגיאה ביצירת דשבורד", deletedSuccessfully: "נמחק בהצלחה", deleteError2: "שגיאה במחיקה", deleteConfirmBoard: "למחוק את \"{name}\"? כל הפריטים בו יימחקו.",
+    tabVisibility: "הצגת לשוניות", tabVisibilityDesc: "בחר אילו לשוניות יוצגו בסרגל העליון. לשוניות מוסתרות לא יופיעו אבל הנתונים שלהן נשמרים.",
+    notifications: "התראות",
+    hebrewDate: "תאריך עברי", hebrewDateDesc: "הצג תאריך עברי בדשבורד הראשי (לפי הלוח העברי).", showHebrewDate: "הצג תאריך עברי",
+    languageTitle: "שפה / Language", languageChoose: "בחר את שפת הממשק / Choose interface language",
   },
   en: {
     personalArea: "Personal Area", installApp: "Install App", signOut: "Sign Out", signedOutSuccess: "Signed out successfully", loading: "Loading...",
