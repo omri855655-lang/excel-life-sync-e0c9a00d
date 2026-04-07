@@ -320,7 +320,7 @@ ${context}
       <Card className="border-primary/20">
         <CardContent className="py-4">
           <div className="flex items-center justify-between mb-3">
-            <h3 className="text-sm font-semibold flex items-center gap-2"><PiggyBank className="h-4 w-4 text-primary" />יעד תקציב</h3>
+            <h3 className="text-sm font-semibold flex items-center gap-2"><PiggyBank className="h-4 w-4 text-primary" />{t("budgetTarget" as any)}</h3>
             <div className="flex gap-1">
               {(["weekly", "monthly", "quarterly", "yearly"] as const).map(p => (
                 <button key={p} onClick={() => setBudgetPeriod(p)} className={`px-2 py-0.5 rounded text-[10px] font-medium transition-all ${budgetPeriod === p ? "bg-primary text-primary-foreground" : "bg-muted text-muted-foreground hover:bg-muted/80"}`}>
