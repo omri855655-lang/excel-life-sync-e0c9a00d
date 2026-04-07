@@ -11,6 +11,16 @@ Deno.serve(async (req) => {
   }
 
   try {
+    const body = await req.json().catch(() => ({}))
+    const action = body.action || 'stats'
+
+    // Password verification doesn't require auth
+    if (action === 'verify_password') {
+      const correctPass = Deno.env.get('ADMIN_DASHBOARD_PASSWORD') || ''
+      const ok = correctPass && body.password === correctPass
+      return new Response(JSON.stringify({ ok }), { headers: { ...corsHeaders, 'Content-Type': 'application/json' } })
+    }
+
     const authHeader = req.headers.get('Authorization')
     if (!authHeader) {
       return new Response(JSON.stringify({ error: 'Unauthorized' }), { status: 401, headers: corsHeaders })
@@ -42,8 +52,7 @@ Deno.serve(async (req) => {
       return new Response(JSON.stringify({ error: 'Forbidden' }), { status: 403, headers: corsHeaders })
     }
 
-    const body = await req.json().catch(() => ({}))
-    const action = body.action || 'stats'
+    // body and action already parsed above
 
     if (action === 'stats') {
       // Get total users count
