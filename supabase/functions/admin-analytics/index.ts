@@ -52,8 +52,7 @@ Deno.serve(async (req) => {
       return new Response(JSON.stringify({ error: 'Forbidden' }), { status: 403, headers: corsHeaders })
     }
 
-    const body = await req.json().catch(() => ({}))
-    const action = body.action || 'stats'
+    // body and action already parsed above
 
     if (action === 'stats') {
       // Get total users count
