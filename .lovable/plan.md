@@ -1,85 +1,103 @@
 
+# תוכנית מלאה: Salt Edge + Gmail OAuth + תרגום מלא
 
-# תוכנית: חיבור אשראי + תרגום מלא + נגישות + תיקון מייל
+## חלק 1: חיבור בנקים ואשראי עם Salt Edge
 
-## סיכום
-4 שיפורים: (1) חיבור לאפליקציות אשראי ישראליות בזמן אמת + ייבוא CSV, (2) תרגום אמיתי של כל הממשק ל-6 שפות, (3) נגישות לפי ת"י 5568, (4) תיקון סנכרון מייל.
+### Secrets נדרשים
+- `SALT_EDGE_APP_ID` — מ-Salt Edge dashboard
+- `SALT_EDGE_SECRET` — מ-Salt Edge dashboard
 
----
+### מיגרציה — טבלת `bank_connections`
+- `id`, `user_id`, `salt_edge_connection_id`, `salt_edge_customer_id`, `provider_name`, `status`, `last_sync`, `created_at`
+- RLS: רק המשתמש רואה את שלו
 
-## 1. חיבור אפליקציות אשראי (Max, Cal, Isracard, Visa)
+### Edge Function חדשה: `salt-edge-connect/index.ts`
+- Actions: `create_customer`, `create_connect_session`, `list_connections`, `fetch_transactions`
+- Headers: `App-id` + `Secret` מ-secrets
+- Salt Edge API v5 (`https://www.saltedge.com/api/v5/`)
+- שמירת עסקאות ב-`payment_tracking`
 
-חברות האשראי בישראל לא מספקות API פתוח — הדרך לגשת לנתונים היא דרך פרויקט הקוד הפתוח **israeli-bank-scrapers** שמדמה כניסה לאתר חברת האשראי ושולף עסקאות.
+### רכיב חדש: `BankConnect.tsx` (מחליף CreditCardConnect + CreditCardImport)
+- כפתור "חבר בנק/אשראי" → פותח Salt Edge Connect URL
+- רשימת חיבורים + סטטוס + כפתור רענון
+- תצוגת עסקאות: ירוק להכנסות, אדום להוצאות
 
-**מה ייבנה:**
-
-- **רכיב חדש** `CreditCardConnect.tsx` — טופס חיבור לחברת אשראי:
-  - בחירת חברה (Max, Cal, Isracard, Visa Cal, Leumi Card, Amex)
-  - הזנת שם משתמש + סיסמה (מוצפנים, לא נשמרים בצד לקוח)
-  - כפתור "סנכרן עכשיו" + סנכרון תקופתי
-  - תצוגת עסקאות אחרונות עם סיווג אוטומטי לקטגוריות
-
-- **Edge Function חדשה** `credit-card-sync/index.ts`:
-  - מקבלת credentials מוצפנים + שם חברה
-  - משתמשת ב-israeli-bank-scrapers לשליפת עסקאות
-  - AI (Gemini) מסווג כל עסקה לקטגוריה (סופר, דלק, ביגוד...)
-  - שומרת ב-`payment_tracking` עם `payment_method: "credit_card"`
-
-- **טבלת DB חדשה** `credit_card_connections`:
-  - `user_id`, `provider`, `encrypted_credentials`, `last_sync`, `sync_status`
-  - RLS: רק המשתמש רואה את שלו
-
-- **שילוב בדשבורד תשלומים**: כפתור "חבר כרטיס אשראי" + תצוגת עסקאות מסונכרנות + גרפים לפי קטגוריה
-
-- **ייבוא CSV/PDF**: גם אפשרות ידנית לייבוא דפי פירוט
+### עדכון: `PaymentDashboard.tsx`
+- טאב "אשראי" → "בנק ואשראי" עם `BankConnect`
+- מחיקת imports ישנים
 
 ---
 
-## 2. תרגום מלא — תיקון כל הטקסט ה-hardcoded
+## חלק 2: חיבור Gmail אמיתי עם OAuth
 
-**הבעיה**: טאבים כמו "תזונה ושינה", "קניות", "הכנסות והוצאות", "מפת חלומות", "שיתופים" הם hardcoded בעברית ב-`Personal.tsx`. קטגוריות תשלום/קניות גם הן בעברית בלבד.
+### Secrets נדרשים
+- `GOOGLE_CLIENT_ID`
+- `GOOGLE_CLIENT_SECRET`
 
-**מה יתוקן:**
+### Edge Function חדשה: `gmail-auth/index.ts`
+- Action `get_auth_url`: יוצר URL הסכמה של Google OAuth 2.0
+- Action `exchange_code`: מחליף authorization code ל-tokens
+- שומר `access_token` + `refresh_token` ב-`email_connections`
 
-- **`Personal.tsx`** שורות 89-95 — החלפה ל-`t("nutrition")`, `t("dreams")`, `t("shopping")`, `t("payments")`, `t("notes")`, `t("sharing")`
-- **`useLanguage.tsx`** — הוספת ~60 מפתחות חדשים לכל 6 שפות:
-  - שמות טאבים, קטגוריות תשלום (23), קטגוריות קניות (12), סטטוסים
-  - פורמט תאריכים/מספרים/מטבע לפי locale
-- **`PaymentDashboard.tsx`** — קטגוריות `CATEGORIES` ו-`FINANCIAL_GUIDES` מתורגמים
-- **`ShoppingDashboard.tsx`** — קטגוריות סופר מתורגמות
-- **`NutritionDashboard.tsx`** — כל התוויות מתורגמות
-- **`AccessibilityWidget.tsx`** — כפתורים ותוויות מתורגמים
-- **`OnboardingWizard.tsx`** — רוסית בבחירת שפות
-- **כללי RTL/LTR**: he+ar → RTL, שאר → LTR
+### עדכון: `email-sync/index.ts`
+- קריאה אמיתית ל-Gmail API עם access_token
+- רענון token אוטומטי עם refresh_token
+- שליפת headers של מיילים + סיווג AI (Gemini)
 
----
-
-## 3. נגישות מלאה (ת"י 5568 / WCAG 2.1 AA)
-
-- **`index.css`**: focus-visible outline (3px), high-contrast mode, prefers-reduced-motion
-- **`AccessibilityWidget.tsx`**: תרגום לכל 6 שפות + `aria-label` דינמי
-- **`Accessibility.tsx`**: דף הצהרת נגישות מתורגם
-- **`SkipLink.tsx`**: תרגום "דלג לתוכן"
-- **סקירת ARIA**: בדיקת heading hierarchy, labels בטפסים, ניגודיות צבעים
+### עדכון: `EmailConnectionDialog.tsx`
+- לחיצה על Gmail → פתיחת חלון OAuth (לא טופס ידני)
+- callback שומר את החיבור
 
 ---
 
-## 4. תיקון סנכרון מייל
+## חלק 3: תרגום מלא — כל ה-hardcoded בעברית
 
-- **Edge Function חדשה** `email-sync/index.ts` — כרגע לא קיימת, לכן הסנכרון נכשל
-- תתמוך ב-IMAP (חיבור ישיר) + placeholder ל-Gmail/Outlook OAuth
-- AI סיווג מיילים לקטגוריות (תשלום, משימה, קניות)
+### `SettingsPanel.tsx` (618 שורות)
+- שורה 29: "סיסמה חייבת להכיל..." → `t("passwordMinLength")`
+- שורה 30: "הסיסמאות לא תואמות" → `t("passwordsMismatch")`
+- שורה 34/36: הודעות שגיאה/הצלחה
+- שורה 42-49: labels של סיסמה
+- שורה 72: "לביצוע,בתהליך,הושלם" → translated defaults
+- שורה 117-119: הודעות PIN
+- כל labels בהמשך הקובץ (theme, layout, language, boards)
+
+### `TelegramSettings.tsx` (207 שורות)
+- כל הטקסט: "בוט טלגרם", "מחובר", "שלבים לחיבור", הודעות toast
+
+### `ShoppingDashboard.tsx` (895 שורות)
+- שורה 36: `SUPERMARKET_CATEGORIES` — 12 קטגוריות
+- שורה 38: `QUANTITY_UNITS` — 10 יחידות
+- שורה 40-200+: `CATEGORY_ITEMS` — 300+ פריטים (ירקות, חלב, בשר...)
+- כל labels וכפתורים בהמשך
+
+### `PaymentDashboard.tsx` (714 שורות)
+- שורה 44: `CATEGORIES` — 23 קטגוריות
+- שורות 46-80: `FINANCIAL_GUIDES` — 4 מדריכים עם כותרות ותוכן
+- כל labels, כפתורים, הודעות
+
+### `NutritionDashboard.tsx` (267 שורות)
+- כל labels: "תזונה", "שינה", "פרופיל בריאות", שמות שדות
+
+### `EmailConnectionDialog.tsx`
+- fallback עברי → `t()` keys
+
+### `BooksManager.tsx`, `ShowsManager.tsx`, `PodcastsManager.tsx`
+- סטטוסים hardcoded ("לקרוא", "קורא", "סיימתי")
+
+### `useLanguage.tsx`
+- הוספת ~120 מפתחות חדשים × 6 שפות (he, en, es, zh, ar, ru)
+- כולל: קטגוריות תשלום, קטגוריות קניות, יחידות כמות, סטטוסים, הודעות מערכת, מדריכים פיננסיים
 
 ---
 
-## סיכום טכני
+## סיכום קבצים
 
-| סוג | קבצים |
-|-----|--------|
-| מיגרציה | `credit_card_connections` + RLS |
-| Edge Functions חדשות | `credit-card-sync`, `email-sync` |
-| רכיבים חדשים | `CreditCardConnect.tsx`, `CreditCardImport.tsx` |
-| עדכונים | `useLanguage.tsx` (~60 מפתחות × 6 שפות), `Personal.tsx`, `PaymentDashboard.tsx`, `ShoppingDashboard.tsx`, `NutritionDashboard.tsx`, `AccessibilityWidget.tsx`, `Accessibility.tsx`, `SkipLink.tsx`, `OnboardingWizard.tsx`, `index.css` |
-
-**הערה חשובה**: חיבור אפליקציות אשראי דורש הרצת scraper בצד שרת. הספרייה `israeli-bank-scrapers` פועלת ב-Node.js עם puppeteer/playwright — ייתכן שנצטרך להריץ אותה כ-microservice חיצוני (Deno Edge Functions לא תומכות ב-puppeteer). אציע פתרון חלופי: API של שירות כמו **Caspion** או **Fincheck** שמספקים גישה ל-scrapers כשירות ענן, או לחלופין נתחיל עם ייבוא CSV + סנכרון ידני ונוסיף חיבור ישיר בהמשך.
-
+| פעולה | קבצים |
+|-------|--------|
+| Secrets חדשים | `SALT_EDGE_APP_ID`, `SALT_EDGE_SECRET`, `GOOGLE_CLIENT_ID`, `GOOGLE_CLIENT_SECRET` |
+| מיגרציה | `bank_connections` table + RLS |
+| Edge Functions חדשות | `salt-edge-connect`, `gmail-auth` |
+| Edge Functions מעודכנות | `email-sync` |
+| רכיב חדש | `BankConnect.tsx` |
+| מחיקה | `CreditCardConnect.tsx`, `CreditCardImport.tsx` |
+| תרגום | `useLanguage.tsx` (~120 keys × 6), `SettingsPanel.tsx`, `TelegramSettings.tsx`, `ShoppingDashboard.tsx`, `PaymentDashboard.tsx`, `NutritionDashboard.tsx`, `EmailConnectionDialog.tsx`, `BooksManager.tsx`, `ShowsManager.tsx`, `PodcastsManager.tsx` |
