@@ -1,76 +1,93 @@
 
+בדקתי את הקוד עצמו, ואתה צודק: כרגע יש פער בין מה שנבנה לבין מה שבאמת עובד.
 
-# תוכנית מלאה: Salt Edge + Gmail OAuth + תרגום מלא
+1. מה שבור כרגע
+- בנק/אשראי: `salt-edge-connect` פותח session אבל אין בכלל טיפול ב-`action=callback`, לכן לא נשמרים `salt_edge_connection_id` ו-`provider_name`. בפועל נשמרת רק רשומת `pending`, ולכן חיבור האשראי לא באמת נסגר ולא יכול להסתנכרן.
+- מיילים: `gmail-auth` ו-`email-sync` חלקיים. ה-flow קיים, אבל הוא שביר: ה-connection נשמר בלי flow קשיח, ויש גם חוסר התאמה בין קטגוריות שה-backend מחזיר (`payments/tasks/bills`) למה שה-UI מצפה (`payment/task/bill`), אז גם התצוגה נשברת.
+- שפות: `useLanguage.tsx` עודכן רק חלקית. יש עדיין הרבה טקסט עברי hardcoded ברכיבים מרכזיים, במיוחד `PaymentDashboard.tsx`, וגם בעוד רכיבי הגדרות, onboarding, התראות, auth ומדיה.
+- נגישות: יש widget בסיסי ו-CSS בסיסי, אבל אין השלמה מערכתית. דף הנגישות מצהיר על יכולות שלא נאכפות באמת בכל המסכים.
 
-## סיכום
-3 שיפורים משולבים: (1) חיבור בנקים/אשראי עם Salt Edge API, (2) חיבור Gmail אמיתי עם OAuth, (3) תרגום מלא של כל הטקסט ה-hardcoded בעברית ל-6 שפות.
+2. תוכנית תיקון
+א. לייצב קודם את הזרימות האמיתיות
+- להשלים את `salt-edge-connect` ל-flow מלא:
+  - יצירת session
+  - callback/return handler אמיתי
+  - שמירת `salt_edge_connection_id`, `provider_name`, `status`
+  - סנכרון עסקאות רק אחרי חיבור מאושר
+- להשלים את `gmail-auth` ל-OAuth אמיתי:
+  - state/nonce תקין
+  - callback מסודר עם success/error
+  - שמירה עקבית של connection
+  - טיפול נכון ב-refresh token ושגיאות Google
+- ליישר backend + frontend:
+  - קטגוריות מייל אחידות
+  - constraints/indexes חסרים במסד
+  - לא להציג providers כאילו הם עובדים אם הם לא סגורים end-to-end
 
----
+ב. לתקן את הממשקים כך שישקפו מצב אמיתי
+- `BankConnect.tsx`: להפסיק להציג pending בלי completion אמיתי; להוסיף polling/refresh אמיתי אחרי popup ושגיאות ברורות.
+- `EmailConnectionDialog.tsx`: Gmail יעבוד באמת; Outlook/IMAP או שיושלמו באמת או שיוסרו זמנית מה-UI.
+- `EmailIntegration.tsx` ו-`EmailInsightsWidget.tsx`: איחוד מלא של category keys, labels, badges ו-summary.
 
-## 1. חיבור בנקים ואשראי עם Salt Edge
+ג. להשלים תרגום מלא באמת
+- להעביר את כל המחרוזות hardcoded למפת תרגומים מסודרת.
+- להתחיל מהרכיבים עם הכי הרבה חוסרים:
+  - `PaymentDashboard.tsx`
+  - `ShoppingDashboard.tsx`
+  - `SettingsPanel.tsx`
+  - `NotificationSettings.tsx`
+  - `OnboardingWizard.tsx`
+  - `Personal.tsx`
+  - `BooksManager.tsx`, `ShowsManager.tsx`, `PodcastsManager.tsx`
+  - `ResetPassword.tsx` ורכיבי auth/empty states
+- להוציא גם מערכים דינמיים לתרגום: קטגוריות, מדריכים פיננסיים, סטטוסים, יחידות ו-labels קבועים.
 
-**Secrets**: `SALT_EDGE_APP_ID`, `SALT_EDGE_SECRET`
+ד. להשלים נגישות מערכתית
+- audit לרכיבי ליבה: dialogs, tabs, forms, nav, dashboard cards.
+- לוודא בפועל:
+  - labels ו-ARIA
+  - סדר פוקוס תקין
+  - focus-visible ברור
+  - ניווט מקלדת מלא
+  - landmarks וכותרות
+  - contrast ו-reduced motion
+  - Skip link שעובד בכל layout
+- לעדכן את `/accessibility` כך שישקף את המצב האמיתי אחרי התיקונים.
 
-**מיגרציה** — טבלת `bank_connections`:
-- `user_id`, `salt_edge_connection_id`, `salt_edge_customer_id`, `provider_name`, `status`, `last_sync`
-- RLS: user_id = auth.uid()
+3. קבצים שאעדכן
+- Backend:
+  - `supabase/functions/salt-edge-connect/index.ts`
+  - `supabase/functions/gmail-auth/index.ts`
+  - `supabase/functions/email-sync/index.ts`
+  - migration נוספת עבור `bank_connections` / `email_connections` אם חסרים constraints או שדות
+- Frontend:
+  - `src/components/dashboards/BankConnect.tsx`
+  - `src/components/EmailConnectionDialog.tsx`
+  - `src/components/EmailIntegration.tsx`
+  - `src/components/EmailInsightsWidget.tsx`
+  - `src/components/dashboards/PaymentDashboard.tsx`
+  - `src/hooks/useLanguage.tsx`
+  - `src/components/AccessibilityWidget.tsx`
+  - `src/pages/Accessibility.tsx`
+  - ורכיבי ה-hardcoded שיימצאו בסריקת ההשלמה
 
-**Edge Function**: `salt-edge-connect/index.ts`
-- Actions: `create_customer` → `create_connect_session` → `list_connections` → `fetch_transactions`
-- Salt Edge API v5 headers: `App-id` + `Secret`
-- שמירת עסקאות ב-`payment_tracking`
+4. סדר ביצוע
+1) לתקן חיבור בנק/אשראי עד שעובד מקצה לקצה  
+2) לתקן Gmail OAuth + sync עד שעובד מקצה לקצה  
+3) ליישר DB/UI ולנקות אי-התאמות  
+4) להשלים i18n בכל המסכים המרכזיים  
+5) לבצע audit נגישות ולסגור את הפערים  
+6) לבצע בדיקה end-to-end לכל flow, לא רק “הקוד קיים”
 
-**רכיב חדש**: `BankConnect.tsx` (מחליף CreditCardConnect + CreditCardImport)
-- כפתור "חבר בנק/אשראי" → Salt Edge Connect URL בחלון חדש
-- רשימת חיבורים + רענון + מחיקה
-- עסקאות: ירוק להכנסות, אדום להוצאות
+5. פרטים טכניים חשובים
+- אני לא אשאיר יותר flow שיוצר `pending` בלי callback/completion.
+- במיילים אאחד את הקטגוריות לסט אחד עקבי בכל המערכת.
+- אם חסר unique constraint ל-`email_connections`, אוסיף אותו במיגרציה כדי שה-upsert יעבוד יציב.
+- אם Outlook/IMAP לא נתמכים באמת, הם לא יישארו מוצגים כאילו הם עובדים.
+- בנגישות, המדד יהיה התנהגות בפועל — לא רק טקסט בדף הצהרה.
 
-**עדכון**: `PaymentDashboard.tsx` — טאב "אשראי" → "בנק ואשראי"
-
----
-
-## 2. חיבור Gmail אמיתי עם OAuth
-
-**Secrets**: `GOOGLE_CLIENT_ID`, `GOOGLE_CLIENT_SECRET`
-
-**Edge Function חדשה**: `gmail-auth/index.ts`
-- `get_auth_url`: מחזיר URL הסכמה של Google
-- `exchange_code`: מחליף code ל-tokens, שומר ב-`email_connections`
-
-**עדכון**: `email-sync/index.ts`
-- קריאה ל-Gmail API עם access_token
-- רענון token אוטומטי
-- סיווג AI של מיילים
-
-**עדכון**: `EmailConnectionDialog.tsx`
-- Gmail → פתיחת OAuth window (לא טופס ידני)
-
----
-
-## 3. תרגום מלא של כל ה-hardcoded
-
-**רכיבים שיתעדכנו**:
-- `SettingsPanel.tsx`: labels סיסמה, PIN, boards, themes — כל ה-toast messages
-- `TelegramSettings.tsx`: כל הטקסט
-- `ShoppingDashboard.tsx`: 12 קטגוריות, 10 יחידות, 300+ פריטים
-- `PaymentDashboard.tsx`: 23 קטגוריות, 4 מדריכים פיננסיים
-- `NutritionDashboard.tsx`: labels תזונה/שינה
-- `EmailConnectionDialog.tsx`: fallbacks
-- `BooksManager.tsx`, `ShowsManager.tsx`, `PodcastsManager.tsx`: סטטוסים
-
-**`useLanguage.tsx`**: הוספת ~120 מפתחות × 6 שפות
-
----
-
-## סיכום קבצים
-
-| פעולה | קבצים |
-|-------|--------|
-| Secrets | `SALT_EDGE_APP_ID`, `SALT_EDGE_SECRET`, `GOOGLE_CLIENT_ID`, `GOOGLE_CLIENT_SECRET` |
-| מיגרציה | `bank_connections` + RLS |
-| Edge Functions חדשות | `salt-edge-connect`, `gmail-auth` |
-| Edge Functions מעודכנות | `email-sync` |
-| רכיב חדש | `BankConnect.tsx` |
-| מחיקה | `CreditCardConnect.tsx`, `CreditCardImport.tsx` |
-| תרגום | `useLanguage.tsx` + ~10 רכיבים |
-
+6. התוצאה המצופה אחרי הסבב הזה
+- חיבור בנק/אשראי ייצור connection אמיתי שניתן לסנכרון.
+- Gmail יתחבר דרך OAuth ויחזיר חשבון פעיל עם sync תקין.
+- המסכים המרכזיים לא יישארו עם עברית hardcoded בשפות אחרות.
+- שכבת הנגישות תהיה תואמת הרבה יותר למה שהמערכת מצהירה עליו.
