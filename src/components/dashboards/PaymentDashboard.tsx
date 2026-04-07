@@ -324,7 +324,7 @@ ${context}
             <div className="flex gap-1">
               {(["weekly", "monthly", "quarterly", "yearly"] as const).map(p => (
                 <button key={p} onClick={() => setBudgetPeriod(p)} className={`px-2 py-0.5 rounded text-[10px] font-medium transition-all ${budgetPeriod === p ? "bg-primary text-primary-foreground" : "bg-muted text-muted-foreground hover:bg-muted/80"}`}>
-                  {p === "weekly" ? "שבועי" : p === "monthly" ? "חודשי" : p === "quarterly" ? "רבעוני" : "שנתי"}
+                  {p === "weekly" ? t("weeklyPeriod" as any) : p === "monthly" ? t("monthlyPeriod" as any) : p === "quarterly" ? t("quarterlyPeriod" as any) : t("yearlyPeriod" as any)}
                 </button>
               ))}
             </div>
