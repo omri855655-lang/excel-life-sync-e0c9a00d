@@ -36,6 +36,8 @@ interface Stats {
   }[];
 }
 
+const ADMIN_PASS_KEY = "tabro_admin_unlocked";
+
 const AdminDashboard = () => {
   const { user, loading: authLoading } = useAuth();
   const navigate = useNavigate();
@@ -45,6 +47,9 @@ const AdminDashboard = () => {
   const [isAdmin, setIsAdmin] = useState(false);
   const [newAdminEmail, setNewAdminEmail] = useState("");
   const [addingAdmin, setAddingAdmin] = useState(false);
+  const [passUnlocked, setPassUnlocked] = useState(() => sessionStorage.getItem(ADMIN_PASS_KEY) === "1");
+  const [passInput, setPassInput] = useState("");
+  const [passError, setPassError] = useState(false);
 
   const fetchStats = useCallback(async () => {
     if (!user) return;
@@ -100,10 +105,46 @@ const AdminDashboard = () => {
     fetchStats();
   };
 
+  const handlePassSubmit = async () => {
+    const { data } = await supabase.functions.invoke("admin-analytics", {
+      body: { action: "verify_password", password: passInput },
+    });
+    if (data?.ok) {
+      sessionStorage.setItem(ADMIN_PASS_KEY, "1");
+      setPassUnlocked(true);
+      setPassError(false);
+    } else {
+      setPassError(true);
+    }
+  };
+
   if (authLoading || loading) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-background">
         <Loader2 className="h-8 w-8 animate-spin text-primary" />
+      </div>
+    );
+  }
+
+  if (!passUnlocked) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-background" dir={dir}>
+        <Card className="max-w-sm w-full">
+          <CardContent className="p-8 text-center space-y-4">
+            <ShieldCheck className="h-12 w-12 mx-auto text-primary" />
+            <h2 className="text-lg font-bold">Admin Access</h2>
+            <Input
+              type="password"
+              placeholder="Enter admin password"
+              value={passInput}
+              onChange={(e) => { setPassInput(e.target.value); setPassError(false); }}
+              onKeyDown={(e) => e.key === "Enter" && handlePassSubmit()}
+              dir="ltr"
+            />
+            {passError && <p className="text-sm text-destructive">Wrong password</p>}
+            <Button onClick={handlePassSubmit} className="w-full">Unlock</Button>
+          </CardContent>
+        </Card>
       </div>
     );
   }
