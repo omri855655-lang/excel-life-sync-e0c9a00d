@@ -1,135 +1,85 @@
 
-# תוכנית מקיפה: 5 שיפורים מרכזיים
+
+# תוכנית: חיבור אשראי + תרגום מלא + נגישות + תיקון מייל
+
+## סיכום
+4 שיפורים: (1) חיבור לאפליקציות אשראי ישראליות בזמן אמת + ייבוא CSV, (2) תרגום אמיתי של כל הממשק ל-6 שפות, (3) נגישות לפי ת"י 5568, (4) תיקון סנכרון מייל.
 
 ---
 
-## שיפור 1 — סל מחזור גלובלי
+## 1. חיבור אפליקציות אשראי (Max, Cal, Isracard, Visa)
 
-**מיגרציה:**
-```text
-recycle_bin table:
-  id, user_id, source_table, source_id,
-  item_data (jsonb), deleted_at, expires_at (7 days)
-  + RLS policy for authenticated users
-```
+חברות האשראי בישראל לא מספקות API פתוח — הדרך לגשת לנתונים היא דרך פרויקט הקוד הפתוח **israeli-bank-scrapers** שמדמה כניסה לאתר חברת האשראי ושולף עסקאות.
 
-**קבצים חדשים:**
-- `src/hooks/useRecycleBin.ts` — softDelete, restore, fetchAll, cleanupExpired
-- `src/components/RecycleBin.tsx` — תצוגה לפי מקור, שחזור, מחיקה לצמיתות
+**מה ייבנה:**
 
-**קבצים מעודכנים (מחיקה רכה):**
-- `BooksManager.tsx`, `ShowsManager.tsx`, `PodcastsManager.tsx`
-- `TaskSpreadsheetDb.tsx`, `ProjectsManager.tsx`, `CoursesManager.tsx`
-- `CustomBoardManager.tsx`
-- `SettingsPanel.tsx` — טאב סל מחזור
+- **רכיב חדש** `CreditCardConnect.tsx` — טופס חיבור לחברת אשראי:
+  - בחירת חברה (Max, Cal, Isracard, Visa Cal, Leumi Card, Amex)
+  - הזנת שם משתמש + סיסמה (מוצפנים, לא נשמרים בצד לקוח)
+  - כפתור "סנכרן עכשיו" + סנכרון תקופתי
+  - תצוגת עסקאות אחרונות עם סיווג אוטומטי לקטגוריות
 
----
+- **Edge Function חדשה** `credit-card-sync/index.ts`:
+  - מקבלת credentials מוצפנים + שם חברה
+  - משתמשת ב-israeli-bank-scrapers לשליפת עסקאות
+  - AI (Gemini) מסווג כל עסקה לקטגוריה (סופר, דלק, ביגוד...)
+  - שומרת ב-`payment_tracking` עם `payment_method: "credit_card"`
 
-## שיפור 2 — דיאלוג פרטים מלאים (ItemDetailDialog)
+- **טבלת DB חדשה** `credit_card_connections`:
+  - `user_id`, `provider`, `encrypted_credentials`, `last_sync`, `sync_status`
+  - RLS: רק המשתמש רואה את שלו
 
-**קובץ חדש:** `src/components/ItemDetailDialog.tsx`
-- שם (editable), סטטוס (select), הערות (textarea), subtitle
-- כפתור שמירה + מחיקה
-- תמיכה מלאה בכל השפות (כפתורים, labels, placeholders)
+- **שילוב בדשבורד תשלומים**: כפתור "חבר כרטיס אשראי" + תצוגת עסקאות מסונכרנות + גרפים לפי קטגוריה
 
-**עדכון:** CompactView, ListView, CardsView — onClick פותח דיאלוג
+- **ייבוא CSV/PDF**: גם אפשרות ידנית לייבוא דפי פירוט
 
 ---
 
-## שיפור 3 — לוקליזציה מלאה ל-6 שפות
+## 2. תרגום מלא — תיקון כל הטקסט ה-hardcoded
 
-**המטרה:** כל שפה מקבלת ממשק מלא ומושלם כמו העברית — אף מפתח לא חסר.
+**הבעיה**: טאבים כמו "תזונה ושינה", "קניות", "הכנסות והוצאות", "מפת חלומות", "שיתופים" הם hardcoded בעברית ב-`Personal.tsx`. קטגוריות תשלום/קניות גם הן בעברית בלבד.
 
-**שפות:** עברית (he), אנגלית (en), ספרדית (es), סינית (zh), ערבית (ar), רוסית (ru — חדשה)
+**מה יתוקן:**
 
-**מה ייעשה:**
-- `useLanguage.tsx` — סריקה מלאה של כל ~120+ מפתחות תרגום, השלמת חסרים בכל שפה
-- הוספת `"ru"` ל-type Language + תרגום מלא לרוסית
-- וידוא שכל מפתח חדש (סל מחזור, דיאלוג פרטים, מייל, תצוגות) מתורגם לכל 6 השפות
-- `SettingsPanel.tsx` — "Русский" בבחירת שפה
-- `OnboardingWizard.tsx` — רוסית ברשימת השפות
-- בדיקת RTL/LTR: עברית וערבית RTL, שאר LTR
-
----
-
-## שיפור 4 — חיבור מייל אישי (Gmail/Outlook/IMAP)
-
-**מיגרציות DB:**
-```text
-email_connections table:
-  id, user_id, provider (gmail/outlook/imap),
-  access_token (encrypted), refresh_token (encrypted),
-  email_address, settings (jsonb), connected_at, last_sync
-
-email_analyses table:
-  id, user_id, connection_id, email_subject, email_from,
-  email_date, category (payment/task/shopping/bill/personal),
-  suggested_action (jsonb), analysis_depth,
-  is_processed, created_at
-```
-
-**Edge Functions חדשות:**
-- `email-oauth-callback/index.ts` — OAuth callback מ-Gmail/Outlook
-- `email-sync/index.ts` — סנכרון מיילים (IMAP/Gmail API/Outlook API)
-- `email-analyze/index.ts` — ניתוח AI לסיווג + הצעות פעולה
-
-**קבצים חדשים בצד לקוח:**
-- `src/components/EmailIntegration.tsx` — דף ראשי
-- `src/components/EmailConnectionDialog.tsx` — חיבור חשבון
-- `src/components/EmailInsightsWidget.tsx` — ווידג'ט דשבורד
-- `src/hooks/useEmailIntegration.ts` — hook לניהול
-
-**יכולות AI:** סיווג אוטומטי, הצעת פעולות, סיכום שבועי, עומק ניתוח לבחירה
-
-**שילוב:** טאב "מייל", ווידג'ט בדשבורד, הגדרות ב-Settings — הכל מתורגם ל-6 שפות
+- **`Personal.tsx`** שורות 89-95 — החלפה ל-`t("nutrition")`, `t("dreams")`, `t("shopping")`, `t("payments")`, `t("notes")`, `t("sharing")`
+- **`useLanguage.tsx`** — הוספת ~60 מפתחות חדשים לכל 6 שפות:
+  - שמות טאבים, קטגוריות תשלום (23), קטגוריות קניות (12), סטטוסים
+  - פורמט תאריכים/מספרים/מטבע לפי locale
+- **`PaymentDashboard.tsx`** — קטגוריות `CATEGORIES` ו-`FINANCIAL_GUIDES` מתורגמים
+- **`ShoppingDashboard.tsx`** — קטגוריות סופר מתורגמות
+- **`NutritionDashboard.tsx`** — כל התוויות מתורגמות
+- **`AccessibilityWidget.tsx`** — כפתורים ותוויות מתורגמים
+- **`OnboardingWizard.tsx`** — רוסית בבחירת שפות
+- **כללי RTL/LTR**: he+ar → RTL, שאר → LTR
 
 ---
 
-## שיפור 5 — תצוגות עובדות בכל הדשבורדים
+## 3. נגישות מלאה (ת"י 5568 / WCAG 2.1 AA)
 
-**הבעיה:** סרגל "עיצוב" קיים אבל תמיד מוצגת טבלה בלבד — viewMode לא משפיע.
-
-**מה ייעשה:**
-- `TaskSpreadsheetDb.tsx` — רינדור מותנה לפי dashViewMode (טבלה / רשימה / כרטיסים / קנבן / קומפקט)
-- `ShoppingDashboard.tsx` — רינדור מותנה לפי viewMode
-- `PaymentDashboard.tsx` — רינדור מותנה לפי viewMode
-- `NutritionDashboard.tsx` — רינדור מותנה לפי viewMode
-- כל תצוגה תומכת בעריכה: שם, הערות, סטטוס — לא רק בטבלה
-- סטטוסים לקנבן: טרם החל / בטיפול / בוצע (מותאם לכל דשבורד)
-- הכל מתורגם ל-6 שפות
+- **`index.css`**: focus-visible outline (3px), high-contrast mode, prefers-reduced-motion
+- **`AccessibilityWidget.tsx`**: תרגום לכל 6 שפות + `aria-label` דינמי
+- **`Accessibility.tsx`**: דף הצהרת נגישות מתורגם
+- **`SkipLink.tsx`**: תרגום "דלג לתוכן"
+- **סקירת ARIA**: בדיקת heading hierarchy, labels בטפסים, ניגודיות צבעים
 
 ---
 
-## סיכום קבצים
+## 4. תיקון סנכרון מייל
 
-### מיגרציות (2):
-1. `recycle_bin` + RLS
-2. `email_connections` + `email_analyses` + RLS
+- **Edge Function חדשה** `email-sync/index.ts` — כרגע לא קיימת, לכן הסנכרון נכשל
+- תתמוך ב-IMAP (חיבור ישיר) + placeholder ל-Gmail/Outlook OAuth
+- AI סיווג מיילים לקטגוריות (תשלום, משימה, קניות)
 
-### קבצים חדשים (~11):
-- `src/hooks/useRecycleBin.ts`
-- `src/components/RecycleBin.tsx`
-- `src/components/ItemDetailDialog.tsx`
-- `src/components/EmailIntegration.tsx`
-- `src/components/EmailConnectionDialog.tsx`
-- `src/components/EmailInsightsWidget.tsx`
-- `src/hooks/useEmailIntegration.ts`
-- `supabase/functions/email-oauth-callback/index.ts`
-- `supabase/functions/email-sync/index.ts`
-- `supabase/functions/email-analyze/index.ts`
+---
 
-### קבצים מעודכנים (~17):
-- `useLanguage.tsx` — לוקליזציה מלאה ל-6 שפות (כל מפתח, כולל חדשים)
-- `SettingsPanel.tsx` — סל מחזור + רוסית + הגדרות מייל
-- `OnboardingWizard.tsx` — רוסית
-- `BooksManager.tsx`, `ShowsManager.tsx`, `PodcastsManager.tsx` — softDelete
-- `TaskSpreadsheetDb.tsx` — softDelete + תצוגות עובדות
-- `ProjectsManager.tsx`, `CoursesManager.tsx`, `CustomBoardManager.tsx` — softDelete
-- `CompactView.tsx`, `ListView.tsx`, `CardsView.tsx` — ItemDetailDialog
-- `ShoppingDashboard.tsx`, `PaymentDashboard.tsx`, `NutritionDashboard.tsx` — תצוגות עובדות
-- `Personal.tsx` — טאב מייל
+## סיכום טכני
 
-### סודות נדרשים:
-- OAuth עבור Gmail: Client ID + Client Secret (מ-Google Cloud Console)
-- OAuth עבור Outlook: Client ID + Client Secret (מ-Azure Portal)
-- ייבקשו מהמשתמש לפני יישום שלב 4
+| סוג | קבצים |
+|-----|--------|
+| מיגרציה | `credit_card_connections` + RLS |
+| Edge Functions חדשות | `credit-card-sync`, `email-sync` |
+| רכיבים חדשים | `CreditCardConnect.tsx`, `CreditCardImport.tsx` |
+| עדכונים | `useLanguage.tsx` (~60 מפתחות × 6 שפות), `Personal.tsx`, `PaymentDashboard.tsx`, `ShoppingDashboard.tsx`, `NutritionDashboard.tsx`, `AccessibilityWidget.tsx`, `Accessibility.tsx`, `SkipLink.tsx`, `OnboardingWizard.tsx`, `index.css` |
+
+**הערה חשובה**: חיבור אפליקציות אשראי דורש הרצת scraper בצד שרת. הספרייה `israeli-bank-scrapers` פועלת ב-Node.js עם puppeteer/playwright — ייתכן שנצטרך להריץ אותה כ-microservice חיצוני (Deno Edge Functions לא תומכות ב-puppeteer). אציע פתרון חלופי: API של שירות כמו **Caspion** או **Fincheck** שמספקים גישה ל-scrapers כשירות ענן, או לחלופין נתחיל עם ייבוא CSV + סנכרון ידני ונוסיף חיבור ישיר בהמשך.
+
