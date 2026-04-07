@@ -93,6 +93,11 @@ const translations = {
     recycleBin: "回收站", emptyBin: "清空回收站", recycleBinEmpty: "回收站为空", recycleBinNote: "项目将在7天后自动删除", restore: "恢复", deletedAt: "已删除", permanentDelete: "永久删除",
     email: "邮件", emailAccounts: "邮件账户", addConnection: "连接账户", connectEmail: "连接邮件账户", chooseProvider: "选择邮件提供商：", emailAddress: "邮件地址", noEmailConnections: "没有连接的邮件账户", connectEmailDesc: "连接Gmail、Outlook或IMAP进行自动分析", lastSync: "上次同步", neverSynced: "从未同步", sync: "同步", confirmDisconnect: "断开邮件账户？", emailSummary: "邮件摘要", recentEmails: "最近邮件", emailInsights: "邮件洞察", emailsAnalyzed: "封邮件已分析", oauthNote: "保存后将跳转至身份验证页面。", password: "密码", back: "返回", connect: "连接",
     editItem: "编辑项目",
+    nutrition: "营养与睡眠", dreams: "梦想地图", shopping: "购物", payments: "收入与支出", notesTab: "便签", sharingTab: "分享",
+    accessibilitySettings: "无障碍设置", fontSize: "字体大小", highContrast: "高对比度", disableAnimations: "禁用动画", bigCursor: "大光标", highlightLinks: "突出显示链接", reset: "重置", accessibilityStatement: "无障碍声明", skipToContent: "跳至主要内容", reduceFontSize: "缩小字体", increaseFontSize: "放大字体",
+    creditCard: "信用卡", connectCreditCard: "连接信用卡", creditCardProvider: "发卡机构", username: "用户名", syncNow: "立即同步", importCSV: "导入CSV", importCreditCard: "导入信用卡账单", transactions: "交易记录", noTransactions: "没有交易", lastFourDigits: "后4位", cardDisplayName: "卡片名称", syncing: "同步中...", syncSuccess: "同步完成", syncError: "同步错误", disconnectCard: "断开卡片", confirmDisconnectCard: "断开此信用卡？",
+    a11yCommitment: "无障碍承诺", a11yCommitmentText: "我们致力于让Tabro对所有用户（包括残障人士）无障碍使用，符合WCAG 2.1 AA级标准。", a11yWhatWeDid: "我们做了什么", a11yLimitations: "已知限制", a11yLimitationsText: "某些组件可能尚未完全无障碍。我们持续改进中。", a11yContact: "联系我们", a11yContactText: "遇到无障碍问题？请通过网站联系表单与我们联系。", lastUpdated: "最后更新",
+    a11yFeatureKeyboard: "完整键盘导航支持", a11yFeatureRtl: "RTL支持", a11yFeatureHeadings: "正确的标题层次结构", a11yFeatureAria: "交互元素的ARIA标签", a11yFeatureContrast: "足够的颜色对比度", a11yFeatureSkip: "跳至内容链接", a11yFeatureTheme: "深色和浅色模式", a11yFeatureForms: "表单带清晰标签和错误消息",
   },
   ar: {
     personalArea: "المنطقة الشخصية", installApp: "تثبيت التطبيق", signOut: "تسجيل الخروج", signedOutSuccess: "تم تسجيل الخروج بنجاح", loading: "جاري التحميل...",
