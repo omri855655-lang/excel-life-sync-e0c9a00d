@@ -299,17 +299,17 @@ ${context}
           <div className="flex justify-center gap-6 mt-4">
             <div className="text-center">
               <TrendingUp className="h-4 w-4 text-green-500 mx-auto mb-1" />
-              <p className="text-xs text-muted-foreground">הכנסות</p>
+              <p className="text-xs text-muted-foreground">{t("income" as any)}</p>
               <p className="font-semibold text-green-600">₪{totalIncome.toLocaleString()}</p>
             </div>
             <div className="text-center">
               <TrendingDown className="h-4 w-4 text-red-500 mx-auto mb-1" />
-              <p className="text-xs text-muted-foreground">הוצאות</p>
+              <p className="text-xs text-muted-foreground">{t("expenses" as any)}</p>
               <p className="font-semibold text-red-600">₪{totalExpenses.toLocaleString()}</p>
             </div>
             <div className="text-center">
               <Calendar className="h-4 w-4 text-amber-500 mx-auto mb-1" />
-              <p className="text-xs text-muted-foreground">באיחור</p>
+              <p className="text-xs text-muted-foreground">{t("overdue" as any)}</p>
               <p className="font-semibold text-amber-600">{overdue.length}</p>
             </div>
           </div>
