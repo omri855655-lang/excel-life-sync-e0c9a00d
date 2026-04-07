@@ -115,6 +115,9 @@ const Personal = () => {
   const { isDark, toggleMode } = useSiteAppearance();
   const { layout } = useLayoutPreference();
 
+  // Sync preferences across devices
+  useSyncedPreferences();
+
   // Fetch shared sheets (where someone shared with me)
   const fetchSharedSheets = useCallback(async () => {
     if (!user) {
