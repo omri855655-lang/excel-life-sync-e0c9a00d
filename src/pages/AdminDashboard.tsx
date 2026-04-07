@@ -36,6 +36,8 @@ interface Stats {
   }[];
 }
 
+const ADMIN_PASS_KEY = "tabro_admin_unlocked";
+
 const AdminDashboard = () => {
   const { user, loading: authLoading } = useAuth();
   const navigate = useNavigate();
@@ -45,6 +47,9 @@ const AdminDashboard = () => {
   const [isAdmin, setIsAdmin] = useState(false);
   const [newAdminEmail, setNewAdminEmail] = useState("");
   const [addingAdmin, setAddingAdmin] = useState(false);
+  const [passUnlocked, setPassUnlocked] = useState(() => sessionStorage.getItem(ADMIN_PASS_KEY) === "1");
+  const [passInput, setPassInput] = useState("");
+  const [passError, setPassError] = useState(false);
 
   const fetchStats = useCallback(async () => {
     if (!user) return;
