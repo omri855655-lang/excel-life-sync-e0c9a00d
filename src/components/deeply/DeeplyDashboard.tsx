@@ -848,8 +848,8 @@ const DeeplyDashboard = () => {
                             className="bg-white/10 hover:bg-white/20 text-[#e8e8ed]"
                             variant="ghost"
                           >
-                            <Plus className="h-4 w-4 ml-1" />
-                            הוסף
+                             <Plus className="h-4 w-4 ml-1" />
+                            {t("add" as any)}
                           </Button>
                           <Button
                             size="sm"
