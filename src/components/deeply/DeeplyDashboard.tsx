@@ -13,6 +13,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
 import { DeeplyMusicPlayer } from "./DeeplyMusicPlayer";
 import { useDailyStopwatch } from "@/hooks/useDailyStopwatch";
+import { useLanguage } from "@/hooks/useLanguage";
 
 // Background themes
 const BG_THEMES = [
