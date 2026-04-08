@@ -16,6 +16,7 @@ import { useDashboardConfig } from '@/hooks/useDashboardConfig';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible';
 import { cn } from '@/lib/utils';
+import { useLanguage } from '@/hooks/useLanguage';
 
 interface Stats {
   totalBooks: number;
@@ -32,6 +33,8 @@ const COLORS = ['hsl(var(--primary))', 'hsl(var(--accent))', 'hsl(var(--secondar
 
 const Dashboard = () => {
   const { user } = useAuth();
+  const { t, dir } = useLanguage();
+  const isHe = dir === "rtl";
   const { boards: customBoards } = useCustomBoards();
   const [customBoardStats, setCustomBoardStats] = useState<Record<string, { total: number; byStatus: Record<string, number> }>>({});
   const [stats, setStats] = useState<Stats>({
@@ -99,7 +102,7 @@ const Dashboard = () => {
   const gregorianDate = today.toLocaleDateString("he-IL", { weekday: "long", day: "numeric", month: "long", year: "numeric" });
   const timeStr = today.toLocaleTimeString("he-IL", { hour: "2-digit", minute: "2-digit" });
 
-  if (loading) return <div className="p-8 text-center text-muted-foreground">טוען נתונים...</div>;
+  if (loading) return <div className="p-8 text-center text-muted-foreground">{t("loading" as any)}</div>;
 
   const isVisible = (id: string) => sections.find(s => s.id === id)?.visible ?? true;
   const getViewMode = (id: string) => sections.find(s => s.id === id)?.viewMode ?? "default";
@@ -296,7 +299,7 @@ const Dashboard = () => {
       <div className="flex items-center justify-between mb-4">
         <div className="flex items-center gap-2">
           <TrendingUp className="h-6 w-6 text-primary" />
-          <h2 className="text-xl font-bold">דשבורד</h2>
+          <h2 className="text-xl font-bold">{t("dashboard" as any)}</h2>
         </div>
         <div className="flex gap-2">
           {stats.totalBooks === 0 && stats.totalShows === 0 && (
@@ -307,7 +310,7 @@ const Dashboard = () => {
           )}
           <Button variant="outline" size="sm" className="gap-1 text-xs" onClick={() => setSettingsOpen(!settingsOpen)}>
             <Settings2 className="h-3.5 w-3.5" />
-            התאמת דשבורד
+            {isHe ? "התאמת דשבורד" : "Customize Dashboard"}
           </Button>
         </div>
       </div>

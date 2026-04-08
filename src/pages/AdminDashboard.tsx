@@ -9,7 +9,7 @@ import { Badge } from "@/components/ui/badge";
 import { toast } from "sonner";
 import {
   Users, LogIn, ClipboardList, ShieldCheck, ArrowRight,
-  UserPlus, Trash2, RefreshCw, Crown, Mail, Loader2, Sparkles
+  UserPlus, Trash2, RefreshCw, Crown, Mail, Loader2, Sparkles, FileText, Save
 } from "lucide-react";
 import {
   Table, TableBody, TableCell, TableHead, TableHeader, TableRow,
@@ -50,6 +50,9 @@ const AdminDashboard = () => {
   const [passUnlocked, setPassUnlocked] = useState(() => sessionStorage.getItem(ADMIN_PASS_KEY) === "1");
   const [passInput, setPassInput] = useState("");
   const [passError, setPassError] = useState(false);
+  const [landingContent, setLandingContent] = useState<Record<string, { he: string; en: string }>>({});
+  const [landingEditing, setLandingEditing] = useState<Record<string, { he: string; en: string }>>({});
+  const [savingLanding, setSavingLanding] = useState(false);
 
   const fetchStats = useCallback(async () => {
     if (!user) return;
@@ -68,6 +71,15 @@ const AdminDashboard = () => {
     }
     setIsAdmin(true);
     setStats(data);
+    // Fetch landing content
+    const { data: lc } = await supabase.from("landing_content").select("key, value_he, value_en");
+    if (lc) {
+      const map: Record<string, { he: string; en: string }> = {};
+      const editMap: Record<string, { he: string; en: string }> = {};
+      lc.forEach((row: any) => { map[row.key] = { he: row.value_he, en: row.value_en }; editMap[row.key] = { he: row.value_he, en: row.value_en }; });
+      setLandingContent(map);
+      setLandingEditing(editMap);
+    }
     setLoading(false);
   }, [user, t]);
 
@@ -347,6 +359,60 @@ const AdminDashboard = () => {
                 </TableBody>
               </Table>
             </div>
+          </CardContent>
+        </Card>
+        {/* Landing Page Content Editor */}
+        <Card>
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2">
+              <FileText className="h-5 w-5" /> {isHe ? "עריכת דף נחיתה" : "Landing Page Editor"}
+            </CardTitle>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            {Object.keys(landingEditing).length === 0 ? (
+              <p className="text-sm text-muted-foreground">{isHe ? "טוען תוכן..." : "Loading content..."}</p>
+            ) : (
+              <>
+                {Object.entries(landingEditing).map(([key, val]) => (
+                  <div key={key} className="space-y-2 p-3 rounded-lg border bg-muted/30">
+                    <p className="text-xs font-mono text-muted-foreground">{key}</p>
+                    <div className="grid grid-cols-2 gap-2">
+                      <div>
+                        <label className="text-xs text-muted-foreground">עברית</label>
+                        <Input
+                          value={val.he}
+                          onChange={(e) => setLandingEditing(prev => ({ ...prev, [key]: { ...prev[key], he: e.target.value } }))}
+                          dir="rtl"
+                        />
+                      </div>
+                      <div>
+                        <label className="text-xs text-muted-foreground">English</label>
+                        <Input
+                          value={val.en}
+                          onChange={(e) => setLandingEditing(prev => ({ ...prev, [key]: { ...prev[key], en: e.target.value } }))}
+                          dir="ltr"
+                        />
+                      </div>
+                    </div>
+                  </div>
+                ))}
+                <Button
+                  onClick={async () => {
+                    setSavingLanding(true);
+                    for (const [key, val] of Object.entries(landingEditing)) {
+                      await supabase.from("landing_content").upsert({ key, value_he: val.he, value_en: val.en }, { onConflict: "key" });
+                    }
+                    setSavingLanding(false);
+                    toast.success(isHe ? "דף נחיתה עודכן!" : "Landing page updated!");
+                  }}
+                  disabled={savingLanding}
+                  className="gap-2"
+                >
+                  {savingLanding ? <Loader2 className="h-4 w-4 animate-spin" /> : <Save className="h-4 w-4" />}
+                  {isHe ? "שמור שינויים" : "Save Changes"}
+                </Button>
+              </>
+            )}
           </CardContent>
         </Card>
       </div>

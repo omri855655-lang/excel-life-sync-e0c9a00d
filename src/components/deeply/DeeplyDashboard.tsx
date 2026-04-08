@@ -146,6 +146,10 @@ const DeeplyDashboard = () => {
     const saved = localStorage.getItem("deeply-custom-yt");
     return saved ? JSON.parse(saved) : {};
   });
+  const [hiddenYtVideos, setHiddenYtVideos] = useState<string[]>(() => {
+    const saved = localStorage.getItem("zoneflow-hidden-yt");
+    return saved ? JSON.parse(saved) : [];
+  });
   const [addYtUrl, setAddYtUrl] = useState("");
   const [addYtTitle, setAddYtTitle] = useState("");
   const [addYtTarget, setAddYtTarget] = useState<string | null>(null);
@@ -188,6 +192,7 @@ const DeeplyDashboard = () => {
   useEffect(() => { localStorage.setItem("deeply-sessions", JSON.stringify(sessions)); }, [sessions]);
   useEffect(() => { localStorage.setItem("deeply-bg-theme", bgTheme); }, [bgTheme]);
   useEffect(() => { localStorage.setItem("deeply-custom-yt", JSON.stringify(customYtVideos)); }, [customYtVideos]);
+  useEffect(() => { localStorage.setItem("zoneflow-hidden-yt", JSON.stringify(hiddenYtVideos)); }, [hiddenYtVideos]);
   useEffect(() => {
     if (!activeYouTube) {
       resetDeeplyAudioState("youtube");
@@ -737,7 +742,7 @@ const DeeplyDashboard = () => {
               const customVideosForCat = customYtVideos[activeYtCat] || [];
               const allVideos = activeCatData
                 ? [
-                    ...activeCatData.videos,
+                    ...activeCatData.videos.filter(v => !hiddenYtVideos.includes(v.id)),
                     ...customVideosForCat.map(v => ({ id: v.id, title: v.title, desc: "סרטון מותאם אישית" })),
                   ]
                 : [];
@@ -768,7 +773,7 @@ const DeeplyDashboard = () => {
                         {allVideos.map(v => {
                           const isCustom = customVideosForCat.some(cv => cv.id === v.id);
                           return (
-                            <div key={v.id} className={`flex items-center gap-3 p-3 rounded-xl transition-all text-right ${
+                            <div key={v.id} className={`group flex items-center gap-3 p-3 rounded-xl transition-all text-right ${
                                 activeYouTube === v.id
                                   ? `${catColorMap[activeCatData.color]} border`
                                   : "bg-white/5 border border-transparent hover:bg-white/10"
@@ -784,11 +789,19 @@ const DeeplyDashboard = () => {
                                 <p className="text-xs text-[#e8e8ed]/40 truncate">{v.desc}</p>
                               </div>
                               <div className="flex items-center gap-1 flex-shrink-0">
-                                {isCustom && (
+                                {isCustom ? (
                                   <button
                                     onClick={(e) => { e.stopPropagation(); removeCustomYtVideo(activeYtCat, v.id); }}
                                     className="text-red-400/50 hover:text-red-400 transition-colors"
                                     title="הסר סרטון"
+                                  >
+                                    <Trash2 className="h-3.5 w-3.5" />
+                                  </button>
+                                ) : (
+                                  <button
+                                    onClick={(e) => { e.stopPropagation(); setHiddenYtVideos(prev => [...prev, v.id]); }}
+                                    className="text-red-400/30 hover:text-red-400 transition-colors opacity-0 group-hover:opacity-100"
+                                    title="הסתר סרטון"
                                   >
                                     <Trash2 className="h-3.5 w-3.5" />
                                   </button>
@@ -894,7 +907,7 @@ const DeeplyDashboard = () => {
                 { id: "zyE92Ufl9G4", title: "Study With Me — 7 שעות מרתון 🎄", desc: "סשן ארוך עם Pomodoro 50/10" },
               ];
               const customStudy = customYtVideos["study-with-me"] || [];
-              const allStudy = [...studyVideos, ...customStudy.map(v => ({ id: v.id, title: v.title, desc: "סרטון מותאם אישית" }))];
+              const allStudy = [...studyVideos.filter(v => !hiddenYtVideos.includes(v.id)), ...customStudy.map(v => ({ id: v.id, title: v.title, desc: "סרטון מותאם אישית" }))];
               return (
                 <>
                   <div className="grid sm:grid-cols-2 gap-2">
@@ -964,7 +977,7 @@ const DeeplyDashboard = () => {
                 { id: "rIHYNwXWP80", title: "בקתה עם גשם ואח — 8 שעות 🏕️", desc: "רעמים ואח לקריאה ארוכה" },
               ];
               const customRead = customYtVideos["read-with-me"] || [];
-              const allRead = [...readVideos, ...customRead.map(v => ({ id: v.id, title: v.title, desc: "סרטון מותאם אישית" }))];
+              const allRead = [...readVideos.filter(v => !hiddenYtVideos.includes(v.id)), ...customRead.map(v => ({ id: v.id, title: v.title, desc: "סרטון מותאם אישית" }))];
               return (
                 <>
                   <div className="grid sm:grid-cols-2 gap-2">
