@@ -192,6 +192,7 @@ const DeeplyDashboard = () => {
   useEffect(() => { localStorage.setItem("deeply-sessions", JSON.stringify(sessions)); }, [sessions]);
   useEffect(() => { localStorage.setItem("deeply-bg-theme", bgTheme); }, [bgTheme]);
   useEffect(() => { localStorage.setItem("deeply-custom-yt", JSON.stringify(customYtVideos)); }, [customYtVideos]);
+  useEffect(() => { localStorage.setItem("zoneflow-hidden-yt", JSON.stringify(hiddenYtVideos)); }, [hiddenYtVideos]);
   useEffect(() => {
     if (!activeYouTube) {
       resetDeeplyAudioState("youtube");
