@@ -836,7 +836,7 @@ const DeeplyDashboard = () => {
                           />
                           <input
                             type="text"
-                            placeholder="שם (אופציונלי)"
+                            placeholder={t("customVideoName" as any)}
                             value={addYtTitle}
                             onChange={(e) => setAddYtTitle(e.target.value)}
                             className="w-[150px] bg-white/5 border border-white/10 rounded-lg px-3 py-2 text-sm text-[#e8e8ed] placeholder:text-[#e8e8ed]/30 outline-none focus:border-white/30"
