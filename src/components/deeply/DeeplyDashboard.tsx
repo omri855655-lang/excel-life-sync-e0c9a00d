@@ -866,7 +866,7 @@ const DeeplyDashboard = () => {
                           className="flex items-center gap-2 text-xs text-[#e8e8ed]/40 hover:text-[#e8e8ed]/70 transition-colors"
                         >
                           <Plus className="h-3.5 w-3.5" />
-                          הוסף סרטון מותאם אישית
+                          {t("addCustomVideo" as any)}
                         </button>
                       )}
                     </>
