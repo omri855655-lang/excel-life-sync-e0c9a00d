@@ -9,7 +9,7 @@ import { Badge } from "@/components/ui/badge";
 import { toast } from "sonner";
 import {
   Users, LogIn, ClipboardList, ShieldCheck, ArrowRight,
-  UserPlus, Trash2, RefreshCw, Crown, Mail, Loader2, Sparkles
+  UserPlus, Trash2, RefreshCw, Crown, Mail, Loader2, Sparkles, FileText, Save
 } from "lucide-react";
 import {
   Table, TableBody, TableCell, TableHead, TableHeader, TableRow,
