@@ -56,6 +56,13 @@ const AdminDashboard = () => {
   const [landingContent, setLandingContent] = useState<Record<string, { he: string; en: string }>>({});
   const [landingEditing, setLandingEditing] = useState<Record<string, { he: string; en: string }>>({});
   const [savingLanding, setSavingLanding] = useState(false);
+  // Mailbox state
+  const [emailSearch, setEmailSearch] = useState("");
+  const [emailStatusFilter, setEmailStatusFilter] = useState("all");
+  const [composeTo, setComposeTo] = useState("");
+  const [composeSubject, setComposeSubject] = useState("");
+  const [composeBody, setComposeBody] = useState("");
+  const [composeSending, setComposeSending] = useState(false);
 
   const fetchStats = useCallback(async () => {
     if (!user) return;
