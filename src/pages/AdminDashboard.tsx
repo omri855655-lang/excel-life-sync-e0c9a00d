@@ -50,6 +50,9 @@ const AdminDashboard = () => {
   const [passUnlocked, setPassUnlocked] = useState(() => sessionStorage.getItem(ADMIN_PASS_KEY) === "1");
   const [passInput, setPassInput] = useState("");
   const [passError, setPassError] = useState(false);
+  const [landingContent, setLandingContent] = useState<Record<string, { he: string; en: string }>>({});
+  const [landingEditing, setLandingEditing] = useState<Record<string, { he: string; en: string }>>({});
+  const [savingLanding, setSavingLanding] = useState(false);
 
   const fetchStats = useCallback(async () => {
     if (!user) return;
