@@ -310,7 +310,7 @@ const Dashboard = () => {
           )}
           <Button variant="outline" size="sm" className="gap-1 text-xs" onClick={() => setSettingsOpen(!settingsOpen)}>
             <Settings2 className="h-3.5 w-3.5" />
-            התאמת דשבורד
+            {isHe ? "התאמת דשבורד" : "Customize Dashboard"}
           </Button>
         </div>
       </div>
