@@ -789,11 +789,19 @@ const DeeplyDashboard = () => {
                                 <p className="text-xs text-[#e8e8ed]/40 truncate">{v.desc}</p>
                               </div>
                               <div className="flex items-center gap-1 flex-shrink-0">
-                                {isCustom && (
+                                {isCustom ? (
                                   <button
                                     onClick={(e) => { e.stopPropagation(); removeCustomYtVideo(activeYtCat, v.id); }}
                                     className="text-red-400/50 hover:text-red-400 transition-colors"
                                     title="הסר סרטון"
+                                  >
+                                    <Trash2 className="h-3.5 w-3.5" />
+                                  </button>
+                                ) : (
+                                  <button
+                                    onClick={(e) => { e.stopPropagation(); setHiddenYtVideos(prev => [...prev, v.id]); }}
+                                    className="text-red-400/30 hover:text-red-400 transition-colors opacity-0 group-hover:opacity-100"
+                                    title="הסתר סרטון"
                                   >
                                     <Trash2 className="h-3.5 w-3.5" />
                                   </button>
