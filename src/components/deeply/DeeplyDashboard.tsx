@@ -795,7 +795,7 @@ const DeeplyDashboard = () => {
                                   <button
                                     onClick={(e) => { e.stopPropagation(); removeCustomYtVideo(activeYtCat, v.id); }}
                                     className="text-red-400/50 hover:text-red-400 transition-colors"
-                                    title="הסר סרטון"
+                                    title={t("removeVideo" as any)}
                                   >
                                     <Trash2 className="h-3.5 w-3.5" />
                                   </button>
