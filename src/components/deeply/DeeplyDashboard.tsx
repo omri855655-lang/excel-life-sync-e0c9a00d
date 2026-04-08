@@ -146,6 +146,10 @@ const DeeplyDashboard = () => {
     const saved = localStorage.getItem("deeply-custom-yt");
     return saved ? JSON.parse(saved) : {};
   });
+  const [hiddenYtVideos, setHiddenYtVideos] = useState<string[]>(() => {
+    const saved = localStorage.getItem("zoneflow-hidden-yt");
+    return saved ? JSON.parse(saved) : [];
+  });
   const [addYtUrl, setAddYtUrl] = useState("");
   const [addYtTitle, setAddYtTitle] = useState("");
   const [addYtTarget, setAddYtTarget] = useState<string | null>(null);
