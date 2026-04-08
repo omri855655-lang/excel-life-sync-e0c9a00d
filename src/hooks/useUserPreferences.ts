@@ -14,7 +14,7 @@ export const DEFAULT_TABS = [
   { id: "projects", name: "פרויקטים", removable: true },
   { id: "courses", name: "קורסים", removable: true },
   { id: "planner", name: "מתכנן לוז", removable: true },
-  { id: "deeply", name: "Deeply", removable: true },
+  { id: "deeply", name: "ZoneFlow", removable: true },
   { id: "nutrition", name: "תזונה ושינה", removable: true },
   { id: "dreams", name: "מפת חלומות", removable: true },
   { id: "shopping", name: "קניות", removable: true },

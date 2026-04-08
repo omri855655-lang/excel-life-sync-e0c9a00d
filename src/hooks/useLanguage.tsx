@@ -239,7 +239,7 @@ const translations = {
   },
   zh: {
     personalArea: "个人区域", installApp: "安装应用", signOut: "退出", signedOutSuccess: "已成功退出", loading: "加载中...",
-    dashboard: "仪表盘", personalTasks: "个人任务", workTasks: "工作任务", books: "书籍", shows: "剧集和电影", podcasts: "播客", dailyRoutine: "每日日程", projects: "项目", courses: "课程", planner: "计划器", deeply: "Deeply", settings: "设置", challenges: "挑战",
+    dashboard: "仪表盘", personalTasks: "个人任务", workTasks: "工作任务", books: "书籍", shows: "剧集和电影", podcasts: "播客", dailyRoutine: "每日日程", projects: "项目", courses: "课程", planner: "计划器", deeply: "ZoneFlow", settings: "设置", challenges: "挑战", restartGuide: "重启向导", restartGuideDesc: "重新启动引导向导。",
     security: "安全", pinCode: "访问码 (PIN)", pinDescription: "每次登录需要4位数密码", changePin: "更改PIN", setPin: "设置PIN", enterNewCode: "输入新密码:", cancel: "取消",
     customDashboards: "自定义面板", customDashboardsDesc: "创建自定义面板来跟踪任何事物。", newDashboard: "新面板", chooseTemplate: "选择模板", taskList: "任务列表", trackingList: "跟踪列表", kanban: "看板", custom: "自定义", dashboardName: "面板名称", dashboardNamePlaceholder: '例如："学习"、"健身"', statuses: "状态（逗号分隔）", statusesDesc: "选择菜单中的状态", showInMainDashboard: "在主面板显示", createDashboard: "创建面板", addNewDashboard: "添加新面板",
     showTabs: "显示标签", showTabsDesc: "选择显示哪些标签。", displayedInDashboard: "在面板中显示", language: "语言", languageDesc: "选择界面语言", hebrew: "עברית", english: "English",
