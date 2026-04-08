@@ -742,7 +742,7 @@ const DeeplyDashboard = () => {
               const customVideosForCat = customYtVideos[activeYtCat] || [];
               const allVideos = activeCatData
                 ? [
-                    ...activeCatData.videos,
+                    ...activeCatData.videos.filter(v => !hiddenYtVideos.includes(v.id)),
                     ...customVideosForCat.map(v => ({ id: v.id, title: v.title, desc: "סרטון מותאם אישית" })),
                   ]
                 : [];
