@@ -687,7 +687,7 @@ ${context}
                 const [, data] = monthData;
                 const monthCats: Record<string, number> = {};
                 data.items.filter(p => p.payment_type === "expense").forEach(p => {
-                  const cat = p.category || "אחר";
+                  const cat = p.category || (isRtl ? "אחר" : "Other");
                   monthCats[cat] = (monthCats[cat] || 0) + p.amount;
                 });
                 const sortedCats = Object.entries(monthCats).sort(([, a], [, b]) => b - a);
