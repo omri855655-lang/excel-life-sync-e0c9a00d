@@ -16,47 +16,44 @@ interface OnboardingWizardProps {
   onComplete: () => void;
 }
 
-const STEPS = [
-  {
-    title: "ברוכים הבאים ל-Tabro!",
-    subtitle: "בוא נתאים את המערכת בדיוק בשבילך — זה ייקח פחות מדקה",
-    type: "welcome" as const,
-  },
-  {
-    title: "בחר עיצוב",
-    subtitle: "בחר את העיצוב שהכי נוח לך. אפשר לשנות בכל עת מההגדרות",
-    type: "theme" as const,
-  },
-  {
-    title: "הכלים שמופעלים אוטומטית",
-    subtitle: "אלה הכלים הבסיסיים שתמיד זמינים ואי אפשר להסתיר",
-    type: "core" as const,
-  },
-  {
-    title: "בחר אילו דשבורדים להציג",
-    subtitle: "לחץ כדי להפעיל או לכבות. כל מה שכבוי לא יופיע בתפריט",
-    type: "optional" as const,
-  },
-  {
-    title: "הסוכן החכם שלך",
-    subtitle: "בפינה השמאלית התחתונה יושב סוכן AI שמבצע בשבילך פעולות",
-    type: "ai" as const,
-  },
-  {
-    title: "הכל מוכן!",
-    subtitle: "המערכת מותאמת אישית ומוכנה לשימוש",
-    type: "done" as const,
-  },
+const STEPS_HE = [
+  { title: "ברוכים הבאים ל-Tabro!", subtitle: "בוא נתאים את המערכת בדיוק בשבילך — זה ייקח פחות מדקה", type: "welcome" as const },
+  { title: "בחר עיצוב", subtitle: "בחר את העיצוב שהכי נוח לך. אפשר לשנות בכל עת מההגדרות", type: "theme" as const },
+  { title: "הכלים שמופעלים אוטומטית", subtitle: "אלה הכלים הבסיסיים שתמיד זמינים ואי אפשר להסתיר", type: "core" as const },
+  { title: "בחר אילו דשבורדים להציג", subtitle: "לחץ כדי להפעיל או לכבות. כל מה שכבוי לא יופיע בתפריט", type: "optional" as const },
+  { title: "חיבור מיילים ותקציב", subtitle: "חבר Gmail לניתוח אוטומטי וייבא פירוט אשראי לניהול תקציב", type: "email_budget" as const },
+  { title: "הסוכן החכם שלך", subtitle: "בפינה השמאלית התחתונה יושב סוכן AI שמבצע בשבילך פעולות", type: "ai" as const },
+  { title: "הכל מוכן!", subtitle: "המערכת מותאמת אישית ומוכנה לשימוש", type: "done" as const },
 ];
 
-const CORE_FEATURES = [
+const STEPS_EN = [
+  { title: "Welcome to Tabro!", subtitle: "Let's customize the system for you — it takes less than a minute", type: "welcome" as const },
+  { title: "Choose a Theme", subtitle: "Pick the design that's most comfortable for you. You can always change it later.", type: "theme" as const },
+  { title: "Core Features", subtitle: "These core tools are always available and can't be hidden", type: "core" as const },
+  { title: "Choose Dashboards", subtitle: "Click to enable or disable. Disabled items won't appear in the menu", type: "optional" as const },
+  { title: "Email & Budget Setup", subtitle: "Connect Gmail for automatic analysis and import credit card statements for budget tracking", type: "email_budget" as const },
+  { title: "Your Smart Agent", subtitle: "The AI agent sits at the bottom-left corner and performs actions for you", type: "ai" as const },
+  { title: "All Set!", subtitle: "The system is personalized and ready to use", type: "done" as const },
+];
+
+const CORE_FEATURES_HE = [
   { icon: ListTodo, name: "משימות עבודה ואישיות", desc: "גליונות עם סטטוסים, קטגוריות, סינון, מעקב התקדמות ושיתוף עם אחרים" },
   { icon: CalendarDays, name: "מתכנן יומי + לוז אירועים", desc: "AI שמתכנן את היום לפי המשימות, יומן אירועים, חגים מכל הדתות ותזכורות" },
-  { icon: Focus, name: "Deeply — מצב ריכוז", desc: "תדרים בינאורליים, מוזיקת רקע, פומודורו ומאמן AI לעבודה עמוקה" },
+  { icon: Focus, name: "ZoneFlow — מצב ריכוז", desc: "תדרים בינאורליים, מוזיקת רקע, פומודורו ומאמן AI לעבודה עמוקה" },
   { icon: FolderKanban, name: "פרויקטים וצוותים", desc: "ניהול פרויקטים עם חברי צוות, ריבוי אחראים למשימה, קישורים ואבני דרך AI" },
   { icon: BookOpen, name: "ספרים, סדרות, פודקאסטים וקורסים", desc: "מעקב מדיה מלא עם סטטוסים, הערות וסילבוס לקורסים" },
   { icon: Trophy, name: "אתגרים ורצפים", desc: "אתגרים מותאמים אישית, מעקב רצפים ואנליטיקה" },
   { icon: Bot, name: "סוכן AI", desc: "מקבל הוראות בשפה טבעית ומבצע — הוספת משימות, פתקים, אירועים ועוד" },
+];
+
+const CORE_FEATURES_EN = [
+  { icon: ListTodo, name: "Work & Personal Tasks", desc: "Sheets with statuses, categories, filters, progress tracking and sharing" },
+  { icon: CalendarDays, name: "Daily Planner + Calendar", desc: "AI-powered day planning, calendar events, holidays and reminders" },
+  { icon: Focus, name: "ZoneFlow — Focus Mode", desc: "Binaural beats, background music, Pomodoro and AI coaching for deep work" },
+  { icon: FolderKanban, name: "Projects & Teams", desc: "Team projects with multiple assignees, links and AI milestones" },
+  { icon: BookOpen, name: "Books, Shows, Podcasts & Courses", desc: "Full media tracking with statuses, notes and course syllabi" },
+  { icon: Trophy, name: "Challenges & Streaks", desc: "Custom challenges, streak tracking and analytics" },
+  { icon: Bot, name: "AI Agent", desc: "Takes natural language instructions — adds tasks, notes, events and more" },
 ];
 
 const DASHBOARD_OPTIONS = [
@@ -89,6 +86,11 @@ const OnboardingWizard = ({ onComplete }: OnboardingWizardProps) => {
     new Set(DASHBOARD_OPTIONS.filter(d => d.defaultOn).map(d => d.key))
   );
 
+  const lang = localStorage.getItem("ui-language") || "he";
+  const isHe = lang === "he" || lang === "ar";
+  const STEPS = isHe ? STEPS_HE : STEPS_EN;
+  const CORE_FEATURES = isHe ? CORE_FEATURES_HE : CORE_FEATURES_EN;
+
   const toggleDashboard = (key: string) => {
     setSelectedDashboards(prev => {
       const next = new Set(prev);
@@ -113,7 +115,7 @@ const OnboardingWizard = ({ onComplete }: OnboardingWizardProps) => {
     }
 
     localStorage.setItem("tabro_onboarded", "true");
-    toast.success("המערכת מוכנה בשבילך!");
+    toast.success(isHe ? "המערכת מוכנה בשבילך!" : "The system is ready for you!");
     onComplete();
   };
 
@@ -285,6 +287,19 @@ const OnboardingWizard = ({ onComplete }: OnboardingWizardProps) => {
             </div>
           )}
 
+          {current.type === "email_budget" && (
+            <div className="space-y-4">
+              <div className="bg-muted/30 rounded-xl p-4 border border-border/50 space-y-2 text-right">
+                <p className="text-sm font-medium text-foreground">{isHe ? "📧 חיבור מייל" : "📧 Email Connection"}</p>
+                <p className="text-xs text-muted-foreground">{isHe ? "חבר את Gmail שלך מדשבורד המיילים כדי לקבל ניתוח אוטומטי, סיווג ותזכורות על מיילים חשובים." : "Connect your Gmail from the Email dashboard to get automatic analysis, classification and reminders for important emails."}</p>
+              </div>
+              <div className="bg-muted/30 rounded-xl p-4 border border-border/50 space-y-2 text-right">
+                <p className="text-sm font-medium text-foreground">{isHe ? "💰 ניהול תקציב" : "💰 Budget Management"}</p>
+                <p className="text-xs text-muted-foreground">{isHe ? "ייבא פירוט אשראי (CSV/Excel), הגדר יעד תקציב שבועי/חודשי, וקבל ניתוח AI על ההוצאות שלך." : "Import credit card statements (CSV/Excel), set weekly/monthly budget targets, and get AI analysis of your spending."}</p>
+              </div>
+            </div>
+          )}
+
           {current.type === "done" && (
             <div className="text-center space-y-4">
               <div className="w-20 h-20 mx-auto rounded-full bg-accent/10 flex items-center justify-center">
@@ -292,10 +307,10 @@ const OnboardingWizard = ({ onComplete }: OnboardingWizardProps) => {
               </div>
               <div className="space-y-2">
                 <p className="text-sm text-foreground font-medium">
-                  {selectedDashboards.size} דשבורדים מופעלים
+                  {selectedDashboards.size} {isHe ? "דשבורדים מופעלים" : "dashboards enabled"}
                 </p>
                 <p className="text-xs text-muted-foreground">
-                  אפשר תמיד לשנות הגדרות, להוסיף דשבורדים ולהתאים את העיצוב מההגדרות.
+                  {isHe ? "אפשר תמיד לשנות הגדרות, להוסיף דשבורדים ולהתאים את העיצוב מההגדרות." : "You can always change settings, add dashboards and customize the design from Settings."}
                 </p>
               </div>
             </div>
@@ -306,23 +321,23 @@ const OnboardingWizard = ({ onComplete }: OnboardingWizardProps) => {
             {step > 0 ? (
               <Button variant="ghost" size="sm" onClick={() => setStep(s => s - 1)} className="gap-1">
                 <ChevronRight className="h-4 w-4" />
-                הקודם
+                {isHe ? "הקודם" : "Previous"}
               </Button>
             ) : (
               <Button variant="ghost" size="sm" onClick={() => { localStorage.setItem("tabro_onboarded", "true"); onComplete(); }} className="text-muted-foreground text-xs">
-                דלג על ההדרכה
+                {isHe ? "דלג על ההדרכה" : "Skip guide"}
               </Button>
             )}
 
             {step < STEPS.length - 1 ? (
               <Button size="sm" onClick={() => setStep(s => s + 1)} className="gap-1">
-                הבא
+                {isHe ? "הבא" : "Next"}
                 <ChevronLeft className="h-4 w-4" />
               </Button>
             ) : (
               <Button size="sm" onClick={finish} className="gap-1 shadow-lg shadow-primary/20">
                 <Sparkles className="h-4 w-4" />
-                בוא נתחיל!
+                {isHe ? "בוא נתחיל!" : "Let's go!"}
               </Button>
             )}
           </div>
