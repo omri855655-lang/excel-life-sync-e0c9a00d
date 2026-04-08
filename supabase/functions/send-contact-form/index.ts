@@ -14,9 +14,11 @@ Deno.serve(async (req) => {
 
   try {
     const resendKey = Deno.env.get('RESEND_API_KEY')
+    const lovableKey = Deno.env.get('LOVABLE_API_KEY')
     if (!resendKey) {
       return new Response(JSON.stringify({ error: 'RESEND_API_KEY not configured' }), { status: 200, headers: { ...corsHeaders, 'Content-Type': 'application/json' } })
     }
+    const useGateway = !!lovableKey
 
     const { subject, message, category, userEmail } = await req.json()
     const messageId = crypto.randomUUID()
@@ -52,11 +54,21 @@ Deno.serve(async (req) => {
     // Send to each admin separately to avoid array rejection
     const results = await Promise.allSettled(
       ADMIN_EMAILS.map(async (toEmail) => {
-        const res = await fetch('https://api.resend.com/emails', {
+        const apiUrl = useGateway
+          ? 'https://connector-gateway.lovable.dev/resend/emails'
+          : 'https://api.resend.com/emails'
+        const headers: Record<string, string> = { 'Content-Type': 'application/json' }
+        if (useGateway) {
+          headers['Authorization'] = `Bearer ${lovableKey}`
+          headers['X-Connection-Api-Key'] = resendKey
+        } else {
+          headers['Authorization'] = `Bearer ${resendKey}`
+        }
+        const res = await fetch(apiUrl, {
           method: 'POST',
-          headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${resendKey}` },
+          headers,
           body: JSON.stringify({
-            from: 'Tabro <onboarding@resend.dev>',
+            from: useGateway ? 'Tabro <info@tabro.org>' : 'Tabro <onboarding@resend.dev>',
             to: [toEmail],
             subject: emailSubject,
             html: emailBody,
