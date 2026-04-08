@@ -55,7 +55,7 @@ export function useEmailIntegration() {
         .select("*")
         .eq("user_id", user.id)
         .order("email_date", { ascending: false })
-        .limit(120);
+        .limit(200);
       if (error) throw error;
       setAnalyses((data as any[]) || []);
     } catch (e) {
