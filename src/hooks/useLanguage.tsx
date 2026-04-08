@@ -193,6 +193,8 @@ const translations = {
     minutes: "minutes", seconds: "seconds",
     catPayment: "Payment", catTask: "Task", catNewsletter: "Newsletter", catSocial: "Social", catOtherEmail: "Other",
     resetHiddenVideos: "Reset Hidden Videos", resetHiddenVideosDesc: "Show ZoneFlow videos that were hidden.",
+    viewTable: "Table", viewKanban: "Kanban", viewList: "List", viewCards: "Cards", viewCompact: "Compact", design: "Design", chooseDesign: "Choose design",
+    hideVideo: "Hide video", removeVideo: "Remove video", openOnYoutube: "Open on YouTube", youtubeLink: "YouTube link", addCustomVideo: "Add custom video", customVideoName: "Name (optional)",
     fixedPayment: "Fixed payment", fixedPaymentsCount: "Fixed payments", fixedPaymentsTotal: "Fixed total",
     companyMailbox: "Company Mailbox", searchEmails: "Search emails...", filterByStatus: "Filter by status", allStatuses: "All statuses",
     sent: "Sent", failed: "Failed",
