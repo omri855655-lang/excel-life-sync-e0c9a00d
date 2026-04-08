@@ -21,6 +21,7 @@ import Unsubscribe from "./pages/Unsubscribe";
 import Terms from "./pages/Terms";
 import Privacy from "./pages/Privacy";
 import Accessibility from "./pages/Accessibility";
+import AgentWidget from "./pages/AgentWidget";
 
 const queryClient = new QueryClient();
 
