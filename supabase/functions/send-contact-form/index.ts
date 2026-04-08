@@ -55,11 +55,21 @@ Deno.serve(async (req) => {
     // Send to each admin separately to avoid array rejection
     const results = await Promise.allSettled(
       ADMIN_EMAILS.map(async (toEmail) => {
-        const res = await fetch('https://api.resend.com/emails', {
+        const apiUrl = useGateway
+          ? 'https://connector-gateway.lovable.dev/resend/emails'
+          : 'https://api.resend.com/emails'
+        const headers: Record<string, string> = { 'Content-Type': 'application/json' }
+        if (useGateway) {
+          headers['Authorization'] = `Bearer ${lovableKey}`
+          headers['X-Connection-Api-Key'] = resendKey
+        } else {
+          headers['Authorization'] = `Bearer ${resendKey}`
+        }
+        const res = await fetch(apiUrl, {
           method: 'POST',
-          headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${resendKey}` },
+          headers,
           body: JSON.stringify({
-            from: 'Tabro <onboarding@resend.dev>',
+            from: useGateway ? 'Tabro <info@tabro.org>' : 'Tabro <onboarding@resend.dev>',
             to: [toEmail],
             subject: emailSubject,
             html: emailBody,
