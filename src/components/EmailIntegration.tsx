@@ -36,7 +36,7 @@ const EmailIntegration = () => {
   const [syncing, setSyncing] = useState<string | null>(null);
   const [reviewing, setReviewing] = useState(false);
   const [reviewResult, setReviewResult] = useState<string | null>(null);
-  const [displayCount, setDisplayCount] = useState(30);
+  const [displayCount, setDisplayCount] = useState(50);
   const [categoryFilter, setCategoryFilter] = useState("all");
   const [sortMode, setSortMode] = useState<"newest" | "oldest" | "sender">("newest");
 
