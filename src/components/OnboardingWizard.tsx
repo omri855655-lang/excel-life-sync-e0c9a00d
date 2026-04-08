@@ -287,6 +287,19 @@ const OnboardingWizard = ({ onComplete }: OnboardingWizardProps) => {
             </div>
           )}
 
+          {current.type === "email_budget" && (
+            <div className="space-y-4">
+              <div className="bg-muted/30 rounded-xl p-4 border border-border/50 space-y-2 text-right">
+                <p className="text-sm font-medium text-foreground">{isHe ? "📧 חיבור מייל" : "📧 Email Connection"}</p>
+                <p className="text-xs text-muted-foreground">{isHe ? "חבר את Gmail שלך מדשבורד המיילים כדי לקבל ניתוח אוטומטי, סיווג ותזכורות על מיילים חשובים." : "Connect your Gmail from the Email dashboard to get automatic analysis, classification and reminders for important emails."}</p>
+              </div>
+              <div className="bg-muted/30 rounded-xl p-4 border border-border/50 space-y-2 text-right">
+                <p className="text-sm font-medium text-foreground">{isHe ? "💰 ניהול תקציב" : "💰 Budget Management"}</p>
+                <p className="text-xs text-muted-foreground">{isHe ? "ייבא פירוט אשראי (CSV/Excel), הגדר יעד תקציב שבועי/חודשי, וקבל ניתוח AI על ההוצאות שלך." : "Import credit card statements (CSV/Excel), set weekly/monthly budget targets, and get AI analysis of your spending."}</p>
+              </div>
+            </div>
+          )}
+
           {current.type === "done" && (
             <div className="text-center space-y-4">
               <div className="w-20 h-20 mx-auto rounded-full bg-accent/10 flex items-center justify-center">
@@ -294,10 +307,10 @@ const OnboardingWizard = ({ onComplete }: OnboardingWizardProps) => {
               </div>
               <div className="space-y-2">
                 <p className="text-sm text-foreground font-medium">
-                  {selectedDashboards.size} דשבורדים מופעלים
+                  {selectedDashboards.size} {isHe ? "דשבורדים מופעלים" : "dashboards enabled"}
                 </p>
                 <p className="text-xs text-muted-foreground">
-                  אפשר תמיד לשנות הגדרות, להוסיף דשבורדים ולהתאים את העיצוב מההגדרות.
+                  {isHe ? "אפשר תמיד לשנות הגדרות, להוסיף דשבורדים ולהתאים את העיצוב מההגדרות." : "You can always change settings, add dashboards and customize the design from Settings."}
                 </p>
               </div>
             </div>
@@ -308,23 +321,23 @@ const OnboardingWizard = ({ onComplete }: OnboardingWizardProps) => {
             {step > 0 ? (
               <Button variant="ghost" size="sm" onClick={() => setStep(s => s - 1)} className="gap-1">
                 <ChevronRight className="h-4 w-4" />
-                הקודם
+                {isHe ? "הקודם" : "Previous"}
               </Button>
             ) : (
               <Button variant="ghost" size="sm" onClick={() => { localStorage.setItem("tabro_onboarded", "true"); onComplete(); }} className="text-muted-foreground text-xs">
-                דלג על ההדרכה
+                {isHe ? "דלג על ההדרכה" : "Skip guide"}
               </Button>
             )}
 
             {step < STEPS.length - 1 ? (
               <Button size="sm" onClick={() => setStep(s => s + 1)} className="gap-1">
-                הבא
+                {isHe ? "הבא" : "Next"}
                 <ChevronLeft className="h-4 w-4" />
               </Button>
             ) : (
               <Button size="sm" onClick={finish} className="gap-1 shadow-lg shadow-primary/20">
                 <Sparkles className="h-4 w-4" />
-                בוא נתחיל!
+                {isHe ? "בוא נתחיל!" : "Let's go!"}
               </Button>
             )}
           </div>
