@@ -9,12 +9,15 @@ import { Badge } from "@/components/ui/badge";
 import { toast } from "sonner";
 import {
   Users, LogIn, ClipboardList, ShieldCheck, ArrowRight,
-  UserPlus, Trash2, RefreshCw, Crown, Mail, Loader2, Sparkles, FileText, Save
+  UserPlus, Trash2, RefreshCw, Crown, Mail, Loader2, Sparkles, FileText, Save,
+  Search, Send, Filter
 } from "lucide-react";
 import {
   Table, TableBody, TableCell, TableHead, TableHeader, TableRow,
 } from "@/components/ui/table";
 import { useLanguage } from "@/hooks/useLanguage";
+import { Textarea } from "@/components/ui/textarea";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 
 interface Stats {
   totalUsers: number;
