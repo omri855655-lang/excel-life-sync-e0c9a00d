@@ -86,6 +86,11 @@ const OnboardingWizard = ({ onComplete }: OnboardingWizardProps) => {
     new Set(DASHBOARD_OPTIONS.filter(d => d.defaultOn).map(d => d.key))
   );
 
+  const lang = localStorage.getItem("ui-language") || "he";
+  const isHe = lang === "he" || lang === "ar";
+  const STEPS = isHe ? STEPS_HE : STEPS_EN;
+  const CORE_FEATURES = isHe ? CORE_FEATURES_HE : CORE_FEATURES_EN;
+
   const toggleDashboard = (key: string) => {
     setSelectedDashboards(prev => {
       const next = new Set(prev);
@@ -110,7 +115,7 @@ const OnboardingWizard = ({ onComplete }: OnboardingWizardProps) => {
     }
 
     localStorage.setItem("tabro_onboarded", "true");
-    toast.success("המערכת מוכנה בשבילך!");
+    toast.success(isHe ? "המערכת מוכנה בשבילך!" : "The system is ready for you!");
     onComplete();
   };
 
