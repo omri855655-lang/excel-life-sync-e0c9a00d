@@ -907,7 +907,7 @@ const DeeplyDashboard = () => {
                 { id: "zyE92Ufl9G4", title: "Study With Me — 7 שעות מרתון 🎄", desc: "סשן ארוך עם Pomodoro 50/10" },
               ];
               const customStudy = customYtVideos["study-with-me"] || [];
-              const allStudy = [...studyVideos, ...customStudy.map(v => ({ id: v.id, title: v.title, desc: "סרטון מותאם אישית" }))];
+              const allStudy = [...studyVideos.filter(v => !hiddenYtVideos.includes(v.id)), ...customStudy.map(v => ({ id: v.id, title: v.title, desc: "סרטון מותאם אישית" }))];
               return (
                 <>
                   <div className="grid sm:grid-cols-2 gap-2">
