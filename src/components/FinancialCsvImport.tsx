@@ -147,12 +147,12 @@ const FinancialCsvImport = () => {
             >
               <FileText className="h-8 w-8 mx-auto text-muted-foreground mb-2" />
               <p className="text-sm text-muted-foreground">
-                {lang === "he" ? "לחץ או גרור קובץ CSV" : "Click or drag a CSV file"}
+                {lang === "he" ? "לחץ או גרור קובץ CSV / Excel" : "Click or drag a CSV / Excel file"}
               </p>
               <input
                 ref={fileRef}
                 type="file"
-                accept=".csv,.tsv,.txt"
+                accept=".csv,.tsv,.txt,.xlsx,.xls"
                 className="hidden"
                 onChange={handleFile}
               />
