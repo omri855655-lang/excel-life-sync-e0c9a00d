@@ -814,7 +814,7 @@ const DeeplyDashboard = () => {
                                   rel="noopener noreferrer"
                                   onClick={(e) => e.stopPropagation()}
                                   className="text-[#e8e8ed]/30 hover:text-[#e8e8ed]/70 transition-colors"
-                                  title="פתח ב-YouTube"
+                                  title={t("openOnYoutube" as any)}
                                 >
                                   <ExternalLink className="h-3.5 w-3.5" />
                                 </a>
