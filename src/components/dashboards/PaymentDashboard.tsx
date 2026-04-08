@@ -12,7 +12,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
 import { Progress } from "@/components/ui/progress";
-import { Plus, Trash2, CreditCard, TrendingUp, TrendingDown, DollarSign, Check, Calendar, Sparkles, MessageCircle, ChevronDown, ChevronUp, BookOpen, PiggyBank, AlertTriangle, Lightbulb, Wallet, BarChart3, Download, History } from "lucide-react";
+import { Plus, Trash2, CreditCard, TrendingUp, TrendingDown, DollarSign, Check, Calendar, Sparkles, MessageCircle, ChevronDown, ChevronUp, BookOpen, PiggyBank, AlertTriangle, Lightbulb, Wallet, BarChart3, Download, History, Pencil, X } from "lucide-react";
 import { exportToExcel } from "@/lib/exportToExcel";
 import SampleDataImport from "@/components/SampleDataImport";
 import { toast } from "sonner";
@@ -20,7 +20,6 @@ import { format } from "date-fns";
 import { useDashboardChatHistory } from "@/hooks/useDashboardChatHistory";
 import AiChatPanel from "@/components/AiChatPanel";
 import BudgetCharts from "@/components/dashboards/BudgetCharts";
-import { useDashboardDisplay } from "@/hooks/useDashboardDisplay";
 import FinancialCsvImport from "@/components/FinancialCsvImport";
 import ManualTransactionForm from "@/components/ManualTransactionForm";
 import CreditCardConnect from "@/components/dashboards/CreditCardConnect";
@@ -121,7 +120,6 @@ const GUIDE_DEFS = [
 ];
 
 const PaymentDashboard = () => {
-  const { viewMode, themeKey, setViewMode, setTheme } = useDashboardDisplay("payments");
   const { user } = useAuth();
   const { t, lang } = useLanguage();
   const isRtl = lang === "he" || lang === "ar";
@@ -145,6 +143,9 @@ const PaymentDashboard = () => {
   const [budgetPeriod, setBudgetPeriod] = useState("monthly");
   const [editingBudget, setEditingBudget] = useState(false);
   const [budgetInput, setBudgetInput] = useState("");
+  const [editingEntryId, setEditingEntryId] = useState<string | null>(null);
+  const [editCategory, setEditCategory] = useState("");
+  const [editNotes, setEditNotes] = useState("");
 
   // Fetch budget target
   useEffect(() => {
@@ -186,7 +187,7 @@ const PaymentDashboard = () => {
     ]);
 
     if (paymentsResult.error || transactionsResult.error) {
-      toast.error(isRtl ? "שגיאה בטעינת נתוני הכספים" : "Error loading financial data");
+      toast.error(t("error" as any));
       setLoading(false);
       return;
     }
@@ -194,7 +195,7 @@ const PaymentDashboard = () => {
     setPayments((paymentsResult.data as any[]) || []);
     setTransactions((transactionsResult.data as any[]) || []);
     setLoading(false);
-  }, [user, isRtl]);
+  }, [user, t]);
 
   useEffect(() => { fetchFinanceData(); }, [fetchFinanceData]);
 
@@ -232,6 +233,26 @@ const PaymentDashboard = () => {
     setPayments(prev => prev.filter(item => item.id !== entry.id));
   };
 
+  const saveEntryEdit = async (entry: DashboardEntry) => {
+    if (entry.source === "payment_tracking") {
+      await supabase.from("payment_tracking").update({ category: editCategory || null, notes: editNotes || null }).eq("id", entry.id);
+      setPayments(prev => prev.map(p => p.id === entry.id ? { ...p, category: editCategory || null, notes: editNotes || null } : p));
+    } else {
+      await supabase.from("financial_transactions").update({ category: editCategory || null }).eq("id", entry.id);
+      setTransactions(prev => prev.map(t => t.id === entry.id ? { ...t, category: editCategory || null } : t));
+    }
+    setEditingEntryId(null);
+    toast.success(t("save" as any));
+  };
+
+  const toggleEntryRecurring = async (entry: DashboardEntry) => {
+    if (entry.source !== "payment_tracking") return;
+    const newRecurring = !entry.recurring;
+    await supabase.from("payment_tracking").update({ recurring: newRecurring }).eq("id", entry.id);
+    setPayments(prev => prev.map(p => p.id === entry.id ? { ...p, recurring: newRecurring } : p));
+    toast.success(newRecurring ? t("fixedPayment" as any) : t("variableExpenses" as any));
+  };
+
   const dashboardEntries = useMemo<DashboardEntry[]>(() => {
     const plannedEntries: DashboardEntry[] = payments.map((payment) => ({
       id: payment.id,
@@ -253,7 +274,7 @@ const PaymentDashboard = () => {
     const importedEntries: DashboardEntry[] = transactions.map((transaction) => ({
       id: transaction.id,
       source: "financial_transactions",
-      title: transaction.description || transaction.merchant || (transaction.direction === "income" ? (isRtl ? "הכנסה מיובאת" : "Imported income") : (isRtl ? "הוצאה מיובאת" : "Imported expense")),
+      title: transaction.description || transaction.merchant || (transaction.direction === "income" ? t("incomeType" as any) : t("expenseType" as any)),
       amount: transaction.amount,
       category: transaction.category,
       payment_type: transaction.direction,
@@ -270,7 +291,7 @@ const PaymentDashboard = () => {
     return [...importedEntries, ...plannedEntries].sort(
       (a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime(),
     );
-  }, [payments, transactions, isRtl]);
+  }, [payments, transactions, t]);
 
   // Financial calculations
   const totalExpenses = useMemo(() => dashboardEntries.filter(p => p.payment_type === "expense").reduce((s, p) => s + p.amount, 0), [dashboardEntries]);
@@ -295,11 +316,11 @@ const PaymentDashboard = () => {
   const categoryBreakdown = useMemo(() => {
     const cats: Record<string, number> = {};
     dashboardEntries.filter(p => p.payment_type === "expense" && !isSavingsCategory(p.category)).forEach(p => {
-      const cat = p.category || (isRtl ? "אחר" : "Other");
+      const cat = p.category || t("catOther" as any);
       cats[cat] = (cats[cat] || 0) + p.amount;
     });
     return Object.entries(cats).sort(([, a], [, b]) => b - a);
-  }, [dashboardEntries, isSavingsCategory]);
+  }, [dashboardEntries, isSavingsCategory, t]);
 
   // 50/30/20 rule calculation
   const needsPercent = totalIncome > 0 ? Math.round((fixedExpenses / totalIncome) * 100) : 0;
@@ -335,56 +356,19 @@ const PaymentDashboard = () => {
     if (!category) return "-";
 
     const categoryKeyMap: Record<string, string> = {
-      "משכורת": "catSalary",
-      "פרילנס": "catFreelance",
-      "דיור": "catHousing",
-      "שכירות": "catRent",
-      "משכנתא": "catMortgage",
-      "סופר": "catGroceries",
-      "אוכל": "catFood",
-      "דלק": "catFuel",
-      "תחבורה": "catTransport",
-      "חשמל": "catElectricity",
-      "מים": "catWater",
-      "גז": "catGas",
-      "אינטרנט": "catInternet",
-      "טלפון": "catPhone",
-      "ביטוחים": "catInsurance",
-      "חשבונות": "catBills",
-      "קניות": "catShopping",
-      "בילויים": "catEntertainment",
-      "חינוך": "catEducation",
-      "בריאות": "catHealth",
-      "חיסכון": "catSavings",
-      "השקעות": "catInvestments",
-      "אחר": "catOther",
-      "Salary": "catSalary",
-      "Freelance": "catFreelance",
-      "Housing": "catHousing",
-      "Rent": "catRent",
-      "Mortgage": "catMortgage",
-      "Groceries": "catGroceries",
-      "Food": "catFood",
-      "Fuel": "catFuel",
-      "Transport": "catTransport",
-      "Electricity": "catElectricity",
-      "Water": "catWater",
-      "Gas": "catGas",
-      "Internet": "catInternet",
-      "Phone": "catPhone",
-      "Insurance": "catInsurance",
-      "Bills": "catBills",
-      "Shopping": "catShopping",
-      "Entertainment": "catEntertainment",
-      "Education": "catEducation",
-      "Health": "catHealth",
-      "Savings": "catSavings",
-      "Investments": "catInvestments",
-      "Other": "catOther",
+      "משכורת": "catSalary", "פרילנס": "catFreelance", "דיור": "catHousing", "שכירות": "catRent", "משכנתא": "catMortgage", "סופר": "catGroceries", "אוכל": "catFood", "דלק": "catFuel", "תחבורה": "catTransport", "חשמל": "catElectricity", "מים": "catWater", "גז": "catGas", "אינטרנט": "catInternet", "טלפון": "catPhone", "ביטוחים": "catInsurance", "חשבונות": "catBills", "קניות": "catShopping", "בילויים": "catEntertainment", "חינוך": "catEducation", "בריאות": "catHealth", "חיסכון": "catSavings", "השקעות": "catInvestments", "אחר": "catOther",
+      "Salary": "catSalary", "Freelance": "catFreelance", "Housing": "catHousing", "Rent": "catRent", "Mortgage": "catMortgage", "Groceries": "catGroceries", "Food": "catFood", "Fuel": "catFuel", "Transport": "catTransport", "Electricity": "catElectricity", "Water": "catWater", "Gas": "catGas", "Internet": "catInternet", "Phone": "catPhone", "Insurance": "catInsurance", "Bills": "catBills", "Shopping": "catShopping", "Entertainment": "catEntertainment", "Education": "catEducation", "Health": "catHealth", "Savings": "catSavings", "Investments": "catInvestments", "Other": "catOther",
     };
 
     const key = categoryKeyMap[category];
     return key ? t(key as any) : category;
+  };
+
+  const getBudgetPeriodLabel = (p: string) => {
+    if (p === "weekly") return t("weeklyPeriod" as any);
+    if (p === "monthly") return t("monthlyPeriod" as any);
+    if (p === "quarterly") return t("quarterlyPeriod" as any);
+    return t("yearlyPeriod" as any);
   };
 
   const sendAiMessage = async (chatInput: string) => {
@@ -432,13 +416,72 @@ ${context}
       if (error) throw error;
       aiChatHistory.setMessages(prev => [...prev, { role: "assistant", content: data?.suggestion || "אין תשובה" }]);
     } catch {
-      aiChatHistory.setMessages(prev => [...prev, { role: "assistant", content: "שגיאה בקבלת תשובה" }]);
+      aiChatHistory.setMessages(prev => [...prev, { role: "assistant", content: t("error" as any) }]);
     }
     setAiLoading(false);
   };
 
   const getMonthlyInsight = () => {
-    sendAiMessage("תן לי סיכום חודשי מפורט: מה הייתי צריך לשפר, מה עשיתי טוב, ומה הצעדים הבאים שלי. תתייחס להוצאות הגדולות ביותר ותציע איך לחסוך.");
+    sendAiMessage(t("monthlySummaryPrompt" as any));
+  };
+
+  // Render a single entry row with inline edit
+  const renderEntryRow = (p: DashboardEntry, colorClass: string) => {
+    const isEditing = editingEntryId === p.id;
+    return (
+      <Card key={p.id} className={p.payment_type === "income" ? "border-green-200 dark:border-green-800" : p.recurring ? "border-muted" : ""}>
+        <CardContent className="py-2 px-3 space-y-0">
+          <div className="flex items-center gap-3">
+            {p.source === "payment_tracking" ? (
+              <Button size="icon" variant="ghost" className="h-6 w-6" onClick={() => togglePaid(p.id, p.paid)}>
+                {p.paid ? <Check className="h-4 w-4 text-primary" /> : <div className="h-4 w-4 border-2 rounded" />}
+              </Button>
+            ) : <div className="h-6 w-6 rounded-full bg-primary/10 flex items-center justify-center text-[10px] font-semibold text-primary">₪</div>}
+            <div className="flex-1 min-w-0">
+              <p className={`text-sm font-medium ${p.paid ? "line-through text-muted-foreground" : ""}`}>{p.title}</p>
+              <div className="flex gap-2 items-center flex-wrap">
+                {p.category && <Badge variant="outline" className="text-[10px]">{getCategoryLabel(p.category)}</Badge>}
+                {p.due_date && <span className="text-[10px] text-muted-foreground">{format(new Date(p.due_date), "dd/MM/yy")}</span>}
+                {p.payment_method && <span className="text-[10px] text-muted-foreground">{p.payment_method}</span>}
+                <Badge variant="secondary" className="text-[9px]">
+                  {p.source === "financial_transactions" ? t("importedLabel" as any) : t("plannedLabel" as any)}
+                </Badge>
+                {p.recurring && <Badge variant="outline" className="text-[9px] border-amber-300 text-amber-600">{t("fixedPayment" as any)}</Badge>}
+              </div>
+            </div>
+            <span className={`font-bold text-sm whitespace-nowrap ${colorClass}`}>
+              {p.payment_type === "income" ? "+" : "-"}₪{p.amount.toLocaleString()}
+            </span>
+            <Button size="icon" variant="ghost" className="h-6 w-6" onClick={() => {
+              if (isEditing) { setEditingEntryId(null); }
+              else { setEditingEntryId(p.id); setEditCategory(p.category || ""); setEditNotes(p.notes || ""); }
+            }}>
+              {isEditing ? <X className="h-3 w-3" /> : <Pencil className="h-3 w-3 text-muted-foreground" />}
+            </Button>
+            <Button size="icon" variant="ghost" className="h-6 w-6 text-destructive" onClick={() => deleteEntry(p)}><Trash2 className="h-3 w-3" /></Button>
+          </div>
+          {isEditing && (
+            <div className="mt-2 flex gap-2 items-end flex-wrap border-t pt-2">
+              <Select value={editCategory} onValueChange={setEditCategory}>
+                <SelectTrigger className="h-8 text-xs w-[140px]"><SelectValue placeholder={t("chooseCategory" as any)} /></SelectTrigger>
+                <SelectContent>
+                  {CATEGORY_IDS.map((c, i) => <SelectItem key={c} value={c}>{t(CATEGORY_KEYS[i] as any)}</SelectItem>)}
+                </SelectContent>
+              </Select>
+              {p.source === "payment_tracking" && (
+                <Input placeholder={t("notes" as any)} value={editNotes} onChange={e => setEditNotes(e.target.value)} className="h-8 text-xs flex-1 min-w-[120px]" />
+              )}
+              {p.source === "payment_tracking" && (
+                <Button size="sm" variant={p.recurring ? "default" : "outline"} className="h-8 text-[10px] gap-1" onClick={() => toggleEntryRecurring(p)}>
+                  {t("fixedPayment" as any)}
+                </Button>
+              )}
+              <Button size="sm" className="h-8 text-xs" onClick={() => saveEntryEdit(p)}>{t("save" as any)}</Button>
+            </div>
+          )}
+        </CardContent>
+      </Card>
+    );
   };
 
   if (loading) return <div className="p-6 text-center text-muted-foreground">{t("loading" as any)}</div>;
@@ -450,7 +493,7 @@ ${context}
         <h2 className="text-2xl font-bold">{t("incomeAndExpenses" as any)}</h2>
         <div className="flex-1" />
         <Button variant="outline" size="sm" className="gap-1.5" onClick={() => exportToExcel(
-          dashboardEntries.map(p => ({ title: p.title, amount: p.amount, type: p.payment_type === 'income' ? t("incomeType" as any) : t("expenseType" as any), category: p.category || '', paid: p.paid, due_date: p.due_date || '', recurring: p.recurring, method: p.payment_method || '', source: p.source === 'financial_transactions' ? (isRtl ? 'מיובא' : 'Imported') : (isRtl ? 'מתוכנן' : 'Planned') })),
+          dashboardEntries.map(p => ({ title: p.title, amount: p.amount, type: p.payment_type === 'income' ? t("incomeType" as any) : t("expenseType" as any), category: p.category || '', paid: p.paid, due_date: p.due_date || '', recurring: p.recurring, method: p.payment_method || '', source: p.source === 'financial_transactions' ? t("importedLabel" as any) : t("plannedLabel" as any) })),
           [{ key: 'title', label: t("descriptionCol" as any) }, { key: 'amount', label: t("amountCol" as any) }, { key: 'type', label: t("typeCol" as any) }, { key: 'category', label: t("categoryCol" as any) }, { key: 'paid', label: t("paidCol" as any) }, { key: 'due_date', label: t("dateCol" as any) }, { key: 'recurring', label: t("recurringCol" as any) }, { key: 'method', label: t("methodCol" as any) }],
           t("paymentsSheet" as any)
         )}>
@@ -468,183 +511,225 @@ ${context}
           <TabsTrigger value="credit-cards" className="flex-1 gap-1"><CreditCard className="h-3 w-3" />{t("bankCreditTab" as any)}</TabsTrigger>
         </TabsList>
 
+      {/* SINGLE overview tab — hero + budget + 50/30/20 + charts + transaction lists */}
       <TabsContent value="overview" className="space-y-4">
-      <Card className="overflow-hidden border-primary/20 bg-gradient-to-br from-card via-primary/5 to-accent/10 shadow-sm backdrop-blur-xl">
-        <CardContent className="py-6 space-y-4">
-          <div className="flex flex-col gap-4 md:flex-row md:items-end md:justify-between">
-            <div>
-              <p className="text-xs uppercase tracking-[0.24em] text-muted-foreground">
-                {isRtl ? "פנוי לחיסכון" : "Available to save"}
-              </p>
-              <p className="text-4xl font-bold text-foreground">₪{Math.abs(availableToSave).toLocaleString()}</p>
-              <p className="text-sm text-muted-foreground mt-1">
-                {availableToSave >= 0
-                  ? (isRtl ? "זה הסכום שנשאר לך אחרי בזבוזים בפועל." : "This is what remains after real spending.")
-                  : (isRtl ? "כרגע הבזבוזים שלך גבוהים מההכנסות." : "Right now spending is higher than income.")}
-              </p>
-            </div>
-
-            <div className="grid grid-cols-2 gap-3 md:grid-cols-4">
-              <div className="rounded-xl border border-border/70 bg-background/80 p-3">
-                <p className="text-xs text-muted-foreground">{t("income" as any)}</p>
-                <p className="mt-1 text-lg font-semibold">₪{totalIncome.toLocaleString()}</p>
-              </div>
-              <div className="rounded-xl border border-border/70 bg-background/80 p-3">
-                <p className="text-xs text-muted-foreground">{isRtl ? "בזבוז" : "Spending"}</p>
-                <p className="mt-1 text-lg font-semibold">₪{totalSpending.toLocaleString()}</p>
-              </div>
-              <div className="rounded-xl border border-border/70 bg-background/80 p-3">
-                <p className="text-xs text-muted-foreground">{isRtl ? "סומן לחיסכון" : "Marked as savings"}</p>
-                <p className="mt-1 text-lg font-semibold">₪{dedicatedSavings.toLocaleString()}</p>
-              </div>
-              <div className="rounded-xl border border-border/70 bg-background/80 p-3">
-                <p className="text-xs text-muted-foreground">{t("overdue" as any)}</p>
-                <p className="mt-1 text-lg font-semibold">{overdue.length}</p>
-              </div>
-            </div>
-          </div>
-
-          <div className="grid gap-3 md:grid-cols-3">
-            <div className="rounded-2xl border border-border/60 bg-background/70 p-4">
-              <div className="flex items-center gap-2 text-sm font-medium">
-                <TrendingUp className="h-4 w-4 text-primary" />
-                {isRtl ? "יעד: להכניס ולשמור" : "Goal: earn and keep"}
-              </div>
-              <p className="mt-2 text-xs leading-6 text-muted-foreground">
-                {isRtl ? "הכנסה לא נספרת כבזבוז. הדשבורד מחשב כמה באמת הוצאת וכמה נשאר לשמור." : "Income is not treated as spending. The dashboard separates real spending from money left to keep."}
-              </p>
-            </div>
-            <div className="rounded-2xl border border-border/60 bg-background/70 p-4">
-              <div className="flex items-center gap-2 text-sm font-medium">
-                <PiggyBank className="h-4 w-4 text-primary" />
-                {isRtl ? "מאזן נטו" : "Net balance"}
-              </div>
-              <p className="mt-2 text-2xl font-semibold">₪{balance.toLocaleString()}</p>
-            </div>
-            <div className="rounded-2xl border border-border/60 bg-background/70 p-4">
-              <div className="flex items-center gap-2 text-sm font-medium">
-                <Calendar className="h-4 w-4 text-primary" />
-                {isRtl ? "הוצאות שלא שולמו" : "Unpaid planned expenses"}
-              </div>
-              <p className="mt-2 text-2xl font-semibold">₪{unpaidExpenses.toLocaleString()}</p>
-            </div>
-          </div>
-        </CardContent>
-      </Card>
-
-      {/* Budget Target */}
-      <Card className="border-primary/20">
-        <CardContent className="py-4">
-          <div className="flex items-center justify-between mb-3">
-            <h3 className="text-sm font-semibold flex items-center gap-2"><PiggyBank className="h-4 w-4 text-primary" />{t("budgetTarget" as any)}</h3>
-            <div className="flex gap-1">
-              {(["weekly", "monthly", "quarterly", "yearly"] as const).map(p => (
-                <button key={p} onClick={() => setBudgetPeriod(p)} className={`px-2 py-0.5 rounded text-[10px] font-medium transition-all ${budgetPeriod === p ? "bg-primary text-primary-foreground" : "bg-muted text-muted-foreground hover:bg-muted/80"}`}>
-                  {p === "weekly" ? t("weeklyPeriod" as any) : p === "monthly" ? t("monthlyPeriod" as any) : p === "quarterly" ? t("quarterlyPeriod" as any) : t("yearlyPeriod" as any)}
-                </button>
-              ))}
-            </div>
-          </div>
-          {editingBudget ? (
-            <div className="flex gap-2">
-              <Input placeholder={t("amount" as any)} type="number" value={budgetInput} onChange={e => setBudgetInput(e.target.value)} dir="ltr" className="flex-1" />
-              <Button size="sm" onClick={saveBudgetTarget}>{t("saveBudget" as any)}</Button>
-              <Button size="sm" variant="ghost" onClick={() => setEditingBudget(false)}>{t("cancelBudget" as any)}</Button>
-            </div>
-          ) : budgetTarget > 0 ? (
-            <div>
-              <div className="flex justify-between text-sm mb-2">
-                <span>{isRtl ? "בוזבז בפועל" : "Spent"}: ₪{totalSpending.toLocaleString()}</span>
-                <span>{t("targetLabel" as any)}: ₪{budgetTarget.toLocaleString()}</span>
-              </div>
-              <Progress value={Math.min((totalSpending / budgetTarget) * 100, 100)} className={`h-3 ${totalSpending > budgetTarget ? "[&>div]:bg-destructive" : "[&>div]:bg-primary"}`} />
-              <div className="flex justify-between mt-2">
-                <span className={`text-sm font-semibold ${totalSpending > budgetTarget ? "text-destructive" : "text-primary"}`}>
-                  {totalSpending > budgetTarget ? `${t("budgetExceeded" as any)} ₪${(totalSpending - budgetTarget).toLocaleString()} ⚠️` : `${t("budgetRemaining" as any)} ₪${(budgetTarget - totalSpending).toLocaleString()} ✅`}
-                </span>
-                <Button size="sm" variant="ghost" className="text-xs h-6" onClick={() => { setEditingBudget(true); setBudgetInput(String(budgetTarget)); }}>{t("editing" as any)}</Button>
-              </div>
-              <p className="mt-2 text-xs text-muted-foreground">
-                {isRtl ? "קטגוריות חיסכון/השקעה לא נספרות כבזבוז בתקציב." : "Savings/investment categories are not counted as spending against the budget."}
-              </p>
-            </div>
-          ) : (
-            <Button variant="outline" size="sm" className="w-full gap-1" onClick={() => setEditingBudget(true)}>
-              <Plus className="h-3 w-3" />{t("setBudgetTarget" as any)} {budgetPeriod === "weekly" ? t("weeklyPeriod" as any) : budgetPeriod === "monthly" ? t("monthlyPeriod" as any) : budgetPeriod === "quarterly" ? t("quarterlyPeriod" as any) : t("yearlyPeriod" as any)}
-            </Button>
-          )}
-        </CardContent>
-      </Card>
-
-      {/* 50/30/20 Rule visual */}
-      {totalIncome > 0 && (
-         <Card>
-          <CardContent className="py-4">
-            <h3 className="text-sm font-semibold mb-3 text-center">{t("rule503020" as any)}</h3>
-            <div className="grid grid-cols-3 gap-3 text-center">
+        {/* Hero Card */}
+        <Card className="overflow-hidden border-primary/20 bg-gradient-to-br from-card via-primary/5 to-accent/10 shadow-sm backdrop-blur-xl">
+          <CardContent className="py-6 space-y-4">
+            <div className="flex flex-col gap-4 md:flex-row md:items-end md:justify-between">
               <div>
-                <div className="relative mx-auto w-16 h-16">
-                  <svg viewBox="0 0 36 36" className="w-16 h-16 -rotate-90">
-                    <circle cx="18" cy="18" r="15" fill="none" stroke="currentColor" className="text-muted/20" strokeWidth="3" />
-                    <circle cx="18" cy="18" r="15" fill="none" stroke="currentColor" className={`${needsPercent <= 50 ? "text-green-500" : "text-red-500"}`} strokeWidth="3" strokeDasharray={`${Math.min(needsPercent, 100) * 0.94} 100`} />
-                  </svg>
-                  <span className="absolute inset-0 flex items-center justify-center text-xs font-bold">{needsPercent}%</span>
-                </div>
-                <p className="text-xs font-medium mt-1">{t("needs" as any)}</p>
-                <p className="text-[10px] text-muted-foreground">{t("targetPercent" as any)}: 50%</p>
-              </div>
-              <div>
-                <div className="relative mx-auto w-16 h-16">
-                  <svg viewBox="0 0 36 36" className="w-16 h-16 -rotate-90">
-                    <circle cx="18" cy="18" r="15" fill="none" stroke="currentColor" className="text-muted/20" strokeWidth="3" />
-                    <circle cx="18" cy="18" r="15" fill="none" stroke="currentColor" className={`${wantsPercent <= 30 ? "text-blue-500" : "text-amber-500"}`} strokeWidth="3" strokeDasharray={`${Math.min(wantsPercent, 100) * 0.94} 100`} />
-                  </svg>
-                  <span className="absolute inset-0 flex items-center justify-center text-xs font-bold">{wantsPercent}%</span>
-                </div>
-                <p className="text-xs font-medium mt-1">{t("wants" as any)}</p>
-                <p className="text-[10px] text-muted-foreground">{t("targetPercent" as any)}: 30%</p>
-              </div>
-              <div>
-                <div className="relative mx-auto w-16 h-16">
-                  <svg viewBox="0 0 36 36" className="w-16 h-16 -rotate-90">
-                    <circle cx="18" cy="18" r="15" fill="none" stroke="currentColor" className="text-muted/20" strokeWidth="3" />
-                    <circle cx="18" cy="18" r="15" fill="none" stroke="currentColor" className={`${savingsPercent >= 20 ? "text-green-500" : "text-red-500"}`} strokeWidth="3" strokeDasharray={`${Math.min(Math.max(savingsPercent, 0), 100) * 0.94} 100`} />
-                  </svg>
-                  <span className="absolute inset-0 flex items-center justify-center text-xs font-bold">{savingsPercent}%</span>
-                </div>
-                <p className="text-xs font-medium mt-1">{t("savings" as any)}</p>
-                <p className="text-[10px] text-muted-foreground">{t("targetPercent" as any)}: 20%</p>
-              </div>
-            </div>
-          </CardContent>
-        </Card>
-      )}
-
-      {/* Category breakdown */}
-      {categoryBreakdown.length > 0 && (
-        <Card>
-          <CardContent className="py-4">
-            <h3 className="text-sm font-semibold mb-3 flex items-center gap-2"><BarChart3 className="h-4 w-4" />{t("expenseBreakdown" as any)}</h3>
-            <div className="space-y-2">
-              {categoryBreakdown.map(([cat, amt]) => {
-                const pct = totalExpenses > 0 ? Math.round((amt / totalExpenses) * 100) : 0;
-                return (
-                  <div key={cat}>
-                    <div className="flex justify-between text-sm mb-1">
-                      <span>{getCategoryLabel(cat)}</span>
-                      <span className="font-medium">₪{amt.toLocaleString()} ({pct}%)</span>
-                    </div>
-                    <Progress value={pct} className="h-2" />
+                <p className="text-xs uppercase tracking-[0.24em] text-muted-foreground">
+                  {t("availableToSave" as any)}
+                </p>
+                <p className="text-4xl font-bold text-foreground">₪{Math.abs(availableToSave).toLocaleString()}</p>
+                <p className="text-sm text-muted-foreground mt-1">
+                  {availableToSave >= 0 ? t("availableToSavePositive" as any) : t("availableToSaveNegative" as any)}
+                </p>
+                {/* Budget remaining on hero card */}
+                {budgetTarget > 0 && (
+                  <div className="mt-2 flex items-center gap-2 flex-wrap">
+                    <Badge variant={totalSpending > budgetTarget ? "destructive" : "default"} className="text-xs">
+                      {getBudgetPeriodLabel(budgetPeriod)}: ₪{budgetTarget.toLocaleString()} | {t("budgetRemaining" as any)}: ₪{Math.max(budgetTarget - totalSpending, 0).toLocaleString()}
+                    </Badge>
                   </div>
-                );
-              })}
+                )}
+              </div>
+
+              <div className="grid grid-cols-2 gap-3 md:grid-cols-4">
+                <div className="rounded-xl border border-border/70 bg-background/80 p-3">
+                  <p className="text-xs text-muted-foreground">{t("income" as any)}</p>
+                  <p className="mt-1 text-lg font-semibold">₪{totalIncome.toLocaleString()}</p>
+                </div>
+                <div className="rounded-xl border border-border/70 bg-background/80 p-3">
+                  <p className="text-xs text-muted-foreground">{t("spendingLabel" as any)}</p>
+                  <p className="mt-1 text-lg font-semibold">₪{totalSpending.toLocaleString()}</p>
+                </div>
+                <div className="rounded-xl border border-border/70 bg-background/80 p-3">
+                  <p className="text-xs text-muted-foreground">{t("markedAsSavings" as any)}</p>
+                  <p className="mt-1 text-lg font-semibold">₪{dedicatedSavings.toLocaleString()}</p>
+                </div>
+                <div className="rounded-xl border border-border/70 bg-background/80 p-3">
+                  <p className="text-xs text-muted-foreground">{t("overdue" as any)}</p>
+                  <p className="mt-1 text-lg font-semibold">{overdue.length}</p>
+                </div>
+              </div>
+            </div>
+
+            <div className="grid gap-3 md:grid-cols-3">
+              <div className="rounded-2xl border border-border/60 bg-background/70 p-4">
+                <div className="flex items-center gap-2 text-sm font-medium">
+                  <TrendingUp className="h-4 w-4 text-primary" />
+                  {t("goalEarnAndKeep" as any)}
+                </div>
+                <p className="mt-2 text-xs leading-6 text-muted-foreground">
+                  {t("goalEarnAndKeepDesc" as any)}
+                </p>
+              </div>
+              <div className="rounded-2xl border border-border/60 bg-background/70 p-4">
+                <div className="flex items-center gap-2 text-sm font-medium">
+                  <PiggyBank className="h-4 w-4 text-primary" />
+                  {t("netBalance" as any)}
+                </div>
+                <p className="mt-2 text-2xl font-semibold">₪{balance.toLocaleString()}</p>
+              </div>
+              <div className="rounded-2xl border border-border/60 bg-background/70 p-4">
+                <div className="flex items-center gap-2 text-sm font-medium">
+                  <Calendar className="h-4 w-4 text-primary" />
+                  {t("unpaidExpenses" as any)}
+                </div>
+                <p className="mt-2 text-2xl font-semibold">₪{unpaidExpenses.toLocaleString()}</p>
+              </div>
             </div>
           </CardContent>
         </Card>
-      )}
 
-      {/* Charts - Pie, Bar comparison, Trend */}
-      <BudgetCharts payments={dashboardEntries.filter(entry => entry.payment_type === "income" || !isSavingsCategory(entry.category)) as any} />
+        {/* Budget Target */}
+        <Card className="border-primary/20">
+          <CardContent className="py-4">
+            <div className="flex items-center justify-between mb-3">
+              <h3 className="text-sm font-semibold flex items-center gap-2"><PiggyBank className="h-4 w-4 text-primary" />{t("budgetTarget" as any)}</h3>
+              <div className="flex gap-1">
+                {(["weekly", "monthly", "quarterly", "yearly"] as const).map(p => (
+                  <button key={p} onClick={() => setBudgetPeriod(p)} className={`px-2 py-0.5 rounded text-[10px] font-medium transition-all ${budgetPeriod === p ? "bg-primary text-primary-foreground" : "bg-muted text-muted-foreground hover:bg-muted/80"}`}>
+                    {getBudgetPeriodLabel(p)}
+                  </button>
+                ))}
+              </div>
+            </div>
+            {editingBudget ? (
+              <div className="flex gap-2">
+                <Input placeholder={t("amount" as any)} type="number" value={budgetInput} onChange={e => setBudgetInput(e.target.value)} dir="ltr" className="flex-1" />
+                <Button size="sm" onClick={saveBudgetTarget}>{t("saveBudget" as any)}</Button>
+                <Button size="sm" variant="ghost" onClick={() => setEditingBudget(false)}>{t("cancelBudget" as any)}</Button>
+              </div>
+            ) : budgetTarget > 0 ? (
+              <div>
+                <div className="flex justify-between text-sm mb-2">
+                  <span>{t("spentLabel" as any)}: ₪{totalSpending.toLocaleString()}</span>
+                  <span>{t("targetLabel" as any)}: ₪{budgetTarget.toLocaleString()}</span>
+                </div>
+                <Progress value={Math.min((totalSpending / budgetTarget) * 100, 100)} className={`h-3 ${totalSpending > budgetTarget ? "[&>div]:bg-destructive" : "[&>div]:bg-primary"}`} />
+                <div className="flex justify-between mt-2">
+                  <span className={`text-sm font-semibold ${totalSpending > budgetTarget ? "text-destructive" : "text-primary"}`}>
+                    {totalSpending > budgetTarget ? `${t("budgetExceeded" as any)} ₪${(totalSpending - budgetTarget).toLocaleString()} ⚠️` : `${t("budgetRemaining" as any)} ₪${(budgetTarget - totalSpending).toLocaleString()} ✅`}
+                  </span>
+                  <Button size="sm" variant="ghost" className="text-xs h-6" onClick={() => { setEditingBudget(true); setBudgetInput(String(budgetTarget)); }}>{t("editing" as any)}</Button>
+                </div>
+                <p className="mt-2 text-xs text-muted-foreground">
+                  {t("savingsNotCounted" as any)}
+                </p>
+              </div>
+            ) : (
+              <Button variant="outline" size="sm" className="w-full gap-1" onClick={() => setEditingBudget(true)}>
+                <Plus className="h-3 w-3" />{t("setBudgetTarget" as any)} {getBudgetPeriodLabel(budgetPeriod)}
+              </Button>
+            )}
+          </CardContent>
+        </Card>
+
+        {/* 50/30/20 Rule visual */}
+        {totalIncome > 0 && (
+           <Card>
+            <CardContent className="py-4">
+              <h3 className="text-sm font-semibold mb-3 text-center">{t("rule503020" as any)}</h3>
+              <div className="grid grid-cols-3 gap-3 text-center">
+                <div>
+                  <div className="relative mx-auto w-16 h-16">
+                    <svg viewBox="0 0 36 36" className="w-16 h-16 -rotate-90">
+                      <circle cx="18" cy="18" r="15" fill="none" stroke="currentColor" className="text-muted/20" strokeWidth="3" />
+                      <circle cx="18" cy="18" r="15" fill="none" stroke="currentColor" className={`${needsPercent <= 50 ? "text-green-500" : "text-red-500"}`} strokeWidth="3" strokeDasharray={`${Math.min(needsPercent, 100) * 0.94} 100`} />
+                    </svg>
+                    <span className="absolute inset-0 flex items-center justify-center text-xs font-bold">{needsPercent}%</span>
+                  </div>
+                  <p className="text-xs font-medium mt-1">{t("needs" as any)}</p>
+                  <p className="text-[10px] text-muted-foreground">{t("targetPercent" as any)}: 50%</p>
+                </div>
+                <div>
+                  <div className="relative mx-auto w-16 h-16">
+                    <svg viewBox="0 0 36 36" className="w-16 h-16 -rotate-90">
+                      <circle cx="18" cy="18" r="15" fill="none" stroke="currentColor" className="text-muted/20" strokeWidth="3" />
+                      <circle cx="18" cy="18" r="15" fill="none" stroke="currentColor" className={`${wantsPercent <= 30 ? "text-blue-500" : "text-amber-500"}`} strokeWidth="3" strokeDasharray={`${Math.min(wantsPercent, 100) * 0.94} 100`} />
+                    </svg>
+                    <span className="absolute inset-0 flex items-center justify-center text-xs font-bold">{wantsPercent}%</span>
+                  </div>
+                  <p className="text-xs font-medium mt-1">{t("wants" as any)}</p>
+                  <p className="text-[10px] text-muted-foreground">{t("targetPercent" as any)}: 30%</p>
+                </div>
+                <div>
+                  <div className="relative mx-auto w-16 h-16">
+                    <svg viewBox="0 0 36 36" className="w-16 h-16 -rotate-90">
+                      <circle cx="18" cy="18" r="15" fill="none" stroke="currentColor" className="text-muted/20" strokeWidth="3" />
+                      <circle cx="18" cy="18" r="15" fill="none" stroke="currentColor" className={`${savingsPercent >= 20 ? "text-green-500" : "text-red-500"}`} strokeWidth="3" strokeDasharray={`${Math.min(Math.max(savingsPercent, 0), 100) * 0.94} 100`} />
+                    </svg>
+                    <span className="absolute inset-0 flex items-center justify-center text-xs font-bold">{savingsPercent}%</span>
+                  </div>
+                  <p className="text-xs font-medium mt-1">{t("savings" as any)}</p>
+                  <p className="text-[10px] text-muted-foreground">{t("targetPercent" as any)}: 20%</p>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+        )}
+
+        {/* Category breakdown */}
+        {categoryBreakdown.length > 0 && (
+          <Card>
+            <CardContent className="py-4">
+              <h3 className="text-sm font-semibold mb-3 flex items-center gap-2"><BarChart3 className="h-4 w-4" />{t("expenseBreakdown" as any)}</h3>
+              <div className="space-y-2">
+                {categoryBreakdown.map(([cat, amt]) => {
+                  const pct = totalExpenses > 0 ? Math.round((amt / totalExpenses) * 100) : 0;
+                  return (
+                    <div key={cat}>
+                      <div className="flex justify-between text-sm mb-1">
+                        <span>{getCategoryLabel(cat)}</span>
+                        <span className="font-medium">₪{amt.toLocaleString()} ({pct}%)</span>
+                      </div>
+                      <Progress value={pct} className="h-2" />
+                    </div>
+                  );
+                })}
+              </div>
+            </CardContent>
+          </Card>
+        )}
+
+        {/* Charts */}
+        <BudgetCharts payments={dashboardEntries.filter(entry => entry.payment_type === "income" || !isSavingsCategory(entry.category)) as any} />
+
+        {/* Fixed expenses */}
+        {recurringExpenseEntries.length > 0 && (
+          <div className="space-y-1">
+            <h3 className="text-sm font-semibold text-muted-foreground flex items-center gap-2">
+              {t("fixedExpenses" as any)}
+              <Badge variant="outline" className="text-[10px]">{recurringExpenseEntries.length} | ₪{recurringExpenseEntries.reduce((s, p) => s + p.amount, 0).toLocaleString()}</Badge>
+            </h3>
+            {recurringExpenseEntries.map(p => renderEntryRow(p, "text-red-600"))}
+          </div>
+        )}
+
+        {/* Variable expenses */}
+        {spendingEntries.length > 0 && (
+          <div className="space-y-1">
+            <h3 className="text-sm font-semibold text-muted-foreground mt-3">{t("spendingAndTransactions" as any)}</h3>
+            {spendingEntries.map(p => renderEntryRow(p, "text-red-600"))}
+          </div>
+        )}
+
+        {/* Income */}
+        {incomeEntries.length > 0 && (
+          <div className="space-y-1">
+            <h3 className="text-sm font-semibold text-muted-foreground mt-3">{t("income" as any)}</h3>
+            {incomeEntries.map(p => renderEntryRow(p, "text-green-600"))}
+          </div>
+        )}
+
+        {dashboardEntries.length === 0 && (
+          <div className="text-center py-8 space-y-3">
+            <p className="text-muted-foreground">{t("noPaymentsYet" as any)}</p>
+            <SampleDataImport type="payments" />
+          </div>
+        )}
       </TabsContent>
 
         <TabsContent value="history" className="space-y-4">
@@ -687,7 +772,7 @@ ${context}
                 const [, data] = monthData;
                 const monthCats: Record<string, number> = {};
                 data.items.filter(p => p.payment_type === "expense").forEach(p => {
-                  const cat = p.category || (isRtl ? "אחר" : "Other");
+                  const cat = p.category || t("catOther" as any);
                   monthCats[cat] = (monthCats[cat] || 0) + p.amount;
                 });
                 const sortedCats = Object.entries(monthCats).sort(([, a], [, b]) => b - a);
@@ -748,99 +833,6 @@ ${context}
                 );
               })()}
             </>
-          )}
-        </TabsContent>
-
-        <TabsContent value="overview" className="space-y-2">
-          {/* Fixed expenses */}
-          {recurringExpenseEntries.length > 0 && (
-            <div className="space-y-1">
-              <h3 className="text-sm font-semibold text-muted-foreground">{t("fixedExpenses" as any)}</h3>
-              {recurringExpenseEntries.map(p => (
-                <Card key={p.id} className="border-muted">
-                  <CardContent className="py-2 px-3 flex items-center gap-3">
-                    {p.source === "payment_tracking" ? (
-                      <Button size="icon" variant="ghost" className="h-6 w-6" onClick={() => togglePaid(p.id, p.paid)}>
-                        {p.paid ? <Check className="h-4 w-4 text-primary" /> : <div className="h-4 w-4 border-2 rounded" />}
-                      </Button>
-                    ) : <div className="h-6 w-6" />}
-                    <div className="flex-1 min-w-0">
-                      <p className={`text-sm font-medium ${p.paid ? "line-through text-muted-foreground" : ""}`}>{p.title}</p>
-                      <div className="flex gap-2 items-center flex-wrap">
-                        {p.category && <Badge variant="outline" className="text-[10px]">{getCategoryLabel(p.category)}</Badge>}
-                        {p.due_date && <span className="text-[10px] text-muted-foreground">{format(new Date(p.due_date), "dd/MM/yy")}</span>}
-                        {p.source === "payment_tracking" && <Badge variant="secondary" className="text-[9px]">{isRtl ? "מתוכנן" : "Planned"}</Badge>}
-                      </div>
-                    </div>
-                    <span className="font-bold text-sm text-red-600 whitespace-nowrap">-₪{p.amount.toLocaleString()}</span>
-                    <Button size="icon" variant="ghost" className="h-6 w-6 text-destructive" onClick={() => deleteEntry(p)}><Trash2 className="h-3 w-3" /></Button>
-                  </CardContent>
-                </Card>
-              ))}
-            </div>
-          )}
-
-          {/* Variable expenses */}
-          {spendingEntries.length > 0 && (
-            <div className="space-y-1">
-              <h3 className="text-sm font-semibold text-muted-foreground mt-3">{isRtl ? "בזבוזים ותנועות" : "Spending & transactions"}</h3>
-              {spendingEntries.map(p => (
-                <Card key={p.id}>
-                  <CardContent className="py-2 px-3 flex items-center gap-3">
-                    {p.source === "payment_tracking" ? (
-                      <Button size="icon" variant="ghost" className="h-6 w-6" onClick={() => togglePaid(p.id, p.paid)}>
-                        {p.paid ? <Check className="h-4 w-4 text-primary" /> : <div className="h-4 w-4 border-2 rounded" />}
-                      </Button>
-                    ) : <div className="h-6 w-6 rounded-full bg-primary/10 flex items-center justify-center text-[10px] font-semibold text-primary">₪</div>}
-                    <div className="flex-1 min-w-0">
-                      <p className={`text-sm font-medium ${p.paid ? "line-through text-muted-foreground" : ""}`}>{p.title}</p>
-                      <div className="flex gap-2 items-center flex-wrap">
-                        {p.category && <Badge variant="outline" className="text-[10px]">{getCategoryLabel(p.category)}</Badge>}
-                        {p.due_date && <span className="text-[10px] text-muted-foreground">{format(new Date(p.due_date), "dd/MM/yy")}</span>}
-                        {p.payment_method && <span className="text-[10px] text-muted-foreground">{p.payment_method}</span>}
-                        <Badge variant="secondary" className="text-[9px]">{p.source === "financial_transactions" ? (isRtl ? "מיובא" : "Imported") : (isRtl ? "מתוכנן" : "Planned")}</Badge>
-                      </div>
-                    </div>
-                    <span className="font-bold text-sm text-red-600 whitespace-nowrap">-₪{p.amount.toLocaleString()}</span>
-                    <Button size="icon" variant="ghost" className="h-6 w-6 text-destructive" onClick={() => deleteEntry(p)}><Trash2 className="h-3 w-3" /></Button>
-                  </CardContent>
-                </Card>
-              ))}
-            </div>
-          )}
-
-          {/* Income */}
-          {incomeEntries.length > 0 && (
-            <div className="space-y-1">
-              <h3 className="text-sm font-semibold text-muted-foreground mt-3">{t("income" as any)}</h3>
-              {incomeEntries.map(p => (
-                <Card key={p.id} className="border-green-200 dark:border-green-800">
-                  <CardContent className="py-2 px-3 flex items-center gap-3">
-                    {p.source === "payment_tracking" ? (
-                      <Button size="icon" variant="ghost" className="h-6 w-6" onClick={() => togglePaid(p.id, p.paid)}>
-                        {p.paid ? <Check className="h-4 w-4 text-primary" /> : <div className="h-4 w-4 border-2 rounded" />}
-                      </Button>
-                    ) : <div className="h-6 w-6 rounded-full bg-primary/10 flex items-center justify-center text-[10px] font-semibold text-primary">₪</div>}
-                    <div className="flex-1 min-w-0">
-                      <p className={`text-sm font-medium ${p.paid ? "line-through text-muted-foreground" : ""}`}>{p.title}</p>
-                      <div className="flex gap-2 items-center flex-wrap">
-                        {p.category && <Badge variant="outline" className="text-[10px]">{getCategoryLabel(p.category)}</Badge>}
-                        <Badge variant="secondary" className="text-[9px]">{p.source === "financial_transactions" ? (isRtl ? "מיובא" : "Imported") : (isRtl ? "מתוכנן" : "Planned")}</Badge>
-                      </div>
-                    </div>
-                    <span className="font-bold text-sm text-green-600 whitespace-nowrap">+₪{p.amount.toLocaleString()}</span>
-                    <Button size="icon" variant="ghost" className="h-6 w-6 text-destructive" onClick={() => deleteEntry(p)}><Trash2 className="h-3 w-3" /></Button>
-                  </CardContent>
-                </Card>
-              ))}
-            </div>
-          )}
-
-          {dashboardEntries.length === 0 && (
-            <div className="text-center py-8 space-y-3">
-              <p className="text-muted-foreground">{t("noPaymentsYet" as any)}</p>
-              <SampleDataImport type="payments" />
-            </div>
           )}
         </TabsContent>
 

@@ -916,7 +916,7 @@ const DeeplyDashboard = () => {
                     {allStudy.map(v => {
                       const isCustom = customStudy.some(cv => cv.id === v.id);
                       return (
-                        <div key={v.id} className={`flex items-center gap-3 p-3 rounded-xl transition-all text-right ${
+                        <div key={v.id} className={`group flex items-center gap-3 p-3 rounded-xl transition-all text-right ${
                             activeYouTube === v.id
                               ? "bg-amber-500/20 border border-amber-500/30"
                               : "bg-white/5 border border-transparent hover:bg-white/10"
@@ -929,14 +929,17 @@ const DeeplyDashboard = () => {
                             <p className="text-xs text-[#e8e8ed]/40 truncate">{v.desc}</p>
                           </div>
                           <div className="flex items-center gap-1 flex-shrink-0">
-                            {isCustom && (
-                              <button onClick={(e) => { e.stopPropagation(); removeCustomYtVideo("study-with-me", v.id); }} className="text-red-400/50 hover:text-red-400 transition-colors" title="הסר">
+                            {isCustom ? (
+                              <button onClick={(e) => { e.stopPropagation(); removeCustomYtVideo("study-with-me", v.id); }} className="text-red-400/50 hover:text-red-400 transition-colors" title={t("removeVideo" as any)}>
+                                <Trash2 className="h-3.5 w-3.5" />
+                              </button>
+                            ) : (
+                              <button onClick={(e) => { e.stopPropagation(); setHiddenYtVideos(prev => [...prev, v.id]); }} className="text-red-400/30 hover:text-red-400 transition-colors opacity-100 md:opacity-0 md:group-hover:opacity-100" title={t("hideVideo" as any)}>
                                 <Trash2 className="h-3.5 w-3.5" />
                               </button>
                             )}
-                            <a href={`https://www.youtube.com/watch?v=${v.id}`} target="_blank" rel="noopener noreferrer" onClick={(e) => e.stopPropagation()} className="text-[#e8e8ed]/30 hover:text-[#e8e8ed]/70 transition-colors" title="פתח ב-YouTube">
+                            <a href={`https://www.youtube.com/watch?v=${v.id}`} target="_blank" rel="noopener noreferrer" onClick={(e) => e.stopPropagation()} className="text-[#e8e8ed]/30 hover:text-[#e8e8ed]/70 transition-colors" title={t("openOnYoutube" as any)}>
                               <ExternalLink className="h-3.5 w-3.5" />
-                            </a>
                           </div>
                         </div>
                       );
@@ -986,7 +989,7 @@ const DeeplyDashboard = () => {
                     {allRead.map(v => {
                       const isCustom = customRead.some(cv => cv.id === v.id);
                       return (
-                        <div key={v.id} className={`flex items-center gap-3 p-3 rounded-xl transition-all text-right ${
+                        <div key={v.id} className={`group flex items-center gap-3 p-3 rounded-xl transition-all text-right ${
                             activeYouTube === v.id
                               ? "bg-emerald-500/20 border border-emerald-500/30"
                               : "bg-white/5 border border-transparent hover:bg-white/10"
@@ -999,14 +1002,17 @@ const DeeplyDashboard = () => {
                             <p className="text-xs text-[#e8e8ed]/40 truncate">{v.desc}</p>
                           </div>
                           <div className="flex items-center gap-1 flex-shrink-0">
-                            {isCustom && (
-                              <button onClick={(e) => { e.stopPropagation(); removeCustomYtVideo("read-with-me", v.id); }} className="text-red-400/50 hover:text-red-400 transition-colors" title="הסר">
+                            {isCustom ? (
+                              <button onClick={(e) => { e.stopPropagation(); removeCustomYtVideo("read-with-me", v.id); }} className="text-red-400/50 hover:text-red-400 transition-colors" title={t("removeVideo" as any)}>
+                                <Trash2 className="h-3.5 w-3.5" />
+                              </button>
+                            ) : (
+                              <button onClick={(e) => { e.stopPropagation(); setHiddenYtVideos(prev => [...prev, v.id]); }} className="text-red-400/30 hover:text-red-400 transition-colors opacity-100 md:opacity-0 md:group-hover:opacity-100" title={t("hideVideo" as any)}>
                                 <Trash2 className="h-3.5 w-3.5" />
                               </button>
                             )}
-                            <a href={`https://www.youtube.com/watch?v=${v.id}`} target="_blank" rel="noopener noreferrer" onClick={(e) => e.stopPropagation()} className="text-[#e8e8ed]/30 hover:text-[#e8e8ed]/70 transition-colors" title="פתח ב-YouTube">
+                            <a href={`https://www.youtube.com/watch?v=${v.id}`} target="_blank" rel="noopener noreferrer" onClick={(e) => e.stopPropagation()} className="text-[#e8e8ed]/30 hover:text-[#e8e8ed]/70 transition-colors" title={t("openOnYoutube" as any)}>
                               <ExternalLink className="h-3.5 w-3.5" />
-                            </a>
                           </div>
                         </div>
                       );
