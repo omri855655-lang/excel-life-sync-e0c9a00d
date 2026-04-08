@@ -13,6 +13,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
 import { DeeplyMusicPlayer } from "./DeeplyMusicPlayer";
 import { useDailyStopwatch } from "@/hooks/useDailyStopwatch";
+import { useLanguage } from "@/hooks/useLanguage";
 
 // Background themes
 const BG_THEMES = [
@@ -89,6 +90,7 @@ const ACTIVE_COLOR_MAP: Record<string, string> = {
 const DeeplyDashboard = () => {
   const { activePresetId, isPlaying, isRendering, toggle } = useAudioEngine();
   const { user } = useAuth();
+  const { t } = useLanguage();
   const { stopwatchTime, isStopwatchRunning, toggleStopwatch, resetStopwatch } = useDailyStopwatch();
 
   // Sound category
@@ -793,7 +795,7 @@ const DeeplyDashboard = () => {
                                   <button
                                     onClick={(e) => { e.stopPropagation(); removeCustomYtVideo(activeYtCat, v.id); }}
                                     className="text-red-400/50 hover:text-red-400 transition-colors"
-                                    title="הסר סרטון"
+                                    title={t("removeVideo" as any)}
                                   >
                                     <Trash2 className="h-3.5 w-3.5" />
                                   </button>
@@ -801,7 +803,7 @@ const DeeplyDashboard = () => {
                                   <button
                                     onClick={(e) => { e.stopPropagation(); setHiddenYtVideos(prev => [...prev, v.id]); }}
                                     className="text-red-400/30 hover:text-red-400 transition-colors opacity-100 md:opacity-0 md:group-hover:opacity-100"
-                                    title="הסתר סרטון"
+                                    title={t("hideVideo" as any)}
                                   >
                                     <Trash2 className="h-3.5 w-3.5" />
                                   </button>
@@ -812,7 +814,7 @@ const DeeplyDashboard = () => {
                                   rel="noopener noreferrer"
                                   onClick={(e) => e.stopPropagation()}
                                   className="text-[#e8e8ed]/30 hover:text-[#e8e8ed]/70 transition-colors"
-                                  title="פתח ב-YouTube"
+                                  title={t("openOnYoutube" as any)}
                                 >
                                   <ExternalLink className="h-3.5 w-3.5" />
                                 </a>
@@ -826,7 +828,7 @@ const DeeplyDashboard = () => {
                         <div className="flex gap-2 items-end flex-wrap">
                           <input
                             type="text"
-                            placeholder="קישור YouTube..."
+                            placeholder={t("youtubeLink" as any)}
                             value={addYtUrl}
                             onChange={(e) => setAddYtUrl(e.target.value)}
                             className="flex-1 min-w-[200px] bg-white/5 border border-white/10 rounded-lg px-3 py-2 text-sm text-[#e8e8ed] placeholder:text-[#e8e8ed]/30 outline-none focus:border-white/30"
@@ -834,7 +836,7 @@ const DeeplyDashboard = () => {
                           />
                           <input
                             type="text"
-                            placeholder="שם (אופציונלי)"
+                            placeholder={t("customVideoName" as any)}
                             value={addYtTitle}
                             onChange={(e) => setAddYtTitle(e.target.value)}
                             className="w-[150px] bg-white/5 border border-white/10 rounded-lg px-3 py-2 text-sm text-[#e8e8ed] placeholder:text-[#e8e8ed]/30 outline-none focus:border-white/30"
@@ -846,8 +848,8 @@ const DeeplyDashboard = () => {
                             className="bg-white/10 hover:bg-white/20 text-[#e8e8ed]"
                             variant="ghost"
                           >
-                            <Plus className="h-4 w-4 ml-1" />
-                            הוסף
+                             <Plus className="h-4 w-4 ml-1" />
+                            {t("add" as any)}
                           </Button>
                           <Button
                             size="sm"
@@ -855,7 +857,7 @@ const DeeplyDashboard = () => {
                             onClick={() => setAddYtTarget(null)}
                             className="text-[#e8e8ed]/50 hover:text-[#e8e8ed]"
                           >
-                            ביטול
+                            {t("cancel" as any)}
                           </Button>
                         </div>
                       ) : (
@@ -864,7 +866,7 @@ const DeeplyDashboard = () => {
                           className="flex items-center gap-2 text-xs text-[#e8e8ed]/40 hover:text-[#e8e8ed]/70 transition-colors"
                         >
                           <Plus className="h-3.5 w-3.5" />
-                          הוסף סרטון מותאם אישית
+                          {t("addCustomVideo" as any)}
                         </button>
                       )}
                     </>

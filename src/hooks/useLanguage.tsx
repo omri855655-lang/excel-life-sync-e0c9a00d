@@ -98,6 +98,10 @@ const translations = {
     catPayment: "תשלום", catTask: "משימה", catNewsletter: "ניוזלטר", catSocial: "חברתי", catOtherEmail: "אחר",
     // ZoneFlow
     resetHiddenVideos: "איפוס סרטונים מוסתרים", resetHiddenVideosDesc: "הצג מחדש סרטוני ZoneFlow שהוסתרו.",
+    // DashboardDisplayToolbar
+    viewTable: "טבלה", viewKanban: "קנבן", viewList: "רשימה", viewCards: "כרטיסים", viewCompact: "קומפקט", design: "עיצוב", chooseDesign: "בחר עיצוב",
+    // ZoneFlow tooltips
+    hideVideo: "הסתר סרטון", removeVideo: "הסר סרטון", openOnYoutube: "פתח ב-YouTube", youtubeLink: "קישור YouTube", addCustomVideo: "הוסף סרטון מותאם אישית", customVideoName: "שם (אופציונלי)",
     // Fixed payment
     fixedPayment: "תשלום קבוע", fixedPaymentsCount: "תשלומים קבועים", fixedPaymentsTotal: "סה\"כ קבועים",
     // Admin mailbox
@@ -189,6 +193,8 @@ const translations = {
     minutes: "minutes", seconds: "seconds",
     catPayment: "Payment", catTask: "Task", catNewsletter: "Newsletter", catSocial: "Social", catOtherEmail: "Other",
     resetHiddenVideos: "Reset Hidden Videos", resetHiddenVideosDesc: "Show ZoneFlow videos that were hidden.",
+    viewTable: "Table", viewKanban: "Kanban", viewList: "List", viewCards: "Cards", viewCompact: "Compact", design: "Design", chooseDesign: "Choose design",
+    hideVideo: "Hide video", removeVideo: "Remove video", openOnYoutube: "Open on YouTube", youtubeLink: "YouTube link", addCustomVideo: "Add custom video", customVideoName: "Name (optional)",
     fixedPayment: "Fixed payment", fixedPaymentsCount: "Fixed payments", fixedPaymentsTotal: "Fixed total",
     companyMailbox: "Company Mailbox", searchEmails: "Search emails...", filterByStatus: "Filter by status", allStatuses: "All statuses",
     sent: "Sent", failed: "Failed",
