@@ -773,7 +773,7 @@ const DeeplyDashboard = () => {
                         {allVideos.map(v => {
                           const isCustom = customVideosForCat.some(cv => cv.id === v.id);
                           return (
-                            <div key={v.id} className={`flex items-center gap-3 p-3 rounded-xl transition-all text-right ${
+                            <div key={v.id} className={`group flex items-center gap-3 p-3 rounded-xl transition-all text-right ${
                                 activeYouTube === v.id
                                   ? `${catColorMap[activeCatData.color]} border`
                                   : "bg-white/5 border border-transparent hover:bg-white/10"
