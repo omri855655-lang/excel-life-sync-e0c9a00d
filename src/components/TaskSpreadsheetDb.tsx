@@ -1379,6 +1379,37 @@ const TaskSpreadsheetDb = ({ title, taskType, readOnly = false, showYearSelector
         }}
       </TaskTabs>
 
+      {/* Compact View Detail Dialog */}
+      {dashViewMode === "compact" && (() => {
+        const selectedTask = tasks.find(t => t.id === selectedRow);
+        return (
+          <ItemDetailDialog
+            item={selectedTask ? {
+              id: selectedTask.id,
+              title: selectedTask.description || "(ללא תיאור)",
+              subtitle: selectedTask.category || null,
+              status: selectedTask.status || null,
+              notes: selectedTask.statusNotes || null,
+              statusOptions: [
+                { value: "טרם החל", label: "טרם החל" },
+                { value: "בטיפול", label: "בטיפול" },
+                { value: "בוצע", label: "בוצע" },
+              ],
+            } : null}
+            open={!!selectedRow && dashViewMode === "compact"}
+            onClose={() => setSelectedRow(null)}
+            onSave={(id, updates) => {
+              const taskUpdates: Partial<Task> = {};
+              if (updates.title !== undefined) taskUpdates.description = updates.title;
+              if (updates.status !== undefined) taskUpdates.status = updates.status;
+              if (updates.notes !== undefined) taskUpdates.statusNotes = updates.notes;
+              updateTask(id, taskUpdates);
+            }}
+            onDelete={readOnly ? undefined : (id) => { deleteTask(id); setSelectedRow(null); }}
+          />
+        );
+      })()}
+
       {/* AI Dialog */}
       <Dialog open={aiDialogOpen} onOpenChange={setAiDialogOpen}>
         <DialogContent className="max-w-md" dir="rtl">
