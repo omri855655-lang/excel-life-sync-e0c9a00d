@@ -642,13 +642,13 @@ ${context}
             ) : budgetTarget > 0 ? (
               <div>
                 <div className="flex justify-between text-sm mb-2">
-                  <span>{t("spentLabel" as any)}: ₪{totalSpending.toLocaleString()}</span>
+                  <span>{t("spentLabel" as any)}: ₪{periodSpending.toLocaleString()}</span>
                   <span>{t("targetLabel" as any)}: ₪{budgetTarget.toLocaleString()}</span>
                 </div>
-                <Progress value={Math.min((totalSpending / budgetTarget) * 100, 100)} className={`h-3 ${totalSpending > budgetTarget ? "[&>div]:bg-destructive" : "[&>div]:bg-primary"}`} />
+                <Progress value={Math.min((periodSpending / budgetTarget) * 100, 100)} className={`h-3 ${periodSpending > budgetTarget ? "[&>div]:bg-destructive" : "[&>div]:bg-primary"}`} />
                 <div className="flex justify-between mt-2">
-                  <span className={`text-sm font-semibold ${totalSpending > budgetTarget ? "text-destructive" : "text-primary"}`}>
-                    {totalSpending > budgetTarget ? `${t("budgetExceeded" as any)} ₪${(totalSpending - budgetTarget).toLocaleString()} ⚠️` : `${t("budgetRemaining" as any)} ₪${(budgetTarget - totalSpending).toLocaleString()} ✅`}
+                  <span className={`text-sm font-semibold ${periodSpending > budgetTarget ? "text-destructive" : "text-primary"}`}>
+                    {periodSpending > budgetTarget ? `${t("budgetExceeded" as any)} ₪${(periodSpending - budgetTarget).toLocaleString()} ⚠️` : `${t("budgetRemaining" as any)} ₪${(budgetTarget - periodSpending).toLocaleString()} ✅`}
                   </span>
                   <Button size="sm" variant="ghost" className="text-xs h-6" onClick={() => { setEditingBudget(true); setBudgetInput(String(budgetTarget)); }}>{t("editing" as any)}</Button>
                 </div>
