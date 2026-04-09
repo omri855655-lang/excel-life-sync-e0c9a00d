@@ -162,7 +162,7 @@ Deno.serve(async (req) => {
             'X-Connection-Api-Key': resendKey,
           },
           body: JSON.stringify({
-            from: 'Tabro <info@tabro.org>',
+            from: 'Tabro <onboarding@resend.dev>',
             to: [to],
             subject,
             html: `<div style="font-family:Arial,sans-serif;max-width:600px;">${htmlBody.replace(/\n/g, '<br/>')}</div>`,

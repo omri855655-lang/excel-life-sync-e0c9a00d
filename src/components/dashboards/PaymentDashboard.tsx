@@ -146,6 +146,7 @@ const PaymentDashboard = () => {
   const [editingEntryId, setEditingEntryId] = useState<string | null>(null);
   const [editCategory, setEditCategory] = useState("");
   const [editNotes, setEditNotes] = useState("");
+  const [editAmount, setEditAmount] = useState("");
 
   // Fetch budget target
   useEffect(() => {
@@ -234,12 +235,17 @@ const PaymentDashboard = () => {
   };
 
   const saveEntryEdit = async (entry: DashboardEntry) => {
+    const parsedAmount = editAmount ? parseFloat(editAmount) : null;
     if (entry.source === "payment_tracking") {
-      await supabase.from("payment_tracking").update({ category: editCategory || null, notes: editNotes || null }).eq("id", entry.id);
-      setPayments(prev => prev.map(p => p.id === entry.id ? { ...p, category: editCategory || null, notes: editNotes || null } : p));
+      const updates: any = { category: editCategory || null, notes: editNotes || null };
+      if (parsedAmount && !isNaN(parsedAmount) && parsedAmount > 0) updates.amount = parsedAmount;
+      await supabase.from("payment_tracking").update(updates).eq("id", entry.id);
+      setPayments(prev => prev.map(p => p.id === entry.id ? { ...p, ...updates } : p));
     } else {
-      await supabase.from("financial_transactions").update({ category: editCategory || null }).eq("id", entry.id);
-      setTransactions(prev => prev.map(t => t.id === entry.id ? { ...t, category: editCategory || null } : t));
+      const updates: any = { category: editCategory || null };
+      if (parsedAmount && !isNaN(parsedAmount) && parsedAmount > 0) updates.amount = parsedAmount;
+      await supabase.from("financial_transactions").update(updates).eq("id", entry.id);
+      setTransactions(prev => prev.map(t => t.id === entry.id ? { ...t, ...updates } : t));
     }
     setEditingEntryId(null);
     toast.success(t("save" as any));
@@ -293,10 +299,40 @@ const PaymentDashboard = () => {
     );
   }, [payments, transactions, t]);
 
+  // Filter entries by budget period for accurate budget calculations
+  const periodFilteredEntries = useMemo(() => {
+    const now = new Date();
+    return dashboardEntries.filter(entry => {
+      const entryDate = new Date(entry.created_at);
+      if (budgetPeriod === "weekly") {
+        const dayOfWeek = now.getDay();
+        const startOfWeek = new Date(now);
+        startOfWeek.setDate(now.getDate() - dayOfWeek);
+        startOfWeek.setHours(0, 0, 0, 0);
+        const endOfWeek = new Date(startOfWeek);
+        endOfWeek.setDate(startOfWeek.getDate() + 6);
+        endOfWeek.setHours(23, 59, 59, 999);
+        return entryDate >= startOfWeek && entryDate <= endOfWeek;
+      }
+      if (budgetPeriod === "monthly") {
+        return entryDate.getMonth() === now.getMonth() && entryDate.getFullYear() === now.getFullYear();
+      }
+      if (budgetPeriod === "quarterly") {
+        const qStart = new Date(now.getFullYear(), Math.floor(now.getMonth() / 3) * 3, 1);
+        const qEnd = new Date(now.getFullYear(), Math.floor(now.getMonth() / 3) * 3 + 3, 0, 23, 59, 59, 999);
+        return entryDate >= qStart && entryDate <= qEnd;
+      }
+      // yearly
+      return entryDate.getFullYear() === now.getFullYear();
+    });
+  }, [dashboardEntries, budgetPeriod]);
+
   // Financial calculations
   const totalExpenses = useMemo(() => dashboardEntries.filter(p => p.payment_type === "expense").reduce((s, p) => s + p.amount, 0), [dashboardEntries]);
   const totalIncome = useMemo(() => dashboardEntries.filter(p => p.payment_type === "income").reduce((s, p) => s + p.amount, 0), [dashboardEntries]);
   const totalSpending = useMemo(() => dashboardEntries.filter(p => p.payment_type === "expense" && !isSavingsCategory(p.category)).reduce((s, p) => s + p.amount, 0), [dashboardEntries, isSavingsCategory]);
+  // Period-filtered spending for budget comparison (excludes fixed/recurring)
+  const periodSpending = useMemo(() => periodFilteredEntries.filter(p => p.payment_type === "expense" && !isSavingsCategory(p.category) && !p.recurring).reduce((s, p) => s + p.amount, 0), [periodFilteredEntries, isSavingsCategory]);
   const dedicatedSavings = useMemo(() => dashboardEntries.filter(p => p.payment_type === "expense" && isSavingsCategory(p.category)).reduce((s, p) => s + p.amount, 0), [dashboardEntries, isSavingsCategory]);
   const balance = totalIncome - totalExpenses;
   const availableToSave = totalIncome - totalSpending;
@@ -454,7 +490,7 @@ ${context}
             </span>
             <Button size="icon" variant="ghost" className="h-6 w-6" onClick={() => {
               if (isEditing) { setEditingEntryId(null); }
-              else { setEditingEntryId(p.id); setEditCategory(p.category || ""); setEditNotes(p.notes || ""); }
+              else { setEditingEntryId(p.id); setEditCategory(p.category || ""); setEditNotes(p.notes || ""); setEditAmount(String(p.amount)); }
             }}>
               {isEditing ? <X className="h-3 w-3" /> : <Pencil className="h-3 w-3 text-muted-foreground" />}
             </Button>
@@ -462,6 +498,7 @@ ${context}
           </div>
           {isEditing && (
             <div className="mt-2 flex gap-2 items-end flex-wrap border-t pt-2">
+              <Input placeholder={t("amount" as any)} type="number" value={editAmount} onChange={e => setEditAmount(e.target.value)} className="h-8 text-xs w-[100px]" dir="ltr" />
               <Select value={editCategory} onValueChange={setEditCategory}>
                 <SelectTrigger className="h-8 text-xs w-[140px]"><SelectValue placeholder={t("chooseCategory" as any)} /></SelectTrigger>
                 <SelectContent>
@@ -528,8 +565,8 @@ ${context}
                 {/* Budget remaining on hero card */}
                 {budgetTarget > 0 && (
                   <div className="mt-2 flex items-center gap-2 flex-wrap">
-                    <Badge variant={totalSpending > budgetTarget ? "destructive" : "default"} className="text-xs">
-                      {getBudgetPeriodLabel(budgetPeriod)}: ₪{budgetTarget.toLocaleString()} | {t("budgetRemaining" as any)}: ₪{Math.max(budgetTarget - totalSpending, 0).toLocaleString()}
+                    <Badge variant={periodSpending > budgetTarget ? "destructive" : "default"} className="text-xs">
+                      {getBudgetPeriodLabel(budgetPeriod)}: ₪{budgetTarget.toLocaleString()} | {t("budgetRemaining" as any)}: ₪{Math.max(budgetTarget - periodSpending, 0).toLocaleString()}
                     </Badge>
                   </div>
                 )}
@@ -605,13 +642,13 @@ ${context}
             ) : budgetTarget > 0 ? (
               <div>
                 <div className="flex justify-between text-sm mb-2">
-                  <span>{t("spentLabel" as any)}: ₪{totalSpending.toLocaleString()}</span>
+                  <span>{t("spentLabel" as any)}: ₪{periodSpending.toLocaleString()}</span>
                   <span>{t("targetLabel" as any)}: ₪{budgetTarget.toLocaleString()}</span>
                 </div>
-                <Progress value={Math.min((totalSpending / budgetTarget) * 100, 100)} className={`h-3 ${totalSpending > budgetTarget ? "[&>div]:bg-destructive" : "[&>div]:bg-primary"}`} />
+                <Progress value={Math.min((periodSpending / budgetTarget) * 100, 100)} className={`h-3 ${periodSpending > budgetTarget ? "[&>div]:bg-destructive" : "[&>div]:bg-primary"}`} />
                 <div className="flex justify-between mt-2">
-                  <span className={`text-sm font-semibold ${totalSpending > budgetTarget ? "text-destructive" : "text-primary"}`}>
-                    {totalSpending > budgetTarget ? `${t("budgetExceeded" as any)} ₪${(totalSpending - budgetTarget).toLocaleString()} ⚠️` : `${t("budgetRemaining" as any)} ₪${(budgetTarget - totalSpending).toLocaleString()} ✅`}
+                  <span className={`text-sm font-semibold ${periodSpending > budgetTarget ? "text-destructive" : "text-primary"}`}>
+                    {periodSpending > budgetTarget ? `${t("budgetExceeded" as any)} ₪${(periodSpending - budgetTarget).toLocaleString()} ⚠️` : `${t("budgetRemaining" as any)} ₪${(budgetTarget - periodSpending).toLocaleString()} ✅`}
                   </span>
                   <Button size="sm" variant="ghost" className="text-xs h-6" onClick={() => { setEditingBudget(true); setBudgetInput(String(budgetTarget)); }}>{t("editing" as any)}</Button>
                 </div>
