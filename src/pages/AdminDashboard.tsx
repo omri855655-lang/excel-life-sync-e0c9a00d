@@ -268,6 +268,16 @@ const AdminDashboard = () => {
             </CardTitle>
           </CardHeader>
           <CardContent className="space-y-4">
+            {/* Inbox / Outbox tabs */}
+            <div className="flex gap-2 mb-3">
+              <button onClick={() => setEmailTab("inbox")} className={`px-3 py-1.5 rounded text-sm font-medium transition-all ${emailTab === "inbox" ? "bg-primary text-primary-foreground" : "bg-muted text-muted-foreground hover:bg-muted/80"}`}>
+                {isHe ? "📥 דואר נכנס" : "📥 Inbox"}
+              </button>
+              <button onClick={() => setEmailTab("outbox")} className={`px-3 py-1.5 rounded text-sm font-medium transition-all ${emailTab === "outbox" ? "bg-primary text-primary-foreground" : "bg-muted text-muted-foreground hover:bg-muted/80"}`}>
+                {isHe ? "📤 דואר יוצא" : "📤 Outbox"}
+              </button>
+            </div>
+
             {/* Search & Filter */}
             <div className="flex flex-wrap gap-2">
               <div className="relative flex-1 min-w-[200px]">
@@ -285,44 +295,87 @@ const AdminDashboard = () => {
               </Select>
             </div>
 
-            {/* Email log table */}
-            {!(stats?.recentEmailLog?.length) ? (
-              <div className="text-center py-8 text-muted-foreground">
-                <Mail className="h-10 w-10 mx-auto mb-2 opacity-50" />
-                <p className="text-sm">{isHe ? "עדיין אין אירועי מייל שנשמרו במערכת." : "No email events have been logged yet."}</p>
-              </div>
+            {emailTab === "inbox" ? (
+              /* Inbox — contact form submissions */
+              (() => {
+                const inboxEmails = (stats?.recentEmailLog || []).filter(e => e.template_name === "contact-form" || e.template_name === "contact_form");
+                const filteredInbox = inboxEmails.filter(e => {
+                  const matchSearch = !emailSearch || e.recipient_email.toLowerCase().includes(emailSearch.toLowerCase()) || e.template_name.toLowerCase().includes(emailSearch.toLowerCase());
+                  const matchStatus = emailStatusFilter === "all" || e.status === emailStatusFilter;
+                  return matchSearch && matchStatus;
+                });
+                return filteredInbox.length === 0 ? (
+                  <div className="text-center py-8 text-muted-foreground">
+                    <Mail className="h-10 w-10 mx-auto mb-2 opacity-50" />
+                    <p className="text-sm">{isHe ? "אין פניות שנכנסו עדיין." : "No incoming messages yet."}</p>
+                  </div>
+                ) : (
+                  <div className="overflow-auto max-h-96">
+                    <Table>
+                      <TableHeader>
+                        <TableRow>
+                          <TableHead>{isHe ? "שולח" : "From"}</TableHead>
+                          <TableHead>{isHe ? "תאריך" : "Date"}</TableHead>
+                          <TableHead>{isHe ? "סטטוס" : "Status"}</TableHead>
+                        </TableRow>
+                      </TableHeader>
+                      <TableBody>
+                        {filteredInbox.map((e, index) => (
+                          <TableRow key={`${e.message_id || e.created_at}-${index}`}>
+                            <TableCell className="text-sm" dir="ltr">{e.recipient_email}</TableCell>
+                            <TableCell className="text-xs text-muted-foreground">{new Date(e.created_at).toLocaleDateString(isHe ? "he-IL" : "en-US", { day: "2-digit", month: "2-digit", hour: "2-digit", minute: "2-digit" })}</TableCell>
+                            <TableCell>
+                              <Badge variant={e.status === "sent" ? "default" : e.status === "failed" ? "destructive" : "secondary"} className="text-[10px]">{e.status}</Badge>
+                            </TableCell>
+                          </TableRow>
+                        ))}
+                      </TableBody>
+                    </Table>
+                  </div>
+                );
+              })()
             ) : (
-              <div className="overflow-auto max-h-96">
-                <Table>
-                  <TableHeader>
-                    <TableRow>
-                      <TableHead>{isHe ? "תבנית" : "Template"}</TableHead>
-                      <TableHead>{isHe ? "נמען" : "Recipient"}</TableHead>
-                      <TableHead>{isHe ? "תאריך" : "Date"}</TableHead>
-                      <TableHead>{isHe ? "סטטוס" : "Status"}</TableHead>
-                    </TableRow>
-                  </TableHeader>
-                  <TableBody>
-                    {stats.recentEmailLog
-                      .filter(e => {
-                        const matchSearch = !emailSearch || e.recipient_email.toLowerCase().includes(emailSearch.toLowerCase()) || e.template_name.toLowerCase().includes(emailSearch.toLowerCase());
-                        const matchStatus = emailStatusFilter === "all" || e.status === emailStatusFilter;
-                        return matchSearch && matchStatus;
-                      })
-                      .map((e, index) => (
-                      <TableRow key={`${e.message_id || e.created_at}-${index}`}>
-                        <TableCell className="text-sm">{e.template_name}</TableCell>
-                        <TableCell className="text-sm" dir="ltr">{e.recipient_email}</TableCell>
-                        <TableCell className="text-xs text-muted-foreground">{new Date(e.created_at).toLocaleDateString(isHe ? "he-IL" : "en-US", { day: "2-digit", month: "2-digit", hour: "2-digit", minute: "2-digit" })}</TableCell>
-                        <TableCell>
-                          <Badge variant={e.status === "sent" ? "default" : e.status === "failed" ? "destructive" : "secondary"} className="text-[10px]">{e.status}</Badge>
-                          {e.error_message && <p className="text-[10px] text-destructive mt-1 truncate max-w-[200px]">{e.error_message}</p>}
-                        </TableCell>
-                      </TableRow>
-                    ))}
-                  </TableBody>
-                </Table>
-              </div>
+              /* Outbox — all sent emails */
+              <>
+                {!(stats?.recentEmailLog?.length) ? (
+                  <div className="text-center py-8 text-muted-foreground">
+                    <Mail className="h-10 w-10 mx-auto mb-2 opacity-50" />
+                    <p className="text-sm">{isHe ? "עדיין אין אירועי מייל שנשמרו במערכת." : "No email events have been logged yet."}</p>
+                  </div>
+                ) : (
+                  <div className="overflow-auto max-h-96">
+                    <Table>
+                      <TableHeader>
+                        <TableRow>
+                          <TableHead>{isHe ? "תבנית" : "Template"}</TableHead>
+                          <TableHead>{isHe ? "נמען" : "Recipient"}</TableHead>
+                          <TableHead>{isHe ? "תאריך" : "Date"}</TableHead>
+                          <TableHead>{isHe ? "סטטוס" : "Status"}</TableHead>
+                        </TableRow>
+                      </TableHeader>
+                      <TableBody>
+                        {stats.recentEmailLog
+                          .filter(e => {
+                            const matchSearch = !emailSearch || e.recipient_email.toLowerCase().includes(emailSearch.toLowerCase()) || e.template_name.toLowerCase().includes(emailSearch.toLowerCase());
+                            const matchStatus = emailStatusFilter === "all" || e.status === emailStatusFilter;
+                            return matchSearch && matchStatus;
+                          })
+                          .map((e, index) => (
+                          <TableRow key={`${e.message_id || e.created_at}-${index}`}>
+                            <TableCell className="text-sm">{e.template_name}</TableCell>
+                            <TableCell className="text-sm" dir="ltr">{e.recipient_email}</TableCell>
+                            <TableCell className="text-xs text-muted-foreground">{new Date(e.created_at).toLocaleDateString(isHe ? "he-IL" : "en-US", { day: "2-digit", month: "2-digit", hour: "2-digit", minute: "2-digit" })}</TableCell>
+                            <TableCell>
+                              <Badge variant={e.status === "sent" ? "default" : e.status === "failed" ? "destructive" : "secondary"} className="text-[10px]">{e.status}</Badge>
+                              {e.error_message && <p className="text-[10px] text-destructive mt-1 truncate max-w-[200px]">{e.error_message}</p>}
+                            </TableCell>
+                          </TableRow>
+                        ))}
+                      </TableBody>
+                    </Table>
+                  </div>
+                )}
+              </>
             )}
 
             {/* Compose email */}
