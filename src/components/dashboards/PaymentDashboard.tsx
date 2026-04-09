@@ -498,6 +498,7 @@ ${context}
           </div>
           {isEditing && (
             <div className="mt-2 flex gap-2 items-end flex-wrap border-t pt-2">
+              <Input placeholder={t("amount" as any)} type="number" value={editAmount} onChange={e => setEditAmount(e.target.value)} className="h-8 text-xs w-[100px]" dir="ltr" />
               <Select value={editCategory} onValueChange={setEditCategory}>
                 <SelectTrigger className="h-8 text-xs w-[140px]"><SelectValue placeholder={t("chooseCategory" as any)} /></SelectTrigger>
                 <SelectContent>
