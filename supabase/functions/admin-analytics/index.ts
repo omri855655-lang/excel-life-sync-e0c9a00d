@@ -149,7 +149,7 @@ Deno.serve(async (req) => {
       }
 
       const lovableKey = Deno.env.get('LOVABLE_API_KEY')
-      const resendKey = Deno.env.get('RESEND_API_KEY')
+      const resendKey = Deno.env.get('RESEND_API_KEY_1') || Deno.env.get('RESEND_API_KEY')
 
       let emailRes: Response
       if (lovableKey && resendKey) {
