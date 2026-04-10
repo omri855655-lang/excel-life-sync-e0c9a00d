@@ -86,6 +86,7 @@ const DailyRoutine = () => {
     dayOfWeek: -1,
     dayOfMonth: -1,
     yearMonth: 0,
+    reminderTime: "",
   });
 
   const todayDate = new Date().toISOString().split("T")[0];
@@ -106,13 +107,14 @@ const DailyRoutine = () => {
         : newTask.frequency === "weekly"
         ? (newTask.dayOfWeek === -1 ? undefined : newTask.dayOfWeek)
         : newTask.frequency === "yearly" && newTask.dayOfMonth !== -1
-        ? newTask.yearMonth // store month in dayOfWeek for yearly
+        ? newTask.yearMonth
         : undefined,
       dayOfMonth: newTask.frequency === "monthly"
         ? (newTask.dayOfMonth === -1 ? undefined : newTask.dayOfMonth)
         : newTask.frequency === "yearly"
         ? (newTask.dayOfMonth === -1 ? undefined : newTask.dayOfMonth)
         : undefined,
+      reminderTime: newTask.reminderTime || undefined,
     });
 
     setNewTask({
@@ -122,6 +124,7 @@ const DailyRoutine = () => {
       dayOfWeek: -1,
       dayOfMonth: -1,
       yearMonth: 0,
+      reminderTime: "",
     });
     setAddDialogOpen(false);
   };
@@ -231,6 +234,11 @@ const DailyRoutine = () => {
                     >
                       {FREQUENCY_LABELS[task.frequency]}
                     </span>
+                    {task.reminderTime && (
+                      <span className="text-xs text-muted-foreground flex items-center gap-1">
+                        🔔 {task.reminderTime}
+                      </span>
+                    )}
                   </div>
                 );
               })}
@@ -247,13 +255,14 @@ const DailyRoutine = () => {
                   <TableHead className="text-right">משימה</TableHead>
                   <TableHead className="text-right">תדירות</TableHead>
                   <TableHead className="text-right">יום</TableHead>
+                  <TableHead className="text-right">תזכורת</TableHead>
                   <TableHead className="w-[50px]"></TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
                 {tasks.length === 0 ? (
                   <TableRow>
-                    <TableCell colSpan={4} className="text-center text-muted-foreground">
+                    <TableCell colSpan={5} className="text-center text-muted-foreground">
                       אין משימות קבועות עדיין
                     </TableCell>
                   </TableRow>
@@ -302,6 +311,13 @@ const DailyRoutine = () => {
                           : task.frequency === "yearly"
                           ? "גמיש"
                           : "-"}
+                      </TableCell>
+                      <TableCell>
+                        {task.reminderTime ? (
+                          <span className="text-xs">🔔 {task.reminderTime}</span>
+                        ) : (
+                          <span className="text-xs text-muted-foreground">-</span>
+                        )}
                       </TableCell>
                       <TableCell>
                         <Button
@@ -661,6 +677,17 @@ const DailyRoutine = () => {
                 )}
               </div>
             )}
+            <div>
+              <label className="text-sm font-medium">שעת תזכורת (אופציונלי)</label>
+              <Input
+                type="time"
+                value={newTask.reminderTime}
+                onChange={(e) => setNewTask({ ...newTask, reminderTime: e.target.value })}
+                placeholder="08:00"
+                dir="ltr"
+              />
+              <p className="text-xs text-muted-foreground mt-1">אם תוגדר שעה, המשימה תופיע במתכנן הלוז ותישלח תזכורת</p>
+            </div>
           </div>
           <DialogFooter>
             <Button variant="outline" onClick={() => setAddDialogOpen(false)}>

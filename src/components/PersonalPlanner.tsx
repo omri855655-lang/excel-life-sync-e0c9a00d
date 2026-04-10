@@ -91,7 +91,12 @@ const PersonalPlanner = () => {
     color: "" as string,
     sourceType: "custom" as string,
     sourceId: null as string | null,
+    inviteeEmails: "" as string,
   });
+
+  // Invitations state
+  const [eventInvitations, setEventInvitations] = useState<any[]>([]);
+  const [sendingInvites, setSendingInvites] = useState(false);
 
   // Resize state
   const [resizingEvent, setResizingEvent] = useState<{ eventId: string; startY: number; originalEndTime: string; edge: "top" | "bottom"; originalStartTime: string } | null>(null);
@@ -439,8 +444,66 @@ const PersonalPlanner = () => {
     return { start, end, days };
   }, [currentDate, viewMode]);
 
+  // Generate virtual events from recurring tasks with reminder_time
+  const recurringEvents = useMemo((): CalendarEvent[] => {
+    const virtualEvents: CalendarEvent[] = [];
+    const tasksWithTime = recurringTasks.filter(t => t.reminderTime);
+    
+    for (const day of dateRange.days) {
+      for (const task of tasksWithTime) {
+        // Check if task is due on this day
+        const dayOfWeek = day.getDay();
+        const dayOfMonth = day.getDate();
+        const month = day.getMonth();
+        
+        let isDue = false;
+        switch (task.frequency) {
+          case "daily": isDue = true; break;
+          case "thrice_weekly":
+            isDue = task.dayOfWeek !== null ? (task.dayOfWeek & (1 << dayOfWeek)) !== 0 : true;
+            break;
+          case "weekly":
+            isDue = task.dayOfWeek === null ? true : task.dayOfWeek === dayOfWeek;
+            break;
+          case "monthly":
+            isDue = task.dayOfMonth === null ? true : task.dayOfMonth === dayOfMonth;
+            break;
+          case "yearly":
+            isDue = (task.dayOfWeek === null && task.dayOfMonth === null) ? true :
+              (task.dayOfWeek === month && task.dayOfMonth === dayOfMonth);
+            break;
+        }
+        
+        if (isDue && task.reminderTime) {
+          const [h, m] = task.reminderTime.split(":").map(Number);
+          const start = new Date(day);
+          start.setHours(h, m, 0, 0);
+          const end = new Date(start);
+          end.setMinutes(end.getMinutes() + 30);
+          
+          virtualEvents.push({
+            id: `recurring-${task.id}-${format(day, "yyyy-MM-dd")}`,
+            title: `🔁 ${task.title}`,
+            description: task.description || "",
+            category: "לוז יומי",
+            startTime: start.toISOString(),
+            endTime: end.toISOString(),
+            color: "#8b5cf6",
+            sourceType: "recurring_task",
+            sourceId: task.id,
+            allDay: false,
+            userId: user?.id || "",
+            createdAt: task.createdAt,
+            updatedAt: task.createdAt,
+          } as CalendarEvent);
+        }
+      }
+    }
+    return virtualEvents;
+  }, [recurringTasks, dateRange.days]);
+
   const filteredEvents = useMemo(() => {
-    return events.filter((e) => {
+    const calendarEvents = events.filter((e) => {
       const eventStart = new Date(e.startTime);
       const eventEnd = new Date(e.endTime);
       return (
@@ -448,7 +511,8 @@ const PersonalPlanner = () => {
         isWithinInterval(eventEnd, { start: dateRange.start, end: dateRange.end })
       );
     });
-  }, [events, dateRange]);
+    return [...calendarEvents, ...recurringEvents];
+  }, [events, dateRange, recurringEvents]);
 
   const navigate = (dir: number) => {
     if (viewMode === "day") setCurrentDate((d) => addDays(d, dir));
@@ -583,6 +647,7 @@ const PersonalPlanner = () => {
       color: "",
       sourceType,
       sourceId: draggedTask.id,
+      inviteeEmails: "",
     });
     setEditingEvent(null);
     setShowEventDialog(true);
@@ -834,6 +899,23 @@ const PersonalPlanner = () => {
         sourceId: newEventData.sourceId,
       });
 
+      // Send invitations if emails provided
+      if (savedEvent && newEventData.inviteeEmails.trim()) {
+        const emails = newEventData.inviteeEmails.split(",").map(e => e.trim()).filter(Boolean);
+        if (emails.length > 0) {
+          setSendingInvites(true);
+          try {
+            await supabase.functions.invoke("send-event-invitation", {
+              body: { eventId: savedEvent.id, inviteeEmails: emails },
+            });
+            toast.success(`📨 נשלחו ${emails.length} הזמנות`);
+          } catch {
+            toast.error("שגיאה בשליחת הזמנות");
+          }
+          setSendingInvites(false);
+        }
+      }
+
       // If it's a custom event (not linked), ask user if they want to link to dashboard
       if (isCustom && savedEvent) {
         setPendingLinkEvent(savedEvent);
@@ -902,6 +984,7 @@ const PersonalPlanner = () => {
       color: event.color || "",
       sourceType: event.sourceType || "custom",
       sourceId: event.sourceId,
+      inviteeEmails: "",
     });
     setShowEventDialog(true);
   };
@@ -919,6 +1002,7 @@ const PersonalPlanner = () => {
       color: "",
       sourceType: "custom",
       sourceId: null,
+      inviteeEmails: "",
     });
     setShowEventDialog(true);
   };
@@ -1903,7 +1987,17 @@ const PersonalPlanner = () => {
                     <SelectTrigger className="w-[70px]"><SelectValue /></SelectTrigger>
                     <SelectContent>{Array.from({ length: 60 }, (_, i) => i).map(m => <SelectItem key={m} value={String(m)}>{String(m).padStart(2, "0")}</SelectItem>)}</SelectContent>
                   </Select>
-                </div>
+            <div>
+              <label className="text-sm font-medium">הזמן משתתפים (מיילים, מופרדים בפסיק)</label>
+              <Input
+                value={newEventData.inviteeEmails}
+                onChange={(e) => setNewEventData((p) => ({ ...p, inviteeEmails: e.target.value }))}
+                placeholder="user@example.com, friend@example.com"
+                dir="ltr"
+              />
+              <p className="text-xs text-muted-foreground mt-1">המוזמנים יקבלו מייל הזמנה</p>
+            </div>
+          </div>
                 <Input
                   type="date"
                   value={newEventData.startTime ? format(new Date(newEventData.startTime), "yyyy-MM-dd") : ""}

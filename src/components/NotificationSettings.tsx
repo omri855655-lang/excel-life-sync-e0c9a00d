@@ -24,6 +24,7 @@ interface PlannerSettings {
   pushEnabled: boolean;
   completionEnabled: boolean;
   reminderMinutes: number[];
+  invitationsEnabled: boolean;
 }
 
 interface NotifPrefs {
@@ -53,6 +54,7 @@ const DEFAULT_PREFS: NotifPrefs = {
     pushEnabled: true,
     completionEnabled: true,
     reminderMinutes: [1, 10, 60],
+    invitationsEnabled: true,
   },
 };
 
@@ -121,6 +123,7 @@ const normalizePrefs = (raw?: Partial<NotifPrefs> | null): NotifPrefs => ({
     reminderMinutes: Array.isArray(raw?.planner?.reminderMinutes) && raw.planner.reminderMinutes.length
       ? [...new Set(raw.planner.reminderMinutes.filter((n) => Number.isFinite(n) && n > 0))].sort((a, b) => a - b)
       : DEFAULT_PREFS.planner.reminderMinutes,
+    invitationsEnabled: raw?.planner?.invitationsEnabled ?? DEFAULT_PREFS.planner.invitationsEnabled,
   },
 });
 
@@ -354,6 +357,10 @@ const NotificationSettings = () => {
                 onClick={() => save({ ...prefs, planner: { ...prefs.planner, completionEnabled: !prefs.planner.completionEnabled } })}
                 className={`rounded-lg border p-3 text-right text-xs ${prefs.planner.completionEnabled ? "border-primary bg-primary/10 text-primary" : "border-border bg-muted/30 text-muted-foreground"}`}
               >התראת סיום אירוע</button>
+              <button
+                onClick={() => save({ ...prefs, planner: { ...prefs.planner, invitationsEnabled: !prefs.planner.invitationsEnabled } })}
+                className={`rounded-lg border p-3 text-right text-xs ${prefs.planner.invitationsEnabled ? "border-primary bg-primary/10 text-primary" : "border-border bg-muted/30 text-muted-foreground"}`}
+              >התראות זימונים</button>
             </div>
 
             <div className="space-y-2">
