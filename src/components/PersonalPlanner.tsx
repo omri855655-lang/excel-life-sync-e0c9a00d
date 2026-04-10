@@ -899,6 +899,23 @@ const PersonalPlanner = () => {
         sourceId: newEventData.sourceId,
       });
 
+      // Send invitations if emails provided
+      if (savedEvent && newEventData.inviteeEmails.trim()) {
+        const emails = newEventData.inviteeEmails.split(",").map(e => e.trim()).filter(Boolean);
+        if (emails.length > 0) {
+          setSendingInvites(true);
+          try {
+            await supabase.functions.invoke("send-event-invitation", {
+              body: { eventId: savedEvent.id, inviteeEmails: emails },
+            });
+            toast.success(`📨 נשלחו ${emails.length} הזמנות`);
+          } catch {
+            toast.error("שגיאה בשליחת הזמנות");
+          }
+          setSendingInvites(false);
+        }
+      }
+
       // If it's a custom event (not linked), ask user if they want to link to dashboard
       if (isCustom && savedEvent) {
         setPendingLinkEvent(savedEvent);
