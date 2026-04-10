@@ -91,7 +91,12 @@ const PersonalPlanner = () => {
     color: "" as string,
     sourceType: "custom" as string,
     sourceId: null as string | null,
+    inviteeEmails: "" as string,
   });
+
+  // Invitations state
+  const [eventInvitations, setEventInvitations] = useState<any[]>([]);
+  const [sendingInvites, setSendingInvites] = useState(false);
 
   // Resize state
   const [resizingEvent, setResizingEvent] = useState<{ eventId: string; startY: number; originalEndTime: string; edge: "top" | "bottom"; originalStartTime: string } | null>(null);
