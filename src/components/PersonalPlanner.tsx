@@ -588,6 +588,7 @@ const PersonalPlanner = () => {
       color: "",
       sourceType,
       sourceId: draggedTask.id,
+      inviteeEmails: "",
     });
     setEditingEvent(null);
     setShowEventDialog(true);
