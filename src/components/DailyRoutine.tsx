@@ -86,6 +86,7 @@ const DailyRoutine = () => {
     dayOfWeek: -1,
     dayOfMonth: -1,
     yearMonth: 0,
+    reminderTime: "",
   });
 
   const todayDate = new Date().toISOString().split("T")[0];
@@ -106,13 +107,14 @@ const DailyRoutine = () => {
         : newTask.frequency === "weekly"
         ? (newTask.dayOfWeek === -1 ? undefined : newTask.dayOfWeek)
         : newTask.frequency === "yearly" && newTask.dayOfMonth !== -1
-        ? newTask.yearMonth // store month in dayOfWeek for yearly
+        ? newTask.yearMonth
         : undefined,
       dayOfMonth: newTask.frequency === "monthly"
         ? (newTask.dayOfMonth === -1 ? undefined : newTask.dayOfMonth)
         : newTask.frequency === "yearly"
         ? (newTask.dayOfMonth === -1 ? undefined : newTask.dayOfMonth)
         : undefined,
+      reminderTime: newTask.reminderTime || undefined,
     });
 
     setNewTask({
@@ -122,6 +124,7 @@ const DailyRoutine = () => {
       dayOfWeek: -1,
       dayOfMonth: -1,
       yearMonth: 0,
+      reminderTime: "",
     });
     setAddDialogOpen(false);
   };
