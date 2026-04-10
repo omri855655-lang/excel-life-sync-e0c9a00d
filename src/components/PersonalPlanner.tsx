@@ -908,6 +908,7 @@ const PersonalPlanner = () => {
       color: event.color || "",
       sourceType: event.sourceType || "custom",
       sourceId: event.sourceId,
+      inviteeEmails: "",
     });
     setShowEventDialog(true);
   };
@@ -925,6 +926,7 @@ const PersonalPlanner = () => {
       color: "",
       sourceType: "custom",
       sourceId: null,
+      inviteeEmails: "",
     });
     setShowEventDialog(true);
   };
