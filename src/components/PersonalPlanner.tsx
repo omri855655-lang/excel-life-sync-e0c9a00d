@@ -444,8 +444,63 @@ const PersonalPlanner = () => {
     return { start, end, days };
   }, [currentDate, viewMode]);
 
+  // Generate virtual events from recurring tasks with reminder_time
+  const recurringEvents = useMemo((): CalendarEvent[] => {
+    const virtualEvents: CalendarEvent[] = [];
+    const tasksWithTime = recurringTasks.filter(t => t.reminderTime);
+    
+    for (const day of dateRange.days) {
+      for (const task of tasksWithTime) {
+        // Check if task is due on this day
+        const dayOfWeek = day.getDay();
+        const dayOfMonth = day.getDate();
+        const month = day.getMonth();
+        
+        let isDue = false;
+        switch (task.frequency) {
+          case "daily": isDue = true; break;
+          case "thrice_weekly":
+            isDue = task.dayOfWeek !== null ? (task.dayOfWeek & (1 << dayOfWeek)) !== 0 : true;
+            break;
+          case "weekly":
+            isDue = task.dayOfWeek === null ? true : task.dayOfWeek === dayOfWeek;
+            break;
+          case "monthly":
+            isDue = task.dayOfMonth === null ? true : task.dayOfMonth === dayOfMonth;
+            break;
+          case "yearly":
+            isDue = (task.dayOfWeek === null && task.dayOfMonth === null) ? true :
+              (task.dayOfWeek === month && task.dayOfMonth === dayOfMonth);
+            break;
+        }
+        
+        if (isDue && task.reminderTime) {
+          const [h, m] = task.reminderTime.split(":").map(Number);
+          const start = new Date(day);
+          start.setHours(h, m, 0, 0);
+          const end = new Date(start);
+          end.setMinutes(end.getMinutes() + 30);
+          
+          virtualEvents.push({
+            id: `recurring-${task.id}-${format(day, "yyyy-MM-dd")}`,
+            title: `🔁 ${task.title}`,
+            description: task.description || "",
+            category: "לוז יומי",
+            startTime: start.toISOString(),
+            endTime: end.toISOString(),
+            color: "#8b5cf6",
+            sourceType: "recurring_task",
+            sourceId: task.id,
+            allDay: false,
+          });
+        }
+      }
+    }
+    return virtualEvents;
+  }, [recurringTasks, dateRange.days]);
+
   const filteredEvents = useMemo(() => {
-    return events.filter((e) => {
+    const calendarEvents = events.filter((e) => {
       const eventStart = new Date(e.startTime);
       const eventEnd = new Date(e.endTime);
       return (
@@ -453,7 +508,8 @@ const PersonalPlanner = () => {
         isWithinInterval(eventEnd, { start: dateRange.start, end: dateRange.end })
       );
     });
-  }, [events, dateRange]);
+    return [...calendarEvents, ...recurringEvents];
+  }, [events, dateRange, recurringEvents]);
 
   const navigate = (dir: number) => {
     if (viewMode === "day") setCurrentDate((d) => addDays(d, dir));
