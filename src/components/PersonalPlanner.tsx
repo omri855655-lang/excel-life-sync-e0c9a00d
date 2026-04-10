@@ -492,7 +492,10 @@ const PersonalPlanner = () => {
             sourceType: "recurring_task",
             sourceId: task.id,
             allDay: false,
-          });
+            userId: user?.id || "",
+            createdAt: task.createdAt,
+            updatedAt: task.createdAt,
+          } as CalendarEvent);
         }
       }
     }
