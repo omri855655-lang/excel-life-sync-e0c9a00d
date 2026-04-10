@@ -313,6 +313,13 @@ const DailyRoutine = () => {
                           : "-"}
                       </TableCell>
                       <TableCell>
+                        {task.reminderTime ? (
+                          <span className="text-xs">🔔 {task.reminderTime}</span>
+                        ) : (
+                          <span className="text-xs text-muted-foreground">-</span>
+                        )}
+                      </TableCell>
+                      <TableCell>
                         <Button
                           variant="ghost"
                           size="icon"
