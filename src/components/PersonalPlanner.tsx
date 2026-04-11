@@ -825,12 +825,12 @@ const PersonalPlanner = () => {
           );
           const newDuration = Math.max(5, originalDuration + deltaMinutes);
           const newEnd = addMinutes(new Date(event.startTime), newDuration);
-          await updateEvent(resizingEvent.eventId, { endTime: newEnd.toISOString() });
+          await updateEvent(resizingEvent.eventId, { endTime: toLocalISOString(newEnd) });
         } else {
           const newStart = addMinutes(new Date(resizingEvent.originalStartTime), deltaMinutes);
           const end = new Date(resizingEvent.originalEndTime);
           if (newStart < end && differenceInMinutes(end, newStart) >= 5) {
-            await updateEvent(resizingEvent.eventId, { startTime: newStart.toISOString() });
+            await updateEvent(resizingEvent.eventId, { startTime: toLocalISOString(newStart) });
           }
         }
       }
@@ -1004,8 +1004,8 @@ const PersonalPlanner = () => {
       title: "",
       description: "",
       category: "אחר",
-      startTime: start.toISOString(),
-      endTime: end.toISOString(),
+      startTime: toLocalISOString(start),
+      endTime: toLocalISOString(end),
       color: "",
       sourceType: "custom",
       sourceId: null,
