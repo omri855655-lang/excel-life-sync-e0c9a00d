@@ -493,8 +493,8 @@ const PersonalPlanner = () => {
             title: `🔁 ${task.title}`,
             description: task.description || "",
             category: "לוז יומי",
-            startTime: start.toISOString(),
-            endTime: end.toISOString(),
+            startTime: toLocalISOString(start),
+            endTime: toLocalISOString(end),
             color: "#8b5cf6",
             sourceType: "recurring_task",
             sourceId: task.id,
@@ -595,8 +595,8 @@ const PersonalPlanner = () => {
 
       const newEnd = addMinutes(newStart, duration);
       updateEvent(draggingEvent.id, {
-        startTime: newStart.toISOString(),
-        endTime: newEnd.toISOString(),
+        startTime: toLocalISOString(newStart),
+        endTime: toLocalISOString(newEnd),
       });
       setDraggingEvent(null);
       setDragCreateState(null);
@@ -649,8 +649,8 @@ const PersonalPlanner = () => {
       title: draggedTask.title,
       description: "",
       category: draggedTask.source === "work" ? "עבודה" : draggedTask.source === "project" ? "פרויקט" : draggedTask.source === "recurring" ? "לוז יומי" : "אישי",
-      startTime: start.toISOString(),
-      endTime: end.toISOString(),
+      startTime: toLocalISOString(start),
+      endTime: toLocalISOString(end),
       color: "",
       sourceType,
       sourceId: draggedTask.id,
