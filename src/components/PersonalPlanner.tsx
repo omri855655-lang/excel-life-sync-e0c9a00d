@@ -1323,11 +1323,11 @@ const PersonalPlanner = () => {
                             setDraggedTask(null);
                           }}
                           onDragEnd={() => setDraggingEvent(null)}
-                          className={`absolute rounded-md px-2 py-1 text-xs cursor-grab active:cursor-grabbing overflow-hidden z-20 shadow-sm hover:shadow-md transition-shadow border select-none ${draggingEvent?.id === event.id ? "opacity-50" : ""}`}
+                          className={`absolute rounded-md px-2 py-1 text-xs cursor-grab active:cursor-grabbing overflow-hidden z-20 shadow-sm hover:shadow-md transition-shadow border select-none ${draggingEvent?.id === event.id ? "opacity-50" : ""} ${event.isInvited && event.invitationStatus === "pending" ? "opacity-60 border-dashed" : ""}`}
                           style={{
                             top,
                             height: Math.max(height, 20),
-                            backgroundColor: event.color + "22",
+                            backgroundColor: event.color + (event.isInvited && event.invitationStatus === "pending" ? "11" : "22"),
                             borderColor: event.color,
                             borderRightWidth: 3,
                             left: `${leftPercent}%`,
@@ -1336,11 +1336,18 @@ const PersonalPlanner = () => {
                           onClick={() => handleClickEvent(event)}
                         >
                           <div className="font-medium truncate" style={{ color: event.color }}>
-                            {event.title}
+                            {event.isInvited ? "📨 " : ""}{event.title}
                           </div>
                           {height >= 36 && (
                             <div className="text-muted-foreground truncate">
                               {format(new Date(event.startTime), "HH:mm")}-{format(new Date(event.endTime), "HH:mm")}
+                            </div>
+                          )}
+                          {/* Accept/Decline buttons for pending invitations */}
+                          {event.isInvited && event.invitationStatus === "pending" && height >= 50 && (
+                            <div className="flex gap-1 mt-0.5">
+                              <button onClick={(e) => { e.stopPropagation(); respondToInvitation(event.invitationId!, "accepted"); }} className="text-[9px] bg-green-500/20 text-green-700 dark:text-green-400 px-1.5 rounded hover:bg-green-500/40">✓ אשר</button>
+                              <button onClick={(e) => { e.stopPropagation(); respondToInvitation(event.invitationId!, "declined"); }} className="text-[9px] bg-red-500/20 text-red-700 dark:text-red-400 px-1.5 rounded hover:bg-red-500/40">✗ דחה</button>
                             </div>
                           )}
 
