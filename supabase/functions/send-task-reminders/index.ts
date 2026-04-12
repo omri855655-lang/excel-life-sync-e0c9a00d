@@ -1,7 +1,7 @@
 import { serve } from "https://deno.land/std@0.190.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.49.2";
 
-const RESEND_API_KEY = Deno.env.get("RESEND_API_KEY");
+const RESEND_API_KEY = Deno.env.get("RESEND_API_KEY_1") || Deno.env.get("RESEND_API_KEY");
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -279,12 +279,20 @@ serve(async (req: Request): Promise<Response> => {
       console.log(`Sending email to ${userEmail}: ${subject}`);
 
       try {
-        const emailResponse = await fetch("https://api.resend.com/emails", {
+        const lovableKey = Deno.env.get('LOVABLE_API_KEY');
+        const apiUrl = lovableKey
+          ? 'https://connector-gateway.lovable.dev/resend/emails'
+          : 'https://api.resend.com/emails';
+        const emailHeaders: Record<string, string> = { 'Content-Type': 'application/json' };
+        if (lovableKey) {
+          emailHeaders['Authorization'] = `Bearer ${lovableKey}`;
+          emailHeaders['X-Connection-Api-Key'] = RESEND_API_KEY!;
+        } else {
+          emailHeaders['Authorization'] = `Bearer ${RESEND_API_KEY}`;
+        }
+        const emailResponse = await fetch(apiUrl, {
           method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-            Authorization: `Bearer ${RESEND_API_KEY}`,
-          },
+          headers: emailHeaders,
           body: JSON.stringify({
             from: "Task Reminder <onboarding@resend.dev>",
             to: [userEmail],
