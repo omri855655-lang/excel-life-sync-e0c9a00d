@@ -1,13 +1,46 @@
 import { serve } from "https://deno.land/std@0.190.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.49.2";
 
-const RESEND_API_KEY = Deno.env.get("RESEND_API_KEY");
 const ADMIN_EMAILS = ['omri855655@gmail.com', 'tabro855@gmail.com', 'info@tabro.org'];
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
   "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
 };
+
+// Unified email sending helper — uses connector gateway when available
+async function sendEmailUnified(
+  to: string[],
+  subject: string,
+  html: string,
+  from: string = 'Tabro <onboarding@resend.dev>',
+  replyTo?: string,
+) {
+  const lovableKey = Deno.env.get('LOVABLE_API_KEY');
+  const resendKey = Deno.env.get('RESEND_API_KEY_1') || Deno.env.get('RESEND_API_KEY');
+  if (!resendKey) throw new Error('No RESEND_API_KEY configured');
+
+  const apiUrl = lovableKey
+    ? 'https://connector-gateway.lovable.dev/resend/emails'
+    : 'https://api.resend.com/emails';
+  const headers: Record<string, string> = { 'Content-Type': 'application/json' };
+  if (lovableKey) {
+    headers['Authorization'] = `Bearer ${lovableKey}`;
+    headers['X-Connection-Api-Key'] = resendKey;
+  } else {
+    headers['Authorization'] = `Bearer ${resendKey}`;
+  }
+
+  const body: Record<string, any> = { from, to, subject, html };
+  if (replyTo) body.reply_to = replyTo;
+
+  const res = await fetch(apiUrl, { method: 'POST', headers, body: JSON.stringify(body) });
+  if (!res.ok) {
+    const text = await res.text();
+    throw new Error(`Email send failed: ${text}`);
+  }
+  return true;
+}
 
 function getWelcomeEmailHtml(lang: string, fullName: string, username: string, origin: string) {
   if (lang === "en") {
@@ -31,12 +64,12 @@ function getWelcomeEmailHtml(lang: string, fullName: string, username: string, o
 
         <div style="background: #fff; border-radius: 8px; padding: 16px; margin-bottom: 12px; border: 1px solid #e5e7eb;">
           <h3 style="margin: 0 0 6px 0; font-size: 15px; color: #111827;">📊 Customizable Dashboard</h3>
-          <p style="margin: 0; font-size: 13px; color: #6b7280;">Customize your dashboard — choose which blocks to show, reorder them, and pick display mode (default/compact/cards) for each section.</p>
+          <p style="margin: 0; font-size: 13px; color: #6b7280;">Customize your dashboard — choose which blocks to show, reorder them, and pick display mode.</p>
         </div>
 
         <div style="background: #fff; border-radius: 8px; padding: 16px; margin-bottom: 12px; border: 1px solid #e5e7eb;">
           <h3 style="margin: 0 0 6px 0; font-size: 15px; color: #111827;">📂 Project Management</h3>
-          <p style="margin: 0; font-size: 13px; color: #6b7280;">Projects with team, statuses (Not Started/In Progress/On Hold/Done), due dates, multi-assignee tasks and AI milestones.</p>
+          <p style="margin: 0; font-size: 13px; color: #6b7280;">Projects with team, statuses, due dates, multi-assignee tasks and AI milestones.</p>
         </div>
 
         <div style="background: #fff; border-radius: 8px; padding: 16px; margin-bottom: 12px; border: 1px solid #e5e7eb;">
@@ -95,12 +128,12 @@ function getWelcomeEmailHtml(lang: string, fullName: string, username: string, o
 
       <div style="background: #fff; border-radius: 8px; padding: 16px; margin-bottom: 12px; border: 1px solid #e5e7eb;">
         <h3 style="margin: 0 0 6px 0; font-size: 15px; color: #111827;">📊 דשבורד מותאם אישית</h3>
-        <p style="margin: 0; font-size: 13px; color: #6b7280;">התאם את הדשבורד — בחר אילו בלוקים להציג, שנה סדר, ובחר סוג תצוגה (רגיל/קומפקטי/כרטיסים) לכל חלק.</p>
+        <p style="margin: 0; font-size: 13px; color: #6b7280;">התאם את הדשבורד — בחר אילו בלוקים להציג, שנה סדר, ובחר סוג תצוגה.</p>
       </div>
 
       <div style="background: #fff; border-radius: 8px; padding: 16px; margin-bottom: 12px; border: 1px solid #e5e7eb;">
         <h3 style="margin: 0 0 6px 0; font-size: 15px; color: #111827;">📂 ניהול פרויקטים</h3>
-        <p style="margin: 0; font-size: 13px; color: #6b7280;">פרויקטים עם צוות, סטטוסים (לא התחיל/בטיפול/בהמתנה/בוצע), תאריכי יעד, ריבוי אחראים ואבני דרך AI.</p>
+        <p style="margin: 0; font-size: 13px; color: #6b7280;">פרויקטים עם צוות, סטטוסים, תאריכי יעד, ריבוי אחראים ואבני דרך AI.</p>
       </div>
 
       <div style="background: #fff; border-radius: 8px; padding: 16px; margin-bottom: 12px; border: 1px solid #e5e7eb;">
@@ -189,38 +222,13 @@ serve(async (req: Request): Promise<Response> => {
 
     const username = profile?.username || user.email.split("@")[0];
     const lang = profile?.preferred_language || "he";
-
-    // Always link to the published website
     const origin = "https://excel-life-sync.lovable.app";
 
     const emailHtml = getWelcomeEmailHtml(lang, fullName, username, origin);
     const subject = lang === "en" ? "Welcome to the App! ✅" : "ברוך הבא למערכת ✅";
 
-    if (!RESEND_API_KEY) {
-      return new Response(JSON.stringify({ error: "RESEND_API_KEY is missing" }), {
-        status: 500,
-        headers: { ...corsHeaders, "Content-Type": "application/json" },
-      });
-    }
-
-    const resendResponse = await fetch("https://api.resend.com/emails", {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-        Authorization: `Bearer ${RESEND_API_KEY}`,
-      },
-      body: JSON.stringify({
-        from: "Tabro <info@tabro.org>",
-        to: [user.email],
-        subject,
-        html: emailHtml,
-      }),
-    });
-
-    if (!resendResponse.ok) {
-      const resendError = await resendResponse.text();
-      throw new Error(`Resend error: ${resendError}`);
-    }
+    // Send welcome email via unified path
+    await sendEmailUnified([user.email], subject, emailHtml);
 
     const welcomeMessageId = crypto.randomUUID();
     await supabase.from("email_send_log").insert({
@@ -246,27 +254,26 @@ serve(async (req: Request): Promise<Response> => {
     `;
 
     const adminMessageId = crypto.randomUUID();
-    await fetch("https://api.resend.com/emails", {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-        Authorization: `Bearer ${RESEND_API_KEY}`,
-      },
-      body: JSON.stringify({
-        from: "Tabro System <info@tabro.org>",
-        to: ADMIN_EMAILS,
-        subject: `🆕 הרשמה חדשה: ${fullName} (${user.email})`,
-        html: adminHtml,
-      }),
-    }).catch((e) => console.error("Admin notification error:", e));
-
-    await supabase.from("email_send_log").insert({
-      message_id: adminMessageId,
-      template_name: "new-signup-admin",
-      recipient_email: "info@tabro.org",
-      status: "sent",
-      metadata: { fullName, userEmail: user.email, username, lang, recipients: ADMIN_EMAILS },
-    });
+    try {
+      await sendEmailUnified(ADMIN_EMAILS, `🆕 הרשמה חדשה: ${fullName} (${user.email})`, adminHtml, 'Tabro System <onboarding@resend.dev>');
+      await supabase.from("email_send_log").insert({
+        message_id: adminMessageId,
+        template_name: "new-signup-admin",
+        recipient_email: "info@tabro.org",
+        status: "sent",
+        metadata: { fullName, userEmail: user.email, username, lang, recipients: ADMIN_EMAILS },
+      });
+    } catch (e) {
+      console.error("Admin notification error:", e);
+      await supabase.from("email_send_log").insert({
+        message_id: adminMessageId,
+        template_name: "new-signup-admin",
+        recipient_email: "info@tabro.org",
+        status: "failed",
+        error_message: e.message?.slice(0, 500),
+        metadata: { fullName, userEmail: user.email },
+      });
+    }
 
     await supabase
       .from("profiles")
