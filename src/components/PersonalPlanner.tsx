@@ -979,9 +979,26 @@ const PersonalPlanner = () => {
     }
   };
 
-  const handleClickEvent = (event: CalendarEvent) => {
+  const handleClickEvent = async (event: CalendarEvent) => {
     if (resizingEvent) return; // Don't open dialog while resizing
     setEditingEvent(event);
+    
+    // Load existing invitees for this event
+    let existingEmails = "";
+    if (event.id && !event.id.startsWith("recurring-")) {
+      try {
+        const { data: invitations } = await supabase
+          .from("event_invitations")
+          .select("invitee_email")
+          .eq("event_id", event.id);
+        if (invitations && invitations.length > 0) {
+          existingEmails = invitations.map(i => i.invitee_email).join(", ");
+        }
+      } catch (e) {
+        console.error("Error loading invitations:", e);
+      }
+    }
+    
     setNewEventData({
       title: event.title,
       description: event.description,
@@ -991,7 +1008,7 @@ const PersonalPlanner = () => {
       color: event.color || "",
       sourceType: event.sourceType || "custom",
       sourceId: event.sourceId,
-      inviteeEmails: "",
+      inviteeEmails: existingEmails,
     });
     setShowEventDialog(true);
   };
