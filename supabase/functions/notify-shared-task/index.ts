@@ -6,6 +6,41 @@ const corsHeaders = {
   "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
 };
 
+// Unified email sending helper
+async function sendEmailUnified(
+  to: string[],
+  subject: string,
+  html: string,
+  from: string = 'Tabro <onboarding@resend.dev>',
+) {
+  const lovableKey = Deno.env.get('LOVABLE_API_KEY');
+  const resendKey = Deno.env.get('RESEND_API_KEY_1') || Deno.env.get('RESEND_API_KEY');
+  if (!resendKey) return false;
+
+  const apiUrl = lovableKey
+    ? 'https://connector-gateway.lovable.dev/resend/emails'
+    : 'https://api.resend.com/emails';
+  const headers: Record<string, string> = { 'Content-Type': 'application/json' };
+  if (lovableKey) {
+    headers['Authorization'] = `Bearer ${lovableKey}`;
+    headers['X-Connection-Api-Key'] = resendKey;
+  } else {
+    headers['Authorization'] = `Bearer ${resendKey}`;
+  }
+
+  const res = await fetch(apiUrl, {
+    method: 'POST',
+    headers,
+    body: JSON.stringify({ from, to, subject, html }),
+  });
+  if (!res.ok) {
+    const text = await res.text();
+    console.error(`Email failed: ${text}`);
+    return false;
+  }
+  return true;
+}
+
 serve(async (req) => {
   if (req.method === "OPTIONS") {
     return new Response(null, { headers: corsHeaders });
@@ -25,15 +60,12 @@ serve(async (req) => {
 
     const supabaseUrl = Deno.env.get("SUPABASE_URL")!;
     const serviceKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
-    const resendKey = Deno.env.get("RESEND_API_KEY");
-
     const supabase = createClient(supabaseUrl, serviceKey);
 
     // Determine who to notify
     const targetUserIds: string[] = [];
 
     if (notifyAllMembers && projectId) {
-      // Notify all project members except the creator
       const { data: members } = await supabase
         .from("project_members")
         .select("user_id, invited_email")
@@ -48,7 +80,6 @@ serve(async (req) => {
         }
       }
 
-      // Also notify the project owner if they're not the one adding
       const { data: project } = await supabase
         .from("projects")
         .select("user_id")
@@ -59,7 +90,6 @@ serve(async (req) => {
         targetUserIds.push(project.user_id);
       }
     } else {
-      // Original behavior: notify the owner only
       targetUserIds.push(ownerUserId);
     }
 
@@ -72,36 +102,28 @@ serve(async (req) => {
     const results = [];
 
     for (const targetUserId of targetUserIds) {
-      // Get target user's email
       const { data: userData } = await supabase.auth.admin.getUserById(targetUserId);
       const targetEmail = userData?.user?.email;
 
-      // Send email notification
-      if (targetEmail && resendKey) {
+      // Send email notification via unified path
+      if (targetEmail) {
         try {
-          await fetch("https://api.resend.com/emails", {
-            method: "POST",
-            headers: {
-              "Content-Type": "application/json",
-              Authorization: `Bearer ${resendKey}`,
-            },
-            body: JSON.stringify({
-              from: "ExcelSync <onboarding@resend.dev>",
-              to: [targetEmail],
-              subject: `${creatorName} צירף/ה משימה${taskPreview}`,
-              html: `
-                <div dir="rtl" style="font-family: Arial, sans-serif; padding: 20px;">
-                  <h2>נוספה משימה חדשה</h2>
-                  <p><strong>${creatorName}</strong> צירף/ה משימה חדשה ${sheetName ? `ל<strong>${sheetName}</strong>` : ""}.</p>
-                  ${normalizedTaskDescription ? `<p>המשימה: <strong>${normalizedTaskDescription}</strong></p>` : ""}
-                  <hr style="margin: 20px 0;" />
-                  <a href="https://excel-life-sync.lovable.app/personal" style="display: inline-block; background: #6366f1; color: white; padding: 10px 20px; border-radius: 8px; text-decoration: none;">
-                    פתח את האפליקציה
-                  </a>
-                </div>
-              `,
-            }),
-          });
+          await sendEmailUnified(
+            [targetEmail],
+            `${creatorName} צירף/ה משימה${taskPreview}`,
+            `
+              <div dir="rtl" style="font-family: Arial, sans-serif; padding: 20px;">
+                <h2>נוספה משימה חדשה</h2>
+                <p><strong>${creatorName}</strong> צירף/ה משימה חדשה ${sheetName ? `ל<strong>${sheetName}</strong>` : ""}.</p>
+                ${normalizedTaskDescription ? `<p>המשימה: <strong>${normalizedTaskDescription}</strong></p>` : ""}
+                <hr style="margin: 20px 0;" />
+                <a href="https://excel-life-sync.lovable.app/personal" style="display: inline-block; background: #6366f1; color: white; padding: 10px 20px; border-radius: 8px; text-decoration: none;">
+                  פתח את האפליקציה
+                </a>
+              </div>
+            `,
+            'ExcelSync <onboarding@resend.dev>',
+          );
         } catch (emailErr) {
           console.error("Email error:", emailErr);
         }
