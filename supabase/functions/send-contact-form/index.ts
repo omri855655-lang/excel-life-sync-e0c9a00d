@@ -51,7 +51,7 @@ Deno.serve(async (req) => {
     const replyTo = userEmail !== 'אנונימי' && userEmail !== 'Anonymous' ? userEmail : undefined
 
     // Always use onboarding@resend.dev as sender (safe verified domain)
-    const fromAddress = 'Tabro <onboarding@resend.dev>'
+    const fromAddress = 'Tabro <noreply@notify.tabro.org>'
 
     // Send to each admin separately
     const results = await Promise.allSettled(

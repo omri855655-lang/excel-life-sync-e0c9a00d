@@ -13,7 +13,7 @@ async function sendEmailUnified(
   to: string[],
   subject: string,
   html: string,
-  from: string = 'Tabro <onboarding@resend.dev>',
+  from: string = 'Tabro <noreply@notify.tabro.org>',
   replyTo?: string,
 ) {
   const lovableKey = Deno.env.get('LOVABLE_API_KEY');
@@ -255,7 +255,7 @@ serve(async (req: Request): Promise<Response> => {
 
     const adminMessageId = crypto.randomUUID();
     try {
-      await sendEmailUnified(ADMIN_EMAILS, `🆕 הרשמה חדשה: ${fullName} (${user.email})`, adminHtml, 'Tabro System <onboarding@resend.dev>');
+      await sendEmailUnified(ADMIN_EMAILS, `🆕 הרשמה חדשה: ${fullName} (${user.email})`, adminHtml);
       await supabase.from("email_send_log").insert({
         message_id: adminMessageId,
         template_name: "new-signup-admin",
