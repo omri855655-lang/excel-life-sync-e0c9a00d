@@ -294,7 +294,7 @@ serve(async (req: Request): Promise<Response> => {
           method: "POST",
           headers: emailHeaders,
           body: JSON.stringify({
-            from: "Task Reminder <onboarding@resend.dev>",
+            from: "Tabro <noreply@notify.tabro.org>",
             to: [userEmail],
             subject,
             html: emailContent,
