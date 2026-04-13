@@ -261,10 +261,10 @@ const AdminDashboard = () => {
         </div>
 
         {/* Company Mailbox */}
-        <Card className="card-surface">
+        <Card className="card-surface" dir="rtl">
           <CardHeader>
-            <CardTitle className="flex items-center gap-2">
-              <Mail className="h-5 w-5" /> {isHe ? "תיבת מייל — info@tabro.org" : "Company Mailbox — info@tabro.org"}
+            <CardTitle className="flex items-center gap-2 text-right">
+              <Mail className="h-5 w-5" /> {isHe ? "תיבת מייל של החברה" : "Company Mailbox"}
             </CardTitle>
           </CardHeader>
           <CardContent className="space-y-4">
@@ -281,8 +281,8 @@ const AdminDashboard = () => {
             {/* Search & Filter */}
             <div className="flex flex-wrap gap-2">
               <div className="relative flex-1 min-w-[200px]">
-                <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
-                <Input placeholder={isHe ? "חיפוש לפי נמען או תבנית..." : "Search by recipient or template..."} value={emailSearch} onChange={e => setEmailSearch(e.target.value)} className="pl-9" dir="ltr" />
+                <Search className="absolute right-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
+                <Input placeholder={isHe ? "חיפוש לפי נמען או תבנית..." : "Search by recipient or template..."} value={emailSearch} onChange={e => setEmailSearch(e.target.value)} className="pr-9" dir="ltr" />
               </div>
               <Select value={emailStatusFilter} onValueChange={setEmailStatusFilter}>
                 <SelectTrigger className="w-[140px]"><SelectValue /></SelectTrigger>
@@ -393,7 +393,13 @@ const AdminDashboard = () => {
                   });
                   setComposeSending(false);
                   if (error || data?.error) {
-                    toast.error(data?.error || "Error sending email");
+                    const errMsg = data?.error || "Error sending email";
+                    // Show detailed sandbox error to admin
+                    if (errMsg.includes("Sandbox") || errMsg.includes("not verified")) {
+                      toast.error(isHe ? "שגיאה: הדומיין עדיין לא אומת. ניתן לשלוח רק לכתובת בעל החשבון ב-Resend. השלם את אימות הדומיין ב-Cloud → Emails." : errMsg, { duration: 8000 });
+                    } else {
+                      toast.error(errMsg);
+                    }
                   } else {
                     toast.success(isHe ? "המייל נשלח!" : "Email sent!");
                     setComposeTo(""); setComposeSubject(""); setComposeBody("");
