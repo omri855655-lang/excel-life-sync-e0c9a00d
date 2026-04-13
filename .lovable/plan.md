@@ -1,124 +1,88 @@
 
-## תוכנית המשך ממוקדת — לפי הבדיקה בקוד ובנתונים
 
-### מה מצאתי בפועל
-1. **השגיאה “error sending mail” באדמין היא אמיתית בבאקאנד**  
-   הבעיה לא רק במסך. כרגע יש כמה מסלולי מייל שונים, וחלקם עדיין משתמשים בשליחה מוגבלת:
-   - `admin-analytics` שולח מיילים בכתובת בטוחה, אבל כשהמערכת נופלת למסלול מוגבל של שליחה ניסיונית, שליחה לכתובות שאינן כתובת הבעלים נכשלת.
-   - `send-welcome-email` עדיין שולח מכתובת `info@tabro.org`, ולכן ממשיך ליפול עם שגיאת דומיין לא מאומת.
-   - גם פונקציות נוספות של התראות/תזכורות עדיין משתמשות במסלול הישן, ולכן יש כשלי מייל עקביים.
+# תוכנית תיקונים — שעות, מיילים, זימונים, RTL ומובייל
 
-2. **חלון עריכת אירוע לא טוען את המיילים שכבר הוזמנו**
-   ב־`PersonalPlanner.tsx` בעת עריכה מוגדר תמיד `inviteeEmails: ""`, ולכן אין טעינה של המוזמנים הקיימים.
+## בעיות שזוהו בדיקת קוד בפועל
 
-3. **הזימון לא מופיע “מיד” אצל המוזמן**
-   יש כבר טבלת זימונים ו־RLS צפייה, אבל:
-   - אין **Realtime** על `calendar_events` ו־`event_invitations`
-   - אין **subscription** ב־`useCalendarEvents`
-   - אין refetch מיידי אצל הצד המקבל  
-   לכן גם אם ההזמנה נשמרת, היא לא קופצת בזמן אמת בלוז של המוזמן.
+### 1. באג קריטי בשעות — toLocalISOString שובר timezone
+**מה קורה**: המשתמש רושם 11:10, `toLocalISOString` יוצר `"2026-04-13T11:10:45"` (ללא timezone). Postgres `timestamptz` מפרש את זה כ-UTC. כשהנתון חוזר מה-DB עם `+00`, הדפדפן ממיר ל-UTC+3 (ישראל) → מציג 14:10.
+**תיקון**: עדכון `toLocalISOString` כך שיוסיף את ה-timezone offset של הדפדפן (לדוגמה `+03:00`). כך Postgres ישמור נכון ב-UTC, וכל דפדפן/מוזמן יציג לפי האזור שלו.
 
-4. **התראות זימונים עדיין לא מחוברות באמת**
-   יש הגדרת `invitationsEnabled` ב־`NotificationSettings`, אבל בפועל אין כתיבה מתאימה ל־`sent_notifications` ואין מסלול מלא של “נשלח זימון” / “אישר/דחה” עם התראה באתר ובמייל.
+### 2. מיילים לכתובות שאינן Gmail נכשלים
+**שורש הבעיה**: כל ה-Edge Functions שולחות מ-`onboarding@resend.dev` — זו כתובת sandbox של Resend. במצב sandbox, ניתן לשלוח **רק לכתובת הבעלים** (omri855655@gmail.com). כל כתובת אחרת (כולל Gmail אחר, Outlook, gov.il) תיכשל.
+**פתרון**: הדומיין `notify.tabro.org` מוגדר אבל **ממתין לאימות DNS**. ברגע שה-DNS יאומת, ניתן יהיה לשלוח מ-`noreply@notify.tabro.org` לכל כתובת. עד אז — אין דרך לשלוח לכתובות שאינן של בעל החשבון ב-Resend.
+**מה אעשה**: אכין את כל ה-Edge Functions כך שישתמשו ב-`notify.tabro.org` כשהדומיין מאומת, וב-sandbox כ-fallback. אוסיף הודעת שגיאה ברורה לאדמין כש-sandbox חוסם שליחה.
 
-5. **יש חור נוסף: ערוצים ישנים של מיילים עדיין נשארו בקוד**
-   גם אחרי התיקונים הקודמים יש פונקציות נוספות שעדיין משתמשות בכתובת/מפתח של השליחה הישנה. אם לא נסגור את כולן, יהיו עדיין נפילות “אקראיות”.
+### 3. זימונים — המוזמן לא רואה אירוע בלוז שלו
+**מה מצאתי**: ה-RLS תקין, ה-Realtime מופעל, ה-invitee_user_id מוגדר נכון (8b7b6ea4). הבעיה היא **באג ב-query עצמה**: ב-`useCalendarEvents.ts` שורה 105, ה-`.or()` filter עלול להיכשל כי PostgREST דורש syntax ספציפי עבור `ilike` עם ערכי מייל. בנוסף, ה-Realtime channel לא מסנן לפי user, אז מגיעים אירועים של כולם, וה-refetch חוזר ושולף רק אירועים ספציפיים. צריך גם לוודא שהמוזמן רשום עם אותו email שנשלח אליו.
+
+### 4. מיילים לתיבת "עדכונים" ולא Inbox ראשי
+**סיבה**: ספקי מייל (Gmail, Outlook) מסווגים מיילים מ-`onboarding@resend.dev` כ"עדכונים" כי זה דומיין משותף. שימוש בדומיין מאומת משלך (`notify.tabro.org`) ישפר את ההגעה ל-Primary Inbox.
+
+### 5. RTL ומובייל — לא הושלם
+**מה חסר**: דשבורדים עדיין LTR בחלקים, מובייל לא מותאם מספיק.
 
 ---
 
-## מה אבצע עכשיו
+## שלבי ביצוע
 
-### שלב 1 — סגירת כל תקלות המייל, לא רק במסך האדמין
-אעדכן את כל פונקציות המייל הרלוונטיות כך שישתמשו באותו מסלול שליחה תקין ואחיד, ולא ינסו לשלוח מכתובת לא מאומתת או במסלול מוגבל:
-- `supabase/functions/admin-analytics/index.ts`
-- `supabase/functions/send-contact-form/index.ts`
-- `supabase/functions/send-welcome-email/index.ts`
-- `supabase/functions/send-event-invitation/index.ts`
-- `supabase/functions/send-push-notifications/index.ts`
-- `supabase/functions/send-task-reminders/index.ts`
-- `supabase/functions/notify-shared-task/index.ts`
+### שלב 1 — תיקון timezone (קריטי)
+**קובץ**: `src/components/PersonalPlanner.tsx`
+- עדכון `toLocalISOString` להוספת timezone offset:
+  ```
+  // לדוגמה: "2026-04-13T11:10:00+03:00" במקום "2026-04-13T11:10:00"
+  ```
+- כך Postgres ישמור כ-UTC 08:10, וכל דפדפן יציג לפי האזור המקומי שלו
+- עדכון גם ב-`send-event-invitation` לשימוש באזור זמן ישראל לתצוגה
 
-מה אסגור שם:
-- מסלול שליחה אחיד
-- כתובת שולח בטוחה עד שהדומיין של המייל יושלם ב־Cloud → Emails
-- לוג מסודר גם לכישלונות, כדי שבאדמין תופיע השגיאה האמיתית ולא רק “error sending mail”
+### שלב 2 — תיקון query של זימונים
+**קובץ**: `src/hooks/useCalendarEvents.ts`
+- תיקון ה-`.or()` filter כך שיעבוד בצורה אמינה עם PostgREST
+- הוספת טיפול נכון ב-email שעלול להכיל תווים מיוחדים
+- וידוא ש-refetch עובד נכון אחרי שינוי realtime
 
-### שלב 2 — תיקון מלא של עריכת מוזמנים באירוע
-ב־`PersonalPlanner.tsx` אטען את המוזמנים הקיימים בזמן פתיחת אירוע לעריכה:
-- שליפת הזימונים של אותו אירוע
-- הצגת כל המיילים בשדה ההזמנה
-- שמירה חכמה של הבדלים: הוספה / הסרה / מניעת כפילויות
+### שלב 3 — הכנת Edge Functions לדומיין מאומת
+**קבצים**: כל Edge Functions ששולחות מייל
+- הוספת בדיקה: אם `notify.tabro.org` מאומת → שליחה ממנו; אחרת → sandbox עם הודעת שגיאה ברורה
+- לוג מפורט לאדמין כדי שיהיה ברור למה מייל נכשל
+- עדכון `send-welcome-email`, `admin-analytics`, `send-event-invitation`, `send-contact-form`
 
-בנוסף אוסיף הגנת DB קטנה כדי למנוע כפילויות של אותו מייל באותו אירוע.
+### שלב 4 — RTL לדשבורדים
+**קבצים**: `PaymentDashboard.tsx`, `AdminDashboard.tsx`, ודשבורדים נוספים
+- הוספת/תיקון `dir="rtl"` בכותרות, כרטיסים, טבלאות
+- יישור לימין עקבי
 
-### שלב 3 — הופעה מיידית של זימון אצל המוזמן
-אוסיף שכבת עדכון בזמן אמת:
-- הוספת `calendar_events` ו־`event_invitations` ל־Realtime publication
-- subscription ב־`useCalendarEvents.ts`
-- refetch אוטומטי כשמגיע שינוי רלוונטי
-- רענון מיידי גם אחרי שליחת זימון וגם אחרי אישור/דחייה
+### שלב 5 — התאמת מובייל/אייפון
+**קבצים**: `PersonalPlanner.tsx`, `PaymentDashboard.tsx`, דשבורדים
+- הוספת responsive breakpoints למובייל
+- גודל גופן מינימלי 16px לשדות קלט (מניעת zoom)
+- טבלאות גלילתיות עם עמודות sticky
+- כפתורים וטאבים בגודל נוח למגע
 
-המטרה: אם למוזמן יש חשבון, האירוע יופיע אצלו בלוז כמעט מיד, בלי רענון ידני.
-
-### שלב 4 — תצוגת pending בהירה עד אישור, בכל הזרימה
-אחזק את ההתנהגות שכבר קיימת חלקית:
-- אירוע מוזמן יוצג בהיר/מעומעם עד אישור
-- התצוגה תהיה עקבית בלוז, לא רק בחלק מהמקרים
-- אישור יסיר את מצב ה־pending
-- דחייה תסיר את האירוע מהתצוגה של המוזמן
-
-### שלב 5 — התראות זימונים אמיתיות באתר ובמייל
-אחבר את הזימונים למערכת ההתראות הקיימת:
-- בעת יצירת זימון: יצירת התראת אתר למוזמן
-- בעת אישור/דחייה: יצירת התראת אתר למזמין
-- אם הגדרות המשתמש מאפשרות — גם מייל / Push
-- שימוש ב־`sent_notifications` כדי שה־NotificationBell יציג את זה בפועל
-- חיבור מלא ל־`invitationsEnabled` שכבר קיים בהגדרות
-
-כאן אעדכן גם את `get-notifications` כדי להעשיר התראות זימון בצורה נכונה.
-
-### שלב 6 — יישור וסיום תיבת האדמין
-אעדכן גם את מסך האדמין עצמו כדי שיציג את המידע השימושי:
-- הודעת שגיאה אמיתית מהשרת
-- סטטוס failure גם ל־admin compose
-- הרחבת נתוני תיבת המייל כך שאפשר יהיה לראות טוב יותר מי נכשל, למה, ועל מה
+### שלב 6 — שדרוג תיבת מייל אדמין
+**קובץ**: `src/pages/AdminDashboard.tsx`
+- הצגת שגיאות מפורטות (domain not verified, sandbox limitation)
+- סינון לפי סטטוס (נשלח/נכשל)
+- שיפור תצוגת פניות נכנסות
 
 ---
 
-## שינויי backend שאדרש להם
-1. **מיגרציה קצרה ל־Realtime**
-   - הוספת `calendar_events`
-   - הוספת `event_invitations`
+## דגש חשוב לגבי מיילים
 
-2. **מיגרציה קצרה למניעת כפילויות זימון**
-   - unique constraint / unique index על אירוע + אימייל מוזמן
-
-3. **ייתכן עדכון קטן ל־RLS אם אזהה חוסר ב־update flow**
-   כרגע ה־SELECT נראה נכון, אבל אאמת גם את זרימת האישור/עדכון דרך השרת.
+**עד שהדומיין `notify.tabro.org` יאומת**, שליחת מיילים לכתובות שאינן omri855655@gmail.com **תמשיך להיכשל**. זו מגבלה של Resend sandbox ולא באג בקוד. הפתרון הוא להשלים את אימות ה-DNS ב-**Cloud → Emails**. אכין את הקוד כך שברגע שהדומיין מאומת, הכל יעבוד אוטומטית.
 
 ---
 
-## קבצים עיקריים שאעדכן
-- `src/components/PersonalPlanner.tsx`
-- `src/hooks/useCalendarEvents.ts`
-- `src/pages/AdminDashboard.tsx`
-- `src/components/NotificationSettings.tsx`
-- `supabase/functions/admin-analytics/index.ts`
-- `supabase/functions/send-event-invitation/index.ts`
-- `supabase/functions/send-contact-form/index.ts`
-- `supabase/functions/send-welcome-email/index.ts`
-- `supabase/functions/get-notifications/index.ts`
-- `supabase/functions/send-push-notifications/index.ts`
-- `supabase/functions/send-task-reminders/index.ts`
-- `supabase/functions/notify-shared-task/index.ts`
-- `supabase/migrations/...` (Realtime + מניעת כפילויות)
+## קבצים לעדכון
 
----
+| קובץ | שינוי |
+|-------|-------|
+| `src/components/PersonalPlanner.tsx` | timezone fix, mobile responsive |
+| `src/hooks/useCalendarEvents.ts` | invitation query fix |
+| `src/components/dashboards/PaymentDashboard.tsx` | RTL, mobile |
+| `src/pages/AdminDashboard.tsx` | mailbox improvements, RTL |
+| `supabase/functions/send-welcome-email/index.ts` | domain-aware sending |
+| `supabase/functions/admin-analytics/index.ts` | domain-aware sending, error detail |
+| `supabase/functions/send-event-invitation/index.ts` | domain-aware, timezone |
+| `supabase/functions/send-contact-form/index.ts` | domain-aware sending |
 
-## התוצאה אחרי הסבב הזה
-- שליחת מייל מהאדמין תפסיק ליפול במסלולים השבורים.
-- זימון ישמר ויופיע גם בעריכה, עם כל המיילים שכבר הוזמנו.
-- משתמש עם חשבון יראה את הפגישה אצלו בלוז כמעט מייד.
-- האירוע יופיע בהיר עד שהוא מאשר.
-- אישור/דחייה ישלחו התראה באתר ולפי ההגדרות גם בערוצים נוספים.
-- תיבת האדמין תציג כשלי מייל בצורה ברורה במקום הודעת שגיאה כללית בלבד.
