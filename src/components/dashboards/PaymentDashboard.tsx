@@ -147,6 +147,7 @@ const PaymentDashboard = () => {
   const [editCategory, setEditCategory] = useState("");
   const [editNotes, setEditNotes] = useState("");
   const [editAmount, setEditAmount] = useState("");
+  const [newRecurringFrequency, setNewRecurringFrequency] = useState("monthly");
 
   // Fetch budget target
   useEffect(() => {
@@ -211,9 +212,10 @@ const PaymentDashboard = () => {
       payment_method: newMethod.trim() || null,
       due_date: newDueDate || null,
       recurring: newRecurring,
+      recurring_frequency: newRecurring ? newRecurringFrequency : null,
     });
     if (error) { toast.error(t("error" as any)); return; }
-    setNewTitle(""); setNewAmount(""); setNewCategory(""); setNewMethod(""); setNewDueDate("");
+    setNewTitle(""); setNewAmount(""); setNewCategory(""); setNewMethod(""); setNewDueDate(""); setNewRecurringFrequency("monthly");
     toast.success(newType === "income" ? t("incomeAdded" as any) : t("expenseAdded" as any));
     fetchFinanceData();
   };
@@ -908,6 +910,17 @@ ${context}
                 <input type="checkbox" checked={newRecurring} onChange={e => setNewRecurring(e.target.checked)} className="rounded" />
                 {t("recurringExpense" as any)}
               </label>
+              {newRecurring && (
+                <Select value={newRecurringFrequency} onValueChange={setNewRecurringFrequency}>
+                  <SelectTrigger><SelectValue placeholder={t("frequency" as any) || "תדירות"} /></SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="monthly">{t("monthlyPeriod" as any) || "חודשי"}</SelectItem>
+                    <SelectItem value="weekly">{t("weeklyPeriod" as any) || "שבועי"}</SelectItem>
+                    <SelectItem value="quarterly">{t("quarterlyPeriod" as any) || "רבעוני"}</SelectItem>
+                    <SelectItem value="yearly">{t("yearlyPeriod" as any) || "שנתי"}</SelectItem>
+                  </SelectContent>
+                </Select>
+              )}
               <Button onClick={addPayment} className={`w-full gap-2 ${newType === "income" ? "bg-green-600 hover:bg-green-700" : ""}`}>
                 <Plus className="h-4 w-4" />{newType === "income" ? t("addIncome" as any) : t("addExpense" as any)}
               </Button>
