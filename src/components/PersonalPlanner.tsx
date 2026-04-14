@@ -456,13 +456,12 @@ const PersonalPlanner = () => {
     return { start, end, days };
   }, [currentDate, viewMode]);
 
-  // Generate virtual events from recurring tasks with reminder_time
+  // Generate virtual events from recurring tasks (with or without reminder_time)
   const recurringEvents = useMemo((): CalendarEvent[] => {
     const virtualEvents: CalendarEvent[] = [];
-    const tasksWithTime = recurringTasks.filter(t => t.reminderTime);
     
     for (const day of dateRange.days) {
-      for (const task of tasksWithTime) {
+      for (const task of recurringTasks) {
         // Check if task is due on this day
         const dayOfWeek = day.getDay();
         const dayOfMonth = day.getDate();
@@ -486,21 +485,35 @@ const PersonalPlanner = () => {
             break;
         }
         
-        if (isDue && task.reminderTime) {
-          const [h, m] = task.reminderTime.split(":").map(Number);
-          const start = new Date(day);
-          start.setHours(h, m, 0, 0);
-          const end = new Date(start);
-          end.setMinutes(end.getMinutes() + 30);
+        if (isDue) {
+          const hasTime = !!task.reminderTime;
+          let start: Date, end: Date;
+          
+          if (hasTime) {
+            const [h, m] = task.reminderTime!.split(":").map(Number);
+            start = new Date(day);
+            start.setHours(h, m, 0, 0);
+            end = new Date(start);
+            end.setMinutes(end.getMinutes() + 30);
+          } else {
+            // Tasks without time: show as 30-min block at 8:00 AM
+            start = new Date(day);
+            start.setHours(8, 0, 0, 0);
+            end = new Date(start);
+            end.setMinutes(end.getMinutes() + 30);
+          }
+          
+          // Check if completed today
+          const isCompleted = isTaskCompletedToday(task.id);
           
           virtualEvents.push({
             id: `recurring-${task.id}-${format(day, "yyyy-MM-dd")}`,
-            title: `🔁 ${task.title}`,
+            title: `🔁 ${task.title}${isCompleted ? " ✅" : ""}`,
             description: task.description || "",
             category: "לוז יומי",
             startTime: toLocalISOString(start),
             endTime: toLocalISOString(end),
-            color: "#8b5cf6",
+            color: isCompleted ? "#22c55e" : "#8b5cf6",
             sourceType: "recurring_task",
             sourceId: task.id,
             allDay: false,
@@ -512,7 +525,7 @@ const PersonalPlanner = () => {
       }
     }
     return virtualEvents;
-  }, [recurringTasks, dateRange.days]);
+  }, [recurringTasks, dateRange.days, isTaskCompletedToday]);
 
   const filteredEvents = useMemo(() => {
     const calendarEvents = events.filter((e) => {

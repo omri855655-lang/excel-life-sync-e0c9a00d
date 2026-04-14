@@ -67,6 +67,7 @@ interface DashboardEntry {
   due_date: string | null;
   paid: boolean;
   recurring: boolean;
+  recurring_frequency: string | null;
   notes: string | null;
   sheet_name: string;
   archived: boolean;
@@ -147,6 +148,7 @@ const PaymentDashboard = () => {
   const [editCategory, setEditCategory] = useState("");
   const [editNotes, setEditNotes] = useState("");
   const [editAmount, setEditAmount] = useState("");
+  const [newRecurringFrequency, setNewRecurringFrequency] = useState("monthly");
 
   // Fetch budget target
   useEffect(() => {
@@ -211,9 +213,10 @@ const PaymentDashboard = () => {
       payment_method: newMethod.trim() || null,
       due_date: newDueDate || null,
       recurring: newRecurring,
+      recurring_frequency: newRecurring ? newRecurringFrequency : null,
     });
     if (error) { toast.error(t("error" as any)); return; }
-    setNewTitle(""); setNewAmount(""); setNewCategory(""); setNewMethod(""); setNewDueDate("");
+    setNewTitle(""); setNewAmount(""); setNewCategory(""); setNewMethod(""); setNewDueDate(""); setNewRecurringFrequency("monthly");
     toast.success(newType === "income" ? t("incomeAdded" as any) : t("expenseAdded" as any));
     fetchFinanceData();
   };
@@ -271,6 +274,7 @@ const PaymentDashboard = () => {
       due_date: payment.due_date,
       paid: payment.paid,
       recurring: payment.recurring,
+      recurring_frequency: payment.recurring_frequency || null,
       notes: payment.notes,
       sheet_name: payment.sheet_name,
       archived: payment.archived,
@@ -288,6 +292,7 @@ const PaymentDashboard = () => {
       due_date: transaction.transaction_date,
       paid: true,
       recurring: false,
+      recurring_frequency: null,
       notes: null,
       sheet_name: "actual",
       archived: false,
@@ -489,7 +494,7 @@ ${context}
                 <Badge variant="secondary" className="text-[9px]">
                   {p.source === "financial_transactions" ? t("importedLabel" as any) : t("plannedLabel" as any)}
                 </Badge>
-                {p.recurring && <Badge variant="outline" className="text-[9px] border-amber-300 text-amber-600">{t("fixedPayment" as any)}</Badge>}
+                {p.recurring && <Badge variant="outline" className="text-[9px] border-amber-300 text-amber-600">{t("fixedPayment" as any)}{p.recurring_frequency ? ` (${getBudgetPeriodLabel(p.recurring_frequency)})` : ""}</Badge>}
               </div>
             </div>
             <span className={`font-bold text-sm whitespace-nowrap ${colorClass}`}>
@@ -908,6 +913,17 @@ ${context}
                 <input type="checkbox" checked={newRecurring} onChange={e => setNewRecurring(e.target.checked)} className="rounded" />
                 {t("recurringExpense" as any)}
               </label>
+              {newRecurring && (
+                <Select value={newRecurringFrequency} onValueChange={setNewRecurringFrequency}>
+                  <SelectTrigger><SelectValue placeholder={t("frequency" as any) || "תדירות"} /></SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="monthly">{t("monthlyPeriod" as any) || "חודשי"}</SelectItem>
+                    <SelectItem value="weekly">{t("weeklyPeriod" as any) || "שבועי"}</SelectItem>
+                    <SelectItem value="quarterly">{t("quarterlyPeriod" as any) || "רבעוני"}</SelectItem>
+                    <SelectItem value="yearly">{t("yearlyPeriod" as any) || "שנתי"}</SelectItem>
+                  </SelectContent>
+                </Select>
+              )}
               <Button onClick={addPayment} className={`w-full gap-2 ${newType === "income" ? "bg-green-600 hover:bg-green-700" : ""}`}>
                 <Plus className="h-4 w-4" />{newType === "income" ? t("addIncome" as any) : t("addExpense" as any)}
               </Button>

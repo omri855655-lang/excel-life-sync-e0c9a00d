@@ -903,8 +903,8 @@ const TaskSpreadsheetDb = ({ title, taskType, readOnly = false, showYearSelector
         </div>
       )}
 
-      {/* Stats Bar */}
-      <div className="flex items-center gap-6 px-4 py-3 bg-card border-b border-border">
+      {/* Stats Bar - sticky */}
+      <div className="flex items-center gap-6 px-4 py-3 bg-card border-b border-border sticky top-0 z-20">
         <div className="flex items-center gap-2">
           <div className="w-3 h-3 rounded-full bg-green-500" />
           <span className="text-sm text-muted-foreground">בוצע: {completedCount}</span>
@@ -929,8 +929,8 @@ const TaskSpreadsheetDb = ({ title, taskType, readOnly = false, showYearSelector
         </div>
       </div>
 
-      {/* Toolbar */}
-      <div className="flex items-center gap-2 p-3 border-b border-border bg-muted/30">
+      {/* Toolbar - sticky below stats */}
+      <div className="flex items-center gap-2 p-3 border-b border-border bg-muted/30 sticky top-[52px] z-20">
         <h2 className="text-lg font-semibold text-foreground ml-4">{title}</h2>
         {!readOnly && (
           <div className="flex items-center gap-1">
