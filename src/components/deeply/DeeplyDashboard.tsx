@@ -8,10 +8,15 @@ import { AUDIO_PRESETS, CATEGORIES, GUIDES, MOTIVATION_TIPS, MORNING_HABITS_GUID
 import { useAudioEngine } from "./useAudioEngine";
 import { unlockAudioContext } from "./iosAudioUnlock";
 import { startSilentAudio } from "./iosSilentAudio";
-import { resetDeeplyAudioState, setDeeplyAudioState, stopOtherDeeplyAudio } from "./deeplyAudioState";
+import {
+  getDeeplyYoutubePlayerState,
+  setDeeplyYoutubePlayerState,
+  stopOtherDeeplyAudio,
+  subscribeToDeeplyYoutubePlayerState,
+} from "./deeplyAudioState";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
-import { DeeplyMusicPlayer } from "./DeeplyMusicPlayer";
+import { ZoneFlowMusicPlayer } from "./DeeplyMusicPlayer";
 import { useDailyStopwatch } from "@/hooks/useDailyStopwatch";
 import { useLanguage } from "@/hooks/useLanguage";
 
@@ -87,7 +92,7 @@ const ACTIVE_COLOR_MAP: Record<string, string> = {
   rose: "bg-rose-500/20 border-rose-500/30",
 };
 
-const DeeplyDashboard = () => {
+const ZoneFlowDashboard = () => {
   const { activePresetId, isPlaying, isRendering, toggle } = useAudioEngine();
   const { user } = useAuth();
   const { t } = useLanguage();
@@ -139,8 +144,7 @@ const DeeplyDashboard = () => {
   // Guides & Motivation
   const [expandedGuide, setExpandedGuide] = useState<string | null>(null);
   const [expandedMotivation, setExpandedMotivation] = useState<string | null>(null);
-  const [activeYouTube, setActiveYouTube] = useState<string | null>(null);
-  const [activeYouTubeTitle, setActiveYouTubeTitle] = useState("");
+  const [activeYouTube, setActiveYouTube] = useState<string | null>(() => getDeeplyYoutubePlayerState().videoId);
   const [activeYtCat, setActiveYtCat] = useState("yt-classical");
   
   // Custom YouTube videos per category
@@ -196,24 +200,11 @@ const DeeplyDashboard = () => {
   useEffect(() => { localStorage.setItem("deeply-custom-yt", JSON.stringify(customYtVideos)); }, [customYtVideos]);
   useEffect(() => { localStorage.setItem("zoneflow-hidden-yt", JSON.stringify(hiddenYtVideos)); }, [hiddenYtVideos]);
   useEffect(() => {
-    if (!activeYouTube) {
-      resetDeeplyAudioState("youtube");
-      return;
-    }
-
-    setDeeplyAudioState("youtube", {
-      playing: true,
-      name: activeYouTubeTitle || "YouTube",
-      stop: () => {
-        setActiveYouTube(null);
-        setActiveYouTubeTitle("");
-      },
+    setActiveYouTube(getDeeplyYoutubePlayerState().videoId);
+    return subscribeToDeeplyYoutubePlayerState(() => {
+      setActiveYouTube(getDeeplyYoutubePlayerState().videoId);
     });
-
-    return () => {
-      resetDeeplyAudioState("youtube");
-    };
-  }, [activeYouTube, activeYouTubeTitle]);
+  }, []);
 
   const extractYouTubeId = (url: string): string | null => {
     const match = url.match(/(?:youtu\.be\/|youtube\.com\/(?:watch\?v=|embed\/|shorts\/))([a-zA-Z0-9_-]{11})/);
@@ -307,18 +298,15 @@ const DeeplyDashboard = () => {
 
     if (nextVideoId) {
       stopOtherDeeplyAudio("youtube");
-      setActiveYouTubeTitle(title);
-    } else {
-      setActiveYouTubeTitle("");
     }
 
-    setActiveYouTube(nextVideoId);
+    setDeeplyYoutubePlayerState({
+      videoId: nextVideoId,
+      title: nextVideoId ? title : "",
+    });
 
     if (nextVideoId) {
-      setTimeout(() => {
-        const el = document.getElementById("yt-player-container");
-        if (el) el.scrollIntoView({ behavior: "smooth", block: "center" });
-      }, 100);
+      setActiveYouTube(nextVideoId);
     }
   };
 
@@ -781,12 +769,12 @@ const DeeplyDashboard = () => {
                                   : "bg-white/5 border border-transparent hover:bg-white/10"
                               }`}>
                               <button
-                                onClick={() => handleYouTubeToggle(v.id)}
+                                onClick={() => handleYouTubeToggle(v.id, v.title)}
                                 className={`w-9 h-9 rounded-lg bg-gradient-to-br ${catGradMap[activeCatData.color]} flex items-center justify-center flex-shrink-0`}
                               >
                                 {activeYouTube === v.id ? <Pause className="h-4 w-4 text-white" /> : <Play className="h-4 w-4 text-white" />}
                               </button>
-                              <div className="min-w-0 flex-1 cursor-pointer" onClick={() => handleYouTubeToggle(v.id)}>
+                              <div className="min-w-0 flex-1 cursor-pointer" onClick={() => handleYouTubeToggle(v.id, v.title)}>
                                 <p className="text-sm font-medium text-[#e8e8ed] truncate">{v.title}</p>
                                 <p className="text-xs text-[#e8e8ed]/40 truncate">{v.desc}</p>
                               </div>
@@ -874,19 +862,6 @@ const DeeplyDashboard = () => {
                 </>
               );
             })()}
-            {activeYouTube && (
-              <div id="yt-player-container" className="rounded-xl overflow-hidden border border-white/10">
-                <iframe
-                  width="100%"
-                  height="315"
-                  src={`https://www.youtube.com/embed/${activeYouTube}?autoplay=1`}
-                  title="Music Player"
-                  allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
-                  allowFullScreen
-                  className="w-full"
-                />
-              </div>
-            )}
           </CardContent>
         </Card>
 
@@ -921,10 +896,10 @@ const DeeplyDashboard = () => {
                               ? "bg-amber-500/20 border border-amber-500/30"
                               : "bg-white/5 border border-transparent hover:bg-white/10"
                           }`}>
-                          <button onClick={() => handleYouTubeToggle(v.id)} className="w-9 h-9 rounded-lg bg-gradient-to-br from-amber-500 to-amber-700 flex items-center justify-center flex-shrink-0">
+                          <button onClick={() => handleYouTubeToggle(v.id, v.title)} className="w-9 h-9 rounded-lg bg-gradient-to-br from-amber-500 to-amber-700 flex items-center justify-center flex-shrink-0">
                             {activeYouTube === v.id ? <Pause className="h-4 w-4 text-white" /> : <Play className="h-4 w-4 text-white" />}
                           </button>
-                          <div className="min-w-0 flex-1 cursor-pointer" onClick={() => handleYouTubeToggle(v.id)}>
+                          <div className="min-w-0 flex-1 cursor-pointer" onClick={() => handleYouTubeToggle(v.id, v.title)}>
                             <p className="text-sm font-medium text-[#e8e8ed] truncate">{v.title}</p>
                             <p className="text-xs text-[#e8e8ed]/40 truncate">{v.desc}</p>
                           </div>
@@ -995,10 +970,10 @@ const DeeplyDashboard = () => {
                               ? "bg-emerald-500/20 border border-emerald-500/30"
                               : "bg-white/5 border border-transparent hover:bg-white/10"
                           }`}>
-                          <button onClick={() => handleYouTubeToggle(v.id)} className="w-9 h-9 rounded-lg bg-gradient-to-br from-emerald-500 to-emerald-700 flex items-center justify-center flex-shrink-0">
+                          <button onClick={() => handleYouTubeToggle(v.id, v.title)} className="w-9 h-9 rounded-lg bg-gradient-to-br from-emerald-500 to-emerald-700 flex items-center justify-center flex-shrink-0">
                             {activeYouTube === v.id ? <Pause className="h-4 w-4 text-white" /> : <Play className="h-4 w-4 text-white" />}
                           </button>
-                          <div className="min-w-0 flex-1 cursor-pointer" onClick={() => handleYouTubeToggle(v.id)}>
+                          <div className="min-w-0 flex-1 cursor-pointer" onClick={() => handleYouTubeToggle(v.id, v.title)}>
                             <p className="text-sm font-medium text-[#e8e8ed] truncate">{v.title}</p>
                             <p className="text-xs text-[#e8e8ed]/40 truncate">{v.desc}</p>
                           </div>
@@ -1039,7 +1014,7 @@ const DeeplyDashboard = () => {
         </Card>
 
         {/* Personal Music Player — background playback */}
-        <DeeplyMusicPlayer
+        <ZoneFlowMusicPlayer
           themeCard={themeCard}
           themeMuted={themeMuted}
           themeSubtle={themeSubtle}
@@ -1446,4 +1421,4 @@ const DeeplyDashboard = () => {
   );
 };
 
-export default DeeplyDashboard;
+export default ZoneFlowDashboard;

@@ -8,12 +8,19 @@ export interface DeeplyAudioStateValue {
 
 type DeeplyAudioWindowKey = "_deeplyMusicState" | "_deeplyFreqState" | "_deeplyYoutubeState";
 
+export interface DeeplyYoutubePlayerState {
+  videoId: string | null;
+  title: string;
+}
+
 declare global {
   interface Window {
     _deeplyMusicState?: DeeplyAudioStateValue;
     _deeplyFreqState?: DeeplyAudioStateValue;
     _deeplyYoutubeState?: DeeplyAudioStateValue;
     _deeplyAudioStateListeners?: Set<() => void>;
+    _deeplyYoutubePlayerState?: DeeplyYoutubePlayerState;
+    _deeplyYoutubePlayerListeners?: Set<() => void>;
   }
 }
 
@@ -40,6 +47,11 @@ function getAudioStateKey(kind: DeeplyAudioKind) {
 function notifyDeeplyAudioListeners() {
   if (!canUseWindow()) return;
   window._deeplyAudioStateListeners?.forEach((listener) => listener());
+}
+
+function notifyDeeplyYoutubePlayerListeners() {
+  if (!canUseWindow()) return;
+  window._deeplyYoutubePlayerListeners?.forEach((listener) => listener());
 }
 
 export function setDeeplyAudioState(kind: DeeplyAudioKind, value: DeeplyAudioStateValue) {
@@ -89,4 +101,40 @@ export function stopOtherDeeplyAudio(activeKind: DeeplyAudioKind) {
       state.stop();
     }
   });
+}
+
+const EMPTY_YOUTUBE_PLAYER_STATE: DeeplyYoutubePlayerState = {
+  videoId: null,
+  title: "",
+};
+
+export function getDeeplyYoutubePlayerState(): DeeplyYoutubePlayerState {
+  if (!canUseWindow()) return EMPTY_YOUTUBE_PLAYER_STATE;
+  return window._deeplyYoutubePlayerState || EMPTY_YOUTUBE_PLAYER_STATE;
+}
+
+export function setDeeplyYoutubePlayerState(value: DeeplyYoutubePlayerState) {
+  if (!canUseWindow()) return;
+  window._deeplyYoutubePlayerState = value;
+  notifyDeeplyYoutubePlayerListeners();
+}
+
+export function resetDeeplyYoutubePlayerState() {
+  if (!canUseWindow()) return;
+  window._deeplyYoutubePlayerState = { ...EMPTY_YOUTUBE_PLAYER_STATE };
+  notifyDeeplyYoutubePlayerListeners();
+}
+
+export function subscribeToDeeplyYoutubePlayerState(listener: () => void) {
+  if (!canUseWindow()) return () => {};
+
+  if (!window._deeplyYoutubePlayerListeners) {
+    window._deeplyYoutubePlayerListeners = new Set();
+  }
+
+  window._deeplyYoutubePlayerListeners.add(listener);
+
+  return () => {
+    window._deeplyYoutubePlayerListeners?.delete(listener);
+  };
 }

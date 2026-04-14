@@ -14,7 +14,7 @@ interface AudioFile {
   path: string;
 }
 
-interface DeeplyMusicPlayerProps {
+interface ZoneFlowMusicPlayerProps {
   onPlayingChange?: (playing: boolean) => void;
   themeCard?: string;
   themeMuted?: string;
@@ -22,7 +22,7 @@ interface DeeplyMusicPlayerProps {
   themeInput?: string;
 }
 
-export function DeeplyMusicPlayer({ onPlayingChange, themeCard, themeMuted, themeSubtle, themeInput }: DeeplyMusicPlayerProps) {
+export function ZoneFlowMusicPlayer({ onPlayingChange, themeCard, themeMuted, themeSubtle, themeInput }: ZoneFlowMusicPlayerProps) {
   const { user } = useAuth();
   const [files, setFiles] = useState<AudioFile[]>([]);
   const [activeFile, setActiveFile] = useState<string | null>(null);

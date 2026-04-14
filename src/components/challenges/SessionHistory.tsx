@@ -107,7 +107,7 @@ const SessionHistory = () => {
       <Card>
         <CardContent className="p-8 text-center text-muted-foreground">
           <Timer className="h-8 w-8 mx-auto mb-2 opacity-40" />
-          <p className="text-sm">אין עדיין סשנים ב-Deeply</p>
+          <p className="text-sm">אין עדיין סשנים ב-ZoneFlow</p>
           <p className="text-xs mt-1">התחל פומודורו או סטופר כדי לראות סטטיסטיקות</p>
         </CardContent>
       </Card>

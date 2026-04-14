@@ -18,8 +18,9 @@ import Dashboard from "@/components/Dashboard";
 import DailyRoutine from "@/components/DailyRoutine";
 import AiDailyPlanner from "@/components/AiDailyPlanner";
 import PersonalPlanner from "@/components/PersonalPlanner";
-import DeeplyDashboard from "@/components/deeply/DeeplyDashboard";
+import ZoneFlowDashboard from "@/components/deeply/DeeplyDashboard";
 import { FloatingMusicMini } from "@/components/deeply/FloatingMusicMini";
+import { GlobalYouTubePlayer } from "@/components/deeply/GlobalYouTubePlayer";
 import PushNotificationToggle from "@/components/PushNotificationToggle";
 import NotificationBell from "@/components/NotificationBell";
 import SettingsPanel from "@/components/SettingsPanel";
@@ -415,7 +416,7 @@ const Personal = () => {
       case "projects": return <ProjectsManager />;
       case "planner": return <PersonalPlanner />;
       case "courses": return <CoursesManager />;
-      case "deeply": return <DeeplyDashboard />;
+      case "deeply": return <ZoneFlowDashboard />;
       case "settings": return <SettingsPanel />;
       case "challenges": return <ChallengesManager />;
       case "nutrition": return <NutritionDashboard />;
@@ -503,6 +504,7 @@ const Personal = () => {
           <div className="min-h-full pb-8">{renderContent()}</div>
         </SidebarLayout>
         <FloatingMusicMini visible={activeTab !== 'deeply'} onGoToDeeply={() => setActiveTab('deeply')} />
+        <GlobalYouTubePlayer />
         <AiDailyPlanner />
       </>
     );
@@ -517,6 +519,7 @@ const Personal = () => {
           <div className="min-h-full pb-8">{renderContent()}</div>
         </CompactLayout>
         <FloatingMusicMini visible={activeTab !== 'deeply'} onGoToDeeply={() => setActiveTab('deeply')} />
+        <GlobalYouTubePlayer />
         <AiDailyPlanner />
       </>
     );
@@ -531,6 +534,7 @@ const Personal = () => {
           <div className="min-h-full pb-20">{renderContent()}</div>
         </BottomNavLayout>
         <FloatingMusicMini visible={activeTab !== 'deeply'} onGoToDeeply={() => setActiveTab('deeply')} />
+        <GlobalYouTubePlayer />
         <AiDailyPlanner />
       </>
     );
@@ -545,6 +549,7 @@ const Personal = () => {
           <div className="min-h-full pb-8">{renderContent()}</div>
         </HamburgerLayout>
         <FloatingMusicMini visible={activeTab !== 'deeply'} onGoToDeeply={() => setActiveTab('deeply')} />
+        <GlobalYouTubePlayer />
         <AiDailyPlanner />
       </>
     );
@@ -559,6 +564,7 @@ const Personal = () => {
           <div className="min-h-full pb-8">{renderContent()}</div>
         </DashboardCardsLayout>
         <FloatingMusicMini visible={activeTab !== 'deeply'} onGoToDeeply={() => setActiveTab('deeply')} />
+        <GlobalYouTubePlayer />
         <AiDailyPlanner />
       </>
     );
@@ -573,6 +579,7 @@ const Personal = () => {
           <div className="min-h-full pb-8">{renderContent()}</div>
         </SplitViewLayout>
         <FloatingMusicMini visible={activeTab !== 'deeply'} onGoToDeeply={() => setActiveTab('deeply')} />
+        <GlobalYouTubePlayer />
         <AiDailyPlanner />
       </>
     );
@@ -742,6 +749,7 @@ const Personal = () => {
       </Tabs>
 
       <FloatingMusicMini visible={activeTab !== 'deeply'} onGoToDeeply={() => setActiveTab('deeply')} />
+      <GlobalYouTubePlayer />
       <AiDailyPlanner />
     </div>
     </>
