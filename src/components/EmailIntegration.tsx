@@ -4,13 +4,15 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Mail, Plus, Trash2, RefreshCw, Loader2, Inbox, CreditCard, ListTodo, ShoppingCart, FileText, User, Sparkles, Eye, ArrowUpDown } from "lucide-react";
+import { Mail, Plus, Trash2, RefreshCw, Loader2, Inbox, CreditCard, ListTodo, ShoppingCart, FileText, User, Sparkles, Eye, ArrowUpDown, MessageCircle } from "lucide-react";
 import { useLanguage } from "@/hooks/useLanguage";
 import EmailConnectionDialog from "@/components/EmailConnectionDialog";
 import { format, subDays, isAfter } from "date-fns";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
 import { toast } from "sonner";
+import { useDashboardChatHistory } from "@/hooks/useDashboardChatHistory";
+import AiChatPanel from "@/components/AiChatPanel";
 
 const CATEGORY_ICONS: Record<string, typeof Mail> = {
   payment: CreditCard,
