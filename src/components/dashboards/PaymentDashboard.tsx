@@ -767,7 +767,7 @@ ${context}
         {/* Fixed expenses */}
         {recurringExpenseEntries.length > 0 && (
           <div className="space-y-1">
-            <h3 className="text-sm font-semibold text-muted-foreground flex items-center gap-2">
+            <h3 className="text-sm font-semibold text-muted-foreground flex items-center gap-2" style={{ textAlign: isRtl ? "right" : "left" }}>
               {t("fixedExpenses" as any)}
               <Badge variant="outline" className="text-[10px]">{recurringExpenseEntries.length} | ₪{recurringExpenseEntries.reduce((s, p) => s + p.amount, 0).toLocaleString()}</Badge>
             </h3>
