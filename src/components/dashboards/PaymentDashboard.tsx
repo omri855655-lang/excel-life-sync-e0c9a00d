@@ -254,12 +254,31 @@ const PaymentDashboard = () => {
     toast.success(t("save" as any));
   };
 
-  const toggleEntryRecurring = async (entry: DashboardEntry) => {
-    if (entry.source !== "payment_tracking") return;
-    const newRecurring = !entry.recurring;
-    await supabase.from("payment_tracking").update({ recurring: newRecurring }).eq("id", entry.id);
-    setPayments(prev => prev.map(p => p.id === entry.id ? { ...p, recurring: newRecurring } : p));
-    toast.success(newRecurring ? t("fixedPayment" as any) : t("variableExpenses" as any));
+  const handleToggleRecurring = async (entry: DashboardEntry) => {
+    if (entry.source === "payment_tracking") {
+      const newRecurring = !entry.recurring;
+      await supabase.from("payment_tracking").update({ recurring: newRecurring }).eq("id", entry.id);
+      setPayments(prev => prev.map(p => p.id === entry.id ? { ...p, recurring: newRecurring } : p));
+      toast.success(newRecurring ? t("fixedPayment" as any) : t("variableExpenses" as any));
+    } else if (entry.source === "financial_transactions") {
+      // For imported transactions: copy to payment_tracking as a fixed expense, then remove from financial_transactions
+      const { error: insertErr } = await supabase.from("payment_tracking").insert({
+        user_id: user!.id,
+        title: entry.title,
+        amount: entry.amount,
+        category: entry.category,
+        payment_type: entry.payment_type,
+        due_date: entry.due_date,
+        recurring: true,
+        recurring_frequency: "monthly",
+        paid: entry.paid,
+      });
+      if (insertErr) { toast.error(t("error" as any)); return; }
+      // Remove from financial_transactions
+      await supabase.from("financial_transactions").delete().eq("id", entry.id);
+      toast.success(t("fixedPayment" as any));
+      fetchFinanceData();
+    }
   };
 
   const dashboardEntries = useMemo<DashboardEntry[]>(() => {
