@@ -479,13 +479,13 @@ ${context}
     return (
       <Card key={p.id} className={p.payment_type === "income" ? "border-green-200 dark:border-green-800" : p.recurring ? "border-muted" : ""}>
         <CardContent className="py-2 px-3 space-y-0">
-          <div className="flex items-center gap-3">
+          <div className="flex items-center gap-3" dir={isRtl ? "rtl" : "ltr"}>
             {p.source === "payment_tracking" ? (
               <Button size="icon" variant="ghost" className="h-6 w-6" onClick={() => togglePaid(p.id, p.paid)}>
                 {p.paid ? <Check className="h-4 w-4 text-primary" /> : <div className="h-4 w-4 border-2 rounded" />}
               </Button>
             ) : <div className="h-6 w-6 rounded-full bg-primary/10 flex items-center justify-center text-[10px] font-semibold text-primary">₪</div>}
-            <div className="flex-1 min-w-0">
+            <div className="flex-1 min-w-0" style={{ textAlign: isRtl ? "right" : "left" }}>
               <p className={`text-sm font-medium ${p.paid ? "line-through text-muted-foreground" : ""}`}>{p.title}</p>
               <div className="flex gap-2 items-center flex-wrap">
                 {p.category && <Badge variant="outline" className="text-[10px]">{getCategoryLabel(p.category)}</Badge>}
@@ -509,7 +509,7 @@ ${context}
             <Button size="icon" variant="ghost" className="h-6 w-6 text-destructive" onClick={() => deleteEntry(p)}><Trash2 className="h-3 w-3" /></Button>
           </div>
           {isEditing && (
-            <div className="mt-2 flex gap-2 items-end flex-wrap border-t pt-2">
+            <div className="mt-2 flex gap-2 items-end flex-wrap border-t pt-2" dir={isRtl ? "rtl" : "ltr"}>
               <Input placeholder={t("amount" as any)} type="number" value={editAmount} onChange={e => setEditAmount(e.target.value)} className="h-8 text-xs w-[100px]" dir="ltr" />
               <Select value={editCategory} onValueChange={setEditCategory}>
                 <SelectTrigger className="h-8 text-xs w-[140px]"><SelectValue placeholder={t("chooseCategory" as any)} /></SelectTrigger>
@@ -517,14 +517,13 @@ ${context}
                   {CATEGORY_IDS.map((c, i) => <SelectItem key={c} value={c}>{t(CATEGORY_KEYS[i] as any)}</SelectItem>)}
                 </SelectContent>
               </Select>
-              {p.source === "payment_tracking" && (
+              {(p.source === "payment_tracking" || p.source === "financial_transactions") && (
                 <Input placeholder={t("notes" as any)} value={editNotes} onChange={e => setEditNotes(e.target.value)} className="h-8 text-xs flex-1 min-w-[120px]" />
               )}
-              {p.source === "payment_tracking" && (
-                <Button size="sm" variant={p.recurring ? "default" : "outline"} className="h-8 text-[10px] gap-1" onClick={() => toggleEntryRecurring(p)}>
-                  {t("fixedPayment" as any)}
-                </Button>
-              )}
+              {/* Mark as fixed/recurring - works for both payment_tracking AND imported transactions */}
+              <Button size="sm" variant={p.recurring ? "default" : "outline"} className="h-8 text-[10px] gap-1" onClick={() => handleToggleRecurring(p)}>
+                {t("fixedPayment" as any)}
+              </Button>
               <Button size="sm" className="h-8 text-xs" onClick={() => saveEntryEdit(p)}>{t("save" as any)}</Button>
             </div>
           )}
