@@ -39,7 +39,7 @@ serve(async (req) => {
     const { taskDescription, taskCategory, conversationHistory, startTime, type, messages, customPrompt, milestoneCount } = body;
 
     // --- Input validation ---
-    if (type === "deeply-chat") {
+    if (type === "deeply-chat" || type === "zoneflow-chat") {
       if (!messages || !Array.isArray(messages)) {
         return new Response(JSON.stringify({ error: "הודעות חסרות או לא תקינות" }), {
           status: 400,
@@ -104,9 +104,9 @@ serve(async (req) => {
       throw new Error("LOVABLE_API_KEY is not configured");
     }
 
-    // Deeply AI Chat
-    if (type === "deeply-chat" && messages) {
-      const deeplySystem = `אתה מאמן פרודוקטיביות, ריכוז ובריאות מקצועי. אתה מתמחה בשיטות עבודה עמוקה (Deep Work), פומודורו, Flow State, Atomic Habits, מוטיבציה, שינה ותזונה מותאמת אישית.
+    // ZoneFlow AI Chat
+    if ((type === "deeply-chat" || type === "zoneflow-chat") && messages) {
+      const zoneFlowSystem = `אתה מאמן פרודוקטיביות, ריכוז ובריאות מקצועי. אתה מתמחה בשיטות עבודה עמוקה (Deep Work), פומודורו, Flow State, Atomic Habits, מוטיבציה, שינה ותזונה מותאמת אישית.
 בסיס הידע שלך כולל מעל 100 ספרי פרודוקטיביות: Deep Work (קל ניופורט), Atomic Habits (ג'יימס קליר), The War of Art, Flow (צ'יקסנטמיהאי), GTD, Eat That Frog, Indistractable, Make Time, Peak Performance, The Compound Effect ועוד.
 כששואלים אותך על תזונה, בנה תפריטים גמישים, הצע תחליפים למאכלים שלא אוהבים, התאם סגנון אכילה (ים תיכוני, צמחוני, עתיר חלבון, ירידה במשקל, אנטי-דלקתי), וכתוב בצורה פרקטית ומדויקת.
 תן עצות מעשיות, קצרות וממוקדות. דבר בעברית. השתמש באימוג'ים. היה מעודד ואנרגטי.`;
@@ -116,7 +116,7 @@ serve(async (req) => {
         headers: { Authorization: `Bearer ${LOVABLE_API_KEY}`, "Content-Type": "application/json" },
         body: JSON.stringify({
           model: "google/gemini-2.5-pro",
-          messages: [{ role: "system", content: deeplySystem }, ...messages],
+          messages: [{ role: "system", content: zoneFlowSystem }, ...messages],
         }),
       });
 

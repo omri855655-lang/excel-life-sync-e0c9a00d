@@ -83,7 +83,7 @@ const ChallengesManager = () => {
       const { count: createdCount } = await supabase.from("tasks").select("id", { count: "exact", head: true }).eq("user_id", user.id).gte("created_at", startOfDay);
 
       // Pomodoro sessions from localStorage
-      const savedSessions = localStorage.getItem("deeply-sessions");
+      const savedSessions = localStorage.getItem("zoneflow-sessions") || localStorage.getItem("deeply-sessions");
       const sessions = savedSessions ? JSON.parse(savedSessions) : [];
       const todaySessions = sessions.filter((s: any) => new Date(s.timestamp).toDateString() === today.toDateString());
 
@@ -149,8 +149,8 @@ const ChallengesManager = () => {
     { id: "book-5", icon: "📖", title: "תולעת ספרים", description: "הוסף 5 ספרים", unlocked: allTimeStats.totalBooks >= 5, progress: Math.min(allTimeStats.totalBooks, 5), target: 5, category: "general" },
     { id: "project-1", icon: "🚀", title: "יזם", description: "צור פרויקט ראשון", unlocked: allTimeStats.totalProjects >= 1, progress: Math.min(allTimeStats.totalProjects, 1), target: 1, category: "general" },
     { id: "project-5", icon: "🏗️", title: "בונה עולמות", description: "צור 5 פרויקטים", unlocked: allTimeStats.totalProjects >= 5, progress: Math.min(allTimeStats.totalProjects, 5), target: 5, category: "general" },
-    { id: "focus-5", icon: "🍅", title: "מתמקד", description: "5 סשנים ב-ZoneFlow", unlocked: (() => { try { const s = JSON.parse(localStorage.getItem("deeply-sessions") || "[]"); return s.length >= 5; } catch { return false; } })(), progress: Math.min((() => { try { return JSON.parse(localStorage.getItem("deeply-sessions") || "[]").length; } catch { return 0; } })(), 5), target: 5, category: "focus" },
-    { id: "focus-25", icon: "🧘", title: "זן מאסטר", description: "25 סשנים ב-ZoneFlow", unlocked: (() => { try { const s = JSON.parse(localStorage.getItem("deeply-sessions") || "[]"); return s.length >= 25; } catch { return false; } })(), progress: Math.min((() => { try { return JSON.parse(localStorage.getItem("deeply-sessions") || "[]").length; } catch { return 0; } })(), 25), target: 25, category: "focus" },
+    { id: "focus-5", icon: "🍅", title: "מתמקד", description: "5 סשנים ב-ZoneFlow", unlocked: (() => { try { const s = JSON.parse(localStorage.getItem("zoneflow-sessions") || localStorage.getItem("deeply-sessions") || "[]"); return s.length >= 5; } catch { return false; } })(), progress: Math.min((() => { try { return JSON.parse(localStorage.getItem("zoneflow-sessions") || localStorage.getItem("deeply-sessions") || "[]").length; } catch { return 0; } })(), 5), target: 5, category: "focus" },
+    { id: "focus-25", icon: "🧘", title: "זן מאסטר", description: "25 סשנים ב-ZoneFlow", unlocked: (() => { try { const s = JSON.parse(localStorage.getItem("zoneflow-sessions") || localStorage.getItem("deeply-sessions") || "[]"); return s.length >= 25; } catch { return false; } })(), progress: Math.min((() => { try { return JSON.parse(localStorage.getItem("zoneflow-sessions") || localStorage.getItem("deeply-sessions") || "[]").length; } catch { return 0; } })(), 25), target: 25, category: "focus" },
   ], [allTimeStats, streak]);
 
   // Generate challenges based on yesterday's performance

@@ -4,7 +4,7 @@
  * unlike Web Audio API oscillators which get suspended.
  */
 
-import { AudioPreset } from "./audioPresets";
+import { AudioPreset } from "./zoneflowAudioPresets";
 
 const RENDER_DURATION_SEC = 900; // 15 minutes
 

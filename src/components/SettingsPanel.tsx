@@ -110,7 +110,7 @@ const SettingsPanel = () => {
       projects: "projects",
       courses: "courses",
       planner: "planner",
-      deeply: "deeply",
+      zoneflow: "zoneflow",
       nutrition: "nutrition",
       dreams: "dreams",
       shopping: "shopping",

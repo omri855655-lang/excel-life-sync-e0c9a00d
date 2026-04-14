@@ -14,7 +14,7 @@ interface SessionLog {
 const SessionHistory = () => {
   const sessions: SessionLog[] = useMemo(() => {
     try {
-      return JSON.parse(localStorage.getItem("deeply-sessions") || "[]");
+      return JSON.parse(localStorage.getItem("zoneflow-sessions") || localStorage.getItem("deeply-sessions") || "[]");
     } catch {
       return [];
     }

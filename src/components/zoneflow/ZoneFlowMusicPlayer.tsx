@@ -4,9 +4,9 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Play, Pause, Trash2, Upload, Music, StopCircle } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
-import { startSilentAudio, stopSilentAudio } from "./iosSilentAudio";
-import { unlockAudioContext } from "./iosAudioUnlock";
-import { resetDeeplyAudioState, setDeeplyAudioState, stopOtherDeeplyAudio } from "./deeplyAudioState";
+import { startSilentAudio, stopSilentAudio } from "./zoneflowIosSilentAudio";
+import { unlockAudioContext } from "./zoneflowIosAudioUnlock";
+import { resetZoneFlowAudioState, setZoneFlowAudioState, stopOtherZoneFlowAudio } from "./zoneflowAudioState";
 
 interface AudioFile {
   name: string;
@@ -69,29 +69,29 @@ export function ZoneFlowMusicPlayer({ onPlayingChange, themeCard, themeMuted, th
     setIsPlaying(false);
     setActiveFile(null);
     onPlayingChange?.(false);
-    resetDeeplyAudioState("music");
+    resetZoneFlowAudioState("music");
   }, [onPlayingChange]);
 
   // Sync global state for floating mini-player
   useEffect(() => {
-    setDeeplyAudioState("music", {
+    setZoneFlowAudioState("music", {
       playing: isPlaying,
       name: activeFile ? files.find(f => f.path === activeFile)?.name || "" : "",
       stop: () => stopMusic(),
     });
 
     return () => {
-      resetDeeplyAudioState("music");
+      resetZoneFlowAudioState("music");
     };
   }, [isPlaying, activeFile, files, stopMusic]);
 
   const playFile = useCallback(async (file: AudioFile) => {
     stopMusic();
-    stopOtherDeeplyAudio("music");
+    stopOtherZoneFlowAudio("music");
 
     // Stop frequency presets when starting music
-    if (window._deeplyFreqState?.playing) {
-      window._deeplyFreqState.stop();
+    if (window._zoneflowFreqState?.playing) {
+      window._zoneflowFreqState.stop();
     }
 
     // Unlock audio context on user gesture

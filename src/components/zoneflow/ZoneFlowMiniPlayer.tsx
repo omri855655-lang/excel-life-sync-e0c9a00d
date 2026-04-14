@@ -1,25 +1,25 @@
 import { useEffect, useState } from "react";
 import { Music, StopCircle, Volume2 } from "lucide-react";
-import { getActiveDeeplyAudio, subscribeToDeeplyAudioState } from "./deeplyAudioState";
+import { getActiveZoneFlowAudio, subscribeToZoneFlowAudioState } from "./zoneflowAudioState";
 
 /**
- * Tiny floating mini-player that appears when Deeply audio is playing
- * and the user navigates away from the Deeply tab.
- * Reads from window._deeplyMusicState (set by DeeplyMusicPlayer & useAudioEngine).
+ * Tiny floating mini-player that appears when ZoneFlow audio is playing
+ * and the user navigates away from the ZoneFlow tab.
+ * Reads from window._zoneflowMusicState.
  */
 
-interface FloatingMusicMiniProps {
+interface ZoneFlowMiniPlayerProps {
   visible: boolean;
-  onGoToDeeply?: () => void;
+  onGoToZoneFlow?: () => void;
 }
 
-export function FloatingMusicMini({ visible, onGoToDeeply }: FloatingMusicMiniProps) {
-  const [activeAudio, setActiveAudio] = useState(getActiveDeeplyAudio());
+export function ZoneFlowMiniPlayer({ visible, onGoToZoneFlow }: ZoneFlowMiniPlayerProps) {
+  const [activeAudio, setActiveAudio] = useState(getActiveZoneFlowAudio());
 
   useEffect(() => {
-    setActiveAudio(getActiveDeeplyAudio());
-    return subscribeToDeeplyAudioState(() => {
-      setActiveAudio(getActiveDeeplyAudio());
+    setActiveAudio(getActiveZoneFlowAudio());
+    return subscribeToZoneFlowAudioState(() => {
+      setActiveAudio(getActiveZoneFlowAudio());
     });
   }, []);
 
@@ -34,7 +34,7 @@ export function FloatingMusicMini({ visible, onGoToDeeply }: FloatingMusicMiniPr
     <div className="fixed bottom-24 right-4 z-[9999] animate-in slide-in-from-bottom-2 fade-in duration-300 md:bottom-4">
       <div
         className="flex items-center gap-2 rounded-xl border bg-card text-card-foreground shadow-lg px-3 py-2 cursor-pointer hover:scale-105 transition-transform relative group"
-        onClick={onGoToDeeply}
+        onClick={onGoToZoneFlow}
         title={displayName || "מוזיקה מנגנת"}
       >
         {primaryAudio?.kind === "freq" ? (

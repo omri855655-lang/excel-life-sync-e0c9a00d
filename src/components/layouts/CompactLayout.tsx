@@ -22,7 +22,7 @@ interface CompactLayoutProps {
 
 const TAB_GROUPS: { id: string; label: string; tabIds: string[] }[] = [
   { id: "main", label: "ראשי", tabIds: ["dashboard", "tasks", "work"] },
-  { id: "media", label: "מדיה", tabIds: ["books", "shows", "podcasts", "deeply"] },
+  { id: "media", label: "מדיה", tabIds: ["books", "shows", "podcasts", "zoneflow"] },
   { id: "planning", label: "תכנון", tabIds: ["routine", "planner", "projects", "courses", "challenges"] },
   { id: "life", label: "חיים", tabIds: ["nutrition", "dreams", "shopping", "payments", "notes"] },
   { id: "more", label: "עוד", tabIds: ["sharing", "contact", "settings"] },

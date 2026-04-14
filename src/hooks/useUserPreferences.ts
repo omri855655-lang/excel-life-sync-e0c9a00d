@@ -14,7 +14,7 @@ export const DEFAULT_TABS = [
   { id: "projects", name: "פרויקטים", removable: true },
   { id: "courses", name: "קורסים", removable: true },
   { id: "planner", name: "מתכנן לוז", removable: true },
-  { id: "deeply", name: "ZoneFlow", removable: true },
+  { id: "zoneflow", name: "ZoneFlow", removable: true },
   { id: "nutrition", name: "תזונה ושינה", removable: true },
   { id: "dreams", name: "מפת חלומות", removable: true },
   { id: "shopping", name: "קניות", removable: true },
@@ -37,7 +37,8 @@ export function useUserPreferences() {
       .single();
 
     if (data) {
-      setHiddenTabs((data.hidden_tabs as string[]) || []);
+      const normalized = ((data.hidden_tabs as string[]) || []).map((tab) => tab === "deeply" ? "zoneflow" : tab);
+      setHiddenTabs(normalized);
     }
     setLoading(false);
   }, [user]);
@@ -47,9 +48,10 @@ export function useUserPreferences() {
   const toggleTab = useCallback(async (tabId: string) => {
     if (!user) return;
     
-    const newHidden = hiddenTabs.includes(tabId)
-      ? hiddenTabs.filter(t => t !== tabId)
-      : [...hiddenTabs, tabId];
+    const normalizedTabId = tabId === "deeply" ? "zoneflow" : tabId;
+    const newHidden = hiddenTabs.includes(normalizedTabId)
+      ? hiddenTabs.filter(t => t !== normalizedTabId)
+      : [...hiddenTabs.filter(t => t !== "deeply"), normalizedTabId];
 
     setHiddenTabs(newHidden);
 
@@ -64,7 +66,8 @@ export function useUserPreferences() {
   }, [user, hiddenTabs]);
 
   const isTabVisible = useCallback((tabId: string) => {
-    return !hiddenTabs.includes(tabId);
+    const normalizedTabId = tabId === "deeply" ? "zoneflow" : tabId;
+    return !hiddenTabs.includes(normalizedTabId) && !hiddenTabs.includes("deeply");
   }, [hiddenTabs]);
 
   return { hiddenTabs, loading, toggleTab, isTabVisible };

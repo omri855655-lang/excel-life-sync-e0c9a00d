@@ -10,6 +10,18 @@ interface StopwatchState {
   current_date_str: string;
 }
 
+const ZONEFLOW_SESSIONS_KEY = "zoneflow-sessions";
+const LEGACY_DEEPLY_SESSIONS_KEY = "deeply-sessions";
+
+const readZoneFlowSessions = () => {
+  const raw = localStorage.getItem(ZONEFLOW_SESSIONS_KEY) || localStorage.getItem(LEGACY_DEEPLY_SESSIONS_KEY) || "[]";
+  return JSON.parse(raw);
+};
+
+const writeZoneFlowSessions = (sessions: unknown) => {
+  localStorage.setItem(ZONEFLOW_SESSIONS_KEY, JSON.stringify(sessions));
+};
+
 const getTodayStr = () => {
   // Israel timezone
   const now = new Date();
@@ -57,7 +69,7 @@ export function useDailyStopwatch() {
 
         if (oldTotal > 60) {
           // Save to localStorage sessions for history
-          const oldSessions = JSON.parse(localStorage.getItem("deeply-sessions") || "[]");
+          const oldSessions = readZoneFlowSessions();
           oldSessions.unshift({
             id: Date.now().toString(),
             type: "stopwatch",
@@ -65,7 +77,7 @@ export function useDailyStopwatch() {
             frequency: "none",
             timestamp: data.current_date_str + "T23:59:00",
           });
-          localStorage.setItem("deeply-sessions", JSON.stringify(oldSessions));
+          writeZoneFlowSessions(oldSessions);
         }
 
         // Reset for today

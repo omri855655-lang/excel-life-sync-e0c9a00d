@@ -93,7 +93,7 @@ function getWelcomeEmailHtml(lang: string, fullName: string, username: string, o
         </div>
 
         <div style="background: #fff; border-radius: 8px; padding: 16px; margin-bottom: 12px; border: 1px solid #e5e7eb;">
-          <h3 style="margin: 0 0 6px 0; font-size: 15px; color: #111827;">🎵 Deeply, Notes, Dreams & More</h3>
+          <h3 style="margin: 0 0 6px 0; font-size: 15px; color: #111827;">🎵 ZoneFlow, Notes, Dreams & More</h3>
           <p style="margin: 0; font-size: 13px; color: #6b7280;">Focus music, colorful notes, dream roadmaps, daily routines, challenges, nutrition tracking and stopwatch.</p>
         </div>
 
@@ -157,7 +157,7 @@ function getWelcomeEmailHtml(lang: string, fullName: string, username: string, o
       </div>
 
       <div style="background: #fff; border-radius: 8px; padding: 16px; margin-bottom: 12px; border: 1px solid #e5e7eb;">
-        <h3 style="margin: 0 0 6px 0; font-size: 15px; color: #111827;">🎵 Deeply, פתקים, חלומות ועוד</h3>
+        <h3 style="margin: 0 0 6px 0; font-size: 15px; color: #111827;">🎵 ZoneFlow, פתקים, חלומות ועוד</h3>
         <p style="margin: 0; font-size: 13px; color: #6b7280;">מוזיקת ריכוז, פתקים צבעוניים, מפת דרכים לחלומות, שגרה יומית, אתגרים, תזונה וסטופר.</p>
       </div>
 

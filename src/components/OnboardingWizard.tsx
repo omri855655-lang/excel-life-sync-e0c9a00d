@@ -62,7 +62,7 @@ const DASHBOARD_OPTIONS = [
   { key: "routine", icon: CalendarDays, name: "לוז יומי", desc: "ניהול שגרה, אירועים ותזכורות", defaultOn: true },
   { key: "projects", icon: FolderKanban, name: "פרויקטים", desc: "פרויקטים, צוות ומשימות מרובות אחראים", defaultOn: true },
   { key: "courses", icon: BookOpen, name: "קורסים", desc: "מעקב לימודים ושיעורים", defaultOn: false },
-  { key: "deeply", icon: Focus, name: "ZoneFlow — ריכוז", desc: "ריכוז, מוזיקה ותדרים", defaultOn: false },
+  { key: "zoneflow", icon: Focus, name: "ZoneFlow — ריכוז", desc: "ריכוז, מוזיקה ותדרים", defaultOn: false },
   { key: "shopping", icon: ShoppingCart, name: "רשימת קניות", desc: "קטלוג קבוע, קטגוריות, סל מחזור ושיתוף", defaultOn: true },
   { key: "notes", icon: StickyNote, name: "פתקים", desc: "פתקים צבעוניים עם חיפוש, קטגוריות והצמדה", defaultOn: true },
   { key: "payments", icon: CreditCard, name: "ניהול תשלומים", desc: "הכנסות, הוצאות ותשלומים חוזרים", defaultOn: false },

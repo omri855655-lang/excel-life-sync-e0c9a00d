@@ -6,7 +6,7 @@
  * are created ONCE and reused. We only pause/play — never destroy.
  */
 
-import { unlockAudioContext } from "./iosAudioUnlock";
+import { unlockAudioContext } from "./zoneflowIosAudioUnlock";
 
 const SILENT_MP3_URL = "/silence.mp3";
 
@@ -52,7 +52,7 @@ export function startSilentAudio() {
   // Register MediaSession so iOS treats this as real media
   if ("mediaSession" in navigator) {
     navigator.mediaSession.metadata = new MediaMetadata({
-      title: "Deeply — מוזיקת רקע",
+      title: "ZoneFlow — מוזיקת רקע",
       artist: "Tabro",
       artwork: [
         { src: "/pwa-192x192.png", sizes: "192x192", type: "image/png" },

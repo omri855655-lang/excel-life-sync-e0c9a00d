@@ -1,38 +1,38 @@
 import { useEffect, useMemo, useState } from "react";
 import {
-  getDeeplyYoutubePlayerState,
-  resetDeeplyAudioState,
-  resetDeeplyYoutubePlayerState,
-  setDeeplyAudioState,
-  subscribeToDeeplyYoutubePlayerState,
-} from "./deeplyAudioState";
+  getZoneFlowYoutubePlayerState,
+  resetZoneFlowAudioState,
+  resetZoneFlowYoutubePlayerState,
+  setZoneFlowAudioState,
+  subscribeToZoneFlowYoutubePlayerState,
+} from "./zoneflowAudioState";
 
-export function GlobalYouTubePlayer() {
-  const [playerState, setPlayerState] = useState(getDeeplyYoutubePlayerState());
+export function GlobalZoneFlowYouTubePlayer() {
+  const [playerState, setPlayerState] = useState(getZoneFlowYoutubePlayerState());
 
   useEffect(() => {
-    setPlayerState(getDeeplyYoutubePlayerState());
-    return subscribeToDeeplyYoutubePlayerState(() => {
-      setPlayerState(getDeeplyYoutubePlayerState());
+    setPlayerState(getZoneFlowYoutubePlayerState());
+    return subscribeToZoneFlowYoutubePlayerState(() => {
+      setPlayerState(getZoneFlowYoutubePlayerState());
     });
   }, []);
 
   useEffect(() => {
     if (!playerState.videoId) {
-      resetDeeplyAudioState("youtube");
+      resetZoneFlowAudioState("youtube");
       return;
     }
 
-    setDeeplyAudioState("youtube", {
+    setZoneFlowAudioState("youtube", {
       playing: true,
       name: playerState.title || "YouTube",
       stop: () => {
-        resetDeeplyYoutubePlayerState();
+        resetZoneFlowYoutubePlayerState();
       },
     });
 
     return () => {
-      resetDeeplyAudioState("youtube");
+      resetZoneFlowAudioState("youtube");
     };
   }, [playerState.videoId, playerState.title]);
 

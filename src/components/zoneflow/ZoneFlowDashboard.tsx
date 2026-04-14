@@ -4,19 +4,19 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Play, Pause, RotateCcw, Timer, Map, Plus, Trash2, BookOpen, ChevronDown, ChevronUp, Flame, CalendarClock, Music, StopCircle, MessageCircle, ExternalLink } from "lucide-react";
-import { AUDIO_PRESETS, CATEGORIES, GUIDES, MOTIVATION_TIPS, MORNING_HABITS_GUIDE, DEEP_SHALLOW_WORK_GUIDE, SLEEP_HABITS_GUIDE, NUTRITION_GUIDE, type AudioPreset } from "./audioPresets";
-import { useAudioEngine } from "./useAudioEngine";
-import { unlockAudioContext } from "./iosAudioUnlock";
-import { startSilentAudio } from "./iosSilentAudio";
+import { AUDIO_PRESETS, CATEGORIES, GUIDES, MOTIVATION_TIPS, MORNING_HABITS_GUIDE, DEEP_SHALLOW_WORK_GUIDE, SLEEP_HABITS_GUIDE, NUTRITION_GUIDE, type AudioPreset } from "./zoneflowAudioPresets";
+import { useZoneFlowAudioEngine } from "./useZoneFlowAudioEngine";
+import { unlockAudioContext } from "./zoneflowIosAudioUnlock";
+import { startSilentAudio } from "./zoneflowIosSilentAudio";
 import {
-  getDeeplyYoutubePlayerState,
-  setDeeplyYoutubePlayerState,
-  stopOtherDeeplyAudio,
-  subscribeToDeeplyYoutubePlayerState,
-} from "./deeplyAudioState";
+  getZoneFlowYoutubePlayerState,
+  setZoneFlowYoutubePlayerState,
+  stopOtherZoneFlowAudio,
+  subscribeToZoneFlowYoutubePlayerState,
+} from "./zoneflowAudioState";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
-import { ZoneFlowMusicPlayer } from "./DeeplyMusicPlayer";
+import { ZoneFlowMusicPlayer } from "./ZoneFlowMusicPlayer";
 import { useDailyStopwatch } from "@/hooks/useDailyStopwatch";
 import { useLanguage } from "@/hooks/useLanguage";
 
@@ -93,7 +93,7 @@ const ACTIVE_COLOR_MAP: Record<string, string> = {
 };
 
 const ZoneFlowDashboard = () => {
-  const { activePresetId, isPlaying, isRendering, toggle } = useAudioEngine();
+  const { activePresetId, isPlaying, isRendering, toggle } = useZoneFlowAudioEngine();
   const { user } = useAuth();
   const { t } = useLanguage();
   const { stopwatchTime, isStopwatchRunning, toggleStopwatch, resetStopwatch } = useDailyStopwatch();
@@ -103,7 +103,7 @@ const ZoneFlowDashboard = () => {
 
   // Background theme
   const [bgTheme, setBgTheme] = useState(() => {
-    const saved = localStorage.getItem("deeply-bg-theme");
+    const saved = localStorage.getItem("zoneflow-bg-theme") || localStorage.getItem("deeply-bg-theme");
     return saved || "dark";
   });
 
@@ -125,18 +125,18 @@ const ZoneFlowDashboard = () => {
   // Tasks
   const [workMode, setWorkMode] = useState<"deep" | "shallow">("deep");
   const [deepTasks, setDeepTasks] = useState<Task[]>(() => {
-    const saved = localStorage.getItem("deeply-deep-tasks");
+    const saved = localStorage.getItem("zoneflow-deep-tasks") || localStorage.getItem("deeply-deep-tasks");
     return saved ? JSON.parse(saved) : [];
   });
   const [shallowTasks, setShallowTasks] = useState<Task[]>(() => {
-    const saved = localStorage.getItem("deeply-shallow-tasks");
+    const saved = localStorage.getItem("zoneflow-shallow-tasks") || localStorage.getItem("deeply-shallow-tasks");
     return saved ? JSON.parse(saved) : [];
   });
   const [newTask, setNewTask] = useState("");
 
   // Roadmap
   const [roadmapChecks, setRoadmapChecks] = useState<Record<string, boolean>>(() => {
-    const saved = localStorage.getItem("deeply-roadmap");
+    const saved = localStorage.getItem("zoneflow-roadmap") || localStorage.getItem("deeply-roadmap");
     return saved ? JSON.parse(saved) : {};
   });
   const [activeRoadmapStep, setActiveRoadmapStep] = useState<number | null>(null);
@@ -144,12 +144,12 @@ const ZoneFlowDashboard = () => {
   // Guides & Motivation
   const [expandedGuide, setExpandedGuide] = useState<string | null>(null);
   const [expandedMotivation, setExpandedMotivation] = useState<string | null>(null);
-  const [activeYouTube, setActiveYouTube] = useState<string | null>(() => getDeeplyYoutubePlayerState().videoId);
+  const [activeYouTube, setActiveYouTube] = useState<string | null>(() => getZoneFlowYoutubePlayerState().videoId);
   const [activeYtCat, setActiveYtCat] = useState("yt-classical");
   
   // Custom YouTube videos per category
   const [customYtVideos, setCustomYtVideos] = useState<Record<string, { id: string; title: string }[]>>(() => {
-    const saved = localStorage.getItem("deeply-custom-yt");
+    const saved = localStorage.getItem("zoneflow-custom-yt") || localStorage.getItem("deeply-custom-yt");
     return saved ? JSON.parse(saved) : {};
   });
   const [hiddenYtVideos, setHiddenYtVideos] = useState<string[]>(() => {
@@ -162,7 +162,7 @@ const ZoneFlowDashboard = () => {
 
   // Sessions
   const [sessions, setSessions] = useState<SessionLog[]>(() => {
-    const saved = localStorage.getItem("deeply-sessions");
+    const saved = localStorage.getItem("zoneflow-sessions") || localStorage.getItem("deeply-sessions");
     return saved ? JSON.parse(saved) : [];
   });
 
@@ -192,17 +192,17 @@ const ZoneFlowDashboard = () => {
   }, [user]);
 
   // Persist
-  useEffect(() => { localStorage.setItem("deeply-deep-tasks", JSON.stringify(deepTasks)); }, [deepTasks]);
-  useEffect(() => { localStorage.setItem("deeply-shallow-tasks", JSON.stringify(shallowTasks)); }, [shallowTasks]);
-  useEffect(() => { localStorage.setItem("deeply-roadmap", JSON.stringify(roadmapChecks)); }, [roadmapChecks]);
-  useEffect(() => { localStorage.setItem("deeply-sessions", JSON.stringify(sessions)); }, [sessions]);
-  useEffect(() => { localStorage.setItem("deeply-bg-theme", bgTheme); }, [bgTheme]);
-  useEffect(() => { localStorage.setItem("deeply-custom-yt", JSON.stringify(customYtVideos)); }, [customYtVideos]);
+  useEffect(() => { localStorage.setItem("zoneflow-deep-tasks", JSON.stringify(deepTasks)); }, [deepTasks]);
+  useEffect(() => { localStorage.setItem("zoneflow-shallow-tasks", JSON.stringify(shallowTasks)); }, [shallowTasks]);
+  useEffect(() => { localStorage.setItem("zoneflow-roadmap", JSON.stringify(roadmapChecks)); }, [roadmapChecks]);
+  useEffect(() => { localStorage.setItem("zoneflow-sessions", JSON.stringify(sessions)); }, [sessions]);
+  useEffect(() => { localStorage.setItem("zoneflow-bg-theme", bgTheme); }, [bgTheme]);
+  useEffect(() => { localStorage.setItem("zoneflow-custom-yt", JSON.stringify(customYtVideos)); }, [customYtVideos]);
   useEffect(() => { localStorage.setItem("zoneflow-hidden-yt", JSON.stringify(hiddenYtVideos)); }, [hiddenYtVideos]);
   useEffect(() => {
-    setActiveYouTube(getDeeplyYoutubePlayerState().videoId);
-    return subscribeToDeeplyYoutubePlayerState(() => {
-      setActiveYouTube(getDeeplyYoutubePlayerState().videoId);
+    setActiveYouTube(getZoneFlowYoutubePlayerState().videoId);
+    return subscribeToZoneFlowYoutubePlayerState(() => {
+      setActiveYouTube(getZoneFlowYoutubePlayerState().videoId);
     });
   }, []);
 
@@ -297,10 +297,10 @@ const ZoneFlowDashboard = () => {
     const nextVideoId = activeYouTube === videoId ? null : videoId;
 
     if (nextVideoId) {
-      stopOtherDeeplyAudio("youtube");
+      stopOtherZoneFlowAudio("youtube");
     }
 
-    setDeeplyYoutubePlayerState({
+    setZoneFlowYoutubePlayerState({
       videoId: nextVideoId,
       title: nextVideoId ? title : "",
     });
@@ -321,7 +321,7 @@ const ZoneFlowDashboard = () => {
 
     try {
       const { data, error } = await supabase.functions.invoke("task-ai-helper", {
-        body: { type: "deeply-chat", messages: newMessages },
+        body: { type: "zoneflow-chat", messages: newMessages },
       });
       if (error) throw error;
       const reply = data?.reply || data?.suggestion || "אין תשובה";
@@ -385,7 +385,7 @@ const ZoneFlowDashboard = () => {
   const themeInput = currentTheme.inputBg + " " + currentTheme.inputBorder;
 
   return (
-    <div className={`h-full ${currentTheme.bg} ${currentTheme.text} overflow-auto ${isLight ? "deeply-light" : ""}`} dir="rtl">
+    <div className={`h-full ${currentTheme.bg} ${currentTheme.text} overflow-auto ${isLight ? "zoneflow-light" : ""}`} dir="rtl">
       <div className="max-w-7xl mx-auto p-4 space-y-4">
 
         {/* Background selector + AI Chat button */}

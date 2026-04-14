@@ -1,7 +1,7 @@
 import { useState, useEffect } from "react";
 import { Play, X } from "lucide-react";
-import { startSilentAudio } from "./deeply/iosSilentAudio";
-import { unlockAudioContext } from "./deeply/iosAudioUnlock";
+import { startSilentAudio } from "./zoneflow/zoneflowIosSilentAudio";
+import { unlockAudioContext } from "./zoneflow/zoneflowIosAudioUnlock";
 
 export default function IosMusicBanner() {
   const [visible, setVisible] = useState(false);

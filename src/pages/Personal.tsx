@@ -18,9 +18,9 @@ import Dashboard from "@/components/Dashboard";
 import DailyRoutine from "@/components/DailyRoutine";
 import AiDailyPlanner from "@/components/AiDailyPlanner";
 import PersonalPlanner from "@/components/PersonalPlanner";
-import ZoneFlowDashboard from "@/components/deeply/DeeplyDashboard";
-import { FloatingMusicMini } from "@/components/deeply/FloatingMusicMini";
-import { GlobalYouTubePlayer } from "@/components/deeply/GlobalYouTubePlayer";
+import ZoneFlowDashboard from "@/components/zoneflow/ZoneFlowDashboard";
+import { ZoneFlowMiniPlayer } from "@/components/zoneflow/ZoneFlowMiniPlayer";
+import { GlobalZoneFlowYouTubePlayer } from "@/components/zoneflow/GlobalZoneFlowYouTubePlayer";
 import PushNotificationToggle from "@/components/PushNotificationToggle";
 import NotificationBell from "@/components/NotificationBell";
 import SettingsPanel from "@/components/SettingsPanel";
@@ -86,7 +86,7 @@ const STATIC_TABS: TabDef[] = [
   { id: "projects", icon: FolderKanban, label: "projects", visibilityKey: "projects" },
   { id: "courses", icon: GraduationCap, label: "courses", visibilityKey: "courses" },
   { id: "planner", icon: CalendarDays, label: "planner", visibilityKey: "planner" },
-  { id: "deeply", icon: Focus, label: "deeply", visibilityKey: "deeply" },
+  { id: "zoneflow", icon: Focus, label: "zoneflow", visibilityKey: "zoneflow" },
   { id: "challenges", icon: Trophy, label: "challenges" },
   { id: "nutrition", icon: Apple, label: "nutrition", visibilityKey: "nutrition" },
   { id: "dreams", icon: Target, label: "dreams", visibilityKey: "dreams" },
@@ -416,7 +416,7 @@ const Personal = () => {
       case "projects": return <ProjectsManager />;
       case "planner": return <PersonalPlanner />;
       case "courses": return <CoursesManager />;
-      case "deeply": return <ZoneFlowDashboard />;
+      case "zoneflow": return <ZoneFlowDashboard />;
       case "settings": return <SettingsPanel />;
       case "challenges": return <ChallengesManager />;
       case "nutrition": return <NutritionDashboard />;
@@ -503,8 +503,8 @@ const Personal = () => {
         >
           <div className="min-h-full pb-8">{renderContent()}</div>
         </SidebarLayout>
-        <FloatingMusicMini visible={activeTab !== 'deeply'} onGoToDeeply={() => setActiveTab('deeply')} />
-        <GlobalYouTubePlayer />
+        <ZoneFlowMiniPlayer visible={activeTab !== 'zoneflow'} onGoToZoneFlow={() => setActiveTab('zoneflow')} />
+        <GlobalZoneFlowYouTubePlayer />
         <AiDailyPlanner />
       </>
     );
@@ -518,8 +518,8 @@ const Personal = () => {
         <CompactLayout tabs={flatTabItems} activeTab={activeTab} onTabChange={setActiveTab} dir={dir} header={<>{headerLeft}{headerControls}</>}>
           <div className="min-h-full pb-8">{renderContent()}</div>
         </CompactLayout>
-        <FloatingMusicMini visible={activeTab !== 'deeply'} onGoToDeeply={() => setActiveTab('deeply')} />
-        <GlobalYouTubePlayer />
+        <ZoneFlowMiniPlayer visible={activeTab !== 'zoneflow'} onGoToZoneFlow={() => setActiveTab('zoneflow')} />
+        <GlobalZoneFlowYouTubePlayer />
         <AiDailyPlanner />
       </>
     );
@@ -533,8 +533,8 @@ const Personal = () => {
         <BottomNavLayout tabs={flatTabItems} activeTab={activeTab} onTabChange={setActiveTab} onReorder={(ids) => { setTabOrder(ids); localStorage.setItem("tab-order", JSON.stringify(ids)); }} dir={dir} header={<>{headerLeft}{headerControls}</>}>
           <div className="min-h-full pb-20">{renderContent()}</div>
         </BottomNavLayout>
-        <FloatingMusicMini visible={activeTab !== 'deeply'} onGoToDeeply={() => setActiveTab('deeply')} />
-        <GlobalYouTubePlayer />
+        <ZoneFlowMiniPlayer visible={activeTab !== 'zoneflow'} onGoToZoneFlow={() => setActiveTab('zoneflow')} />
+        <GlobalZoneFlowYouTubePlayer />
         <AiDailyPlanner />
       </>
     );
@@ -548,8 +548,8 @@ const Personal = () => {
         <HamburgerLayout tabs={flatTabItems} activeTab={activeTab} onTabChange={setActiveTab} onReorder={(ids) => { setTabOrder(ids); localStorage.setItem("tab-order", JSON.stringify(ids)); }} dir={dir} header={<>{headerControls}</>}>
           <div className="min-h-full pb-8">{renderContent()}</div>
         </HamburgerLayout>
-        <FloatingMusicMini visible={activeTab !== 'deeply'} onGoToDeeply={() => setActiveTab('deeply')} />
-        <GlobalYouTubePlayer />
+        <ZoneFlowMiniPlayer visible={activeTab !== 'zoneflow'} onGoToZoneFlow={() => setActiveTab('zoneflow')} />
+        <GlobalZoneFlowYouTubePlayer />
         <AiDailyPlanner />
       </>
     );
@@ -563,8 +563,8 @@ const Personal = () => {
         <DashboardCardsLayout tabs={flatTabItems} activeTab={activeTab} onTabChange={setActiveTab} dir={dir} header={<>{headerLeft}{headerControls}</>}>
           <div className="min-h-full pb-8">{renderContent()}</div>
         </DashboardCardsLayout>
-        <FloatingMusicMini visible={activeTab !== 'deeply'} onGoToDeeply={() => setActiveTab('deeply')} />
-        <GlobalYouTubePlayer />
+        <ZoneFlowMiniPlayer visible={activeTab !== 'zoneflow'} onGoToZoneFlow={() => setActiveTab('zoneflow')} />
+        <GlobalZoneFlowYouTubePlayer />
         <AiDailyPlanner />
       </>
     );
@@ -578,8 +578,8 @@ const Personal = () => {
         <SplitViewLayout tabs={flatTabItems} activeTab={activeTab} onTabChange={setActiveTab} onReorder={(ids) => { setTabOrder(ids); localStorage.setItem("tab-order", JSON.stringify(ids)); }} dir={dir} header={<>{headerLeft}{headerControls}</>}>
           <div className="min-h-full pb-8">{renderContent()}</div>
         </SplitViewLayout>
-        <FloatingMusicMini visible={activeTab !== 'deeply'} onGoToDeeply={() => setActiveTab('deeply')} />
-        <GlobalYouTubePlayer />
+        <ZoneFlowMiniPlayer visible={activeTab !== 'zoneflow'} onGoToZoneFlow={() => setActiveTab('zoneflow')} />
+        <GlobalZoneFlowYouTubePlayer />
         <AiDailyPlanner />
       </>
     );
@@ -748,8 +748,8 @@ const Personal = () => {
         </div>
       </Tabs>
 
-      <FloatingMusicMini visible={activeTab !== 'deeply'} onGoToDeeply={() => setActiveTab('deeply')} />
-      <GlobalYouTubePlayer />
+      <ZoneFlowMiniPlayer visible={activeTab !== 'zoneflow'} onGoToZoneFlow={() => setActiveTab('zoneflow')} />
+      <GlobalZoneFlowYouTubePlayer />
       <AiDailyPlanner />
     </div>
     </>

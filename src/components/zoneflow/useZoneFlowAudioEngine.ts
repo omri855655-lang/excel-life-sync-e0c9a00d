@@ -1,9 +1,9 @@
 import { useState, useCallback, useRef, useEffect } from "react";
-import { AudioPreset, AUDIO_PRESETS } from "./audioPresets";
-import { startSilentAudio, stopSilentAudio } from "./iosSilentAudio";
-import { unlockAudioContext } from "./iosAudioUnlock";
-import { renderPresetToBlob } from "./renderPresetToAudio";
-import { resetDeeplyAudioState, setDeeplyAudioState, stopOtherDeeplyAudio } from "./deeplyAudioState";
+import { AudioPreset, AUDIO_PRESETS } from "./zoneflowAudioPresets";
+import { startSilentAudio, stopSilentAudio } from "./zoneflowIosSilentAudio";
+import { unlockAudioContext } from "./zoneflowIosAudioUnlock";
+import { renderPresetToBlob } from "./renderZoneFlowPresetToAudio";
+import { resetZoneFlowAudioState, setZoneFlowAudioState, stopOtherZoneFlowAudio } from "./zoneflowAudioState";
 
 // Quick lookup for preset names by id
 const PRESET_NAME_MAP: Record<string, string> = {};
@@ -15,7 +15,7 @@ AUDIO_PRESETS.forEach(p => { PRESET_NAME_MAP[p.id] = p.nameHe || p.name; });
  * playback — iOS keeps <audio> elements alive but suspends Web Audio
  * API oscillators when the app goes to background.
  */
-export function useAudioEngine() {
+export function useZoneFlowAudioEngine() {
   const [activePresetId, setActivePresetId] = useState<string | null>(null);
   const [isPlaying, setIsPlaying] = useState(false);
   const [isRendering, setIsRendering] = useState(false);
@@ -38,16 +38,16 @@ export function useAudioEngine() {
     setIsPlaying(false);
     setIsRendering(false);
     isPlayingRef.current = false;
-    resetDeeplyAudioState("freq");
+    resetZoneFlowAudioState("freq");
   }, []);
 
   const playPreset = useCallback(async (preset: AudioPreset) => {
     stopAudio();
-    stopOtherDeeplyAudio("freq");
+    stopOtherZoneFlowAudio("freq");
 
     // Stop music player when starting frequency preset
-    if (window._deeplyMusicState?.playing) {
-      window._deeplyMusicState.stop();
+    if (window._zoneflowMusicState?.playing) {
+      window._zoneflowMusicState.stop();
     }
 
     setIsRendering(true);
@@ -77,9 +77,9 @@ export function useAudioEngine() {
       // MediaSession for lock screen controls
       if ("mediaSession" in navigator) {
         navigator.mediaSession.metadata = new MediaMetadata({
-          title: `Deeply — ${preset.nameHe || preset.name}`,
+          title: `ZoneFlow — ${preset.nameHe || preset.name}`,
           artist: "Tabro",
-          album: "Deeply",
+          album: "ZoneFlow",
           artwork: [
             { src: "/pwa-192x192.png", sizes: "192x192", type: "image/png" },
             { src: "/pwa-512x512.png", sizes: "512x512", type: "image/png" },
@@ -127,7 +127,7 @@ export function useAudioEngine() {
 
   // Sync global state for floating mini-player (frequency presets)
   useEffect(() => {
-    setDeeplyAudioState("freq", {
+    setZoneFlowAudioState("freq", {
       playing: isPlaying,
       name: activePresetId
         ? (PRESET_NAME_MAP[activePresetId] || activePresetId)
@@ -139,7 +139,7 @@ export function useAudioEngine() {
     });
 
     return () => {
-      resetDeeplyAudioState("freq");
+      resetZoneFlowAudioState("freq");
     };
   }, [isPlaying, activePresetId, stopAudio]);
 
