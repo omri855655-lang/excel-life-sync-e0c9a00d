@@ -123,6 +123,37 @@ const EmailIntegration = () => {
     }
   };
 
+  const sendAiMessage = async (chatInput: string) => {
+    if (!chatInput.trim()) return;
+    const userMsg = { role: "user", content: chatInput };
+    aiChatHistory.setMessages(prev => [...prev, userMsg]);
+    setAiLoading(true);
+
+    try {
+      const emailSummary = recentEmails.slice(0, 30).map(e => ({
+        subject: e.email_subject,
+        from: e.email_from,
+        date: e.email_date,
+        category: e.category,
+      }));
+
+      const context = `הנה סיכום מיילים אחרונים (14 יום אחרונים):\n${JSON.stringify(emailSummary, null, 2)}`;
+
+      const { data, error } = await supabase.functions.invoke("task-ai-helper", {
+        body: {
+          taskDescription: chatInput,
+          conversationHistory: [...aiChatHistory.messages, userMsg].slice(-20),
+          customPrompt: `אתה עוזר אישי חכם שמנתח מיילים. ${context}\n\nהמשתמש שואל: ${chatInput}\n\nענה בעברית, השתמש באימוג'ים, תן תובנות מועילות.`,
+        },
+      });
+      if (error) throw error;
+      aiChatHistory.setMessages(prev => [...prev, { role: "assistant", content: data?.suggestion || "אין תשובה" }]);
+    } catch {
+      aiChatHistory.setMessages(prev => [...prev, { role: "assistant", content: isHe ? "שגיאה בקבלת תשובה" : "Error getting response" }]);
+    }
+    setAiLoading(false);
+  };
+
   if (loading) {
     return (
       <div className="flex items-center justify-center h-64">
@@ -133,7 +164,28 @@ const EmailIntegration = () => {
 
   return (
     <div className="space-y-4 p-4">
-      {/* Connected Accounts */}
+      {/* AI Chat Toggle */}
+      <div className="flex justify-end">
+        <Button size="sm" variant={showAiChat ? "default" : "outline"} onClick={() => setShowAiChat(!showAiChat)} className="gap-1">
+          <MessageCircle className="h-3.5 w-3.5" />
+          {isHe ? "שיחה עם AI" : "AI Chat"}
+        </Button>
+      </div>
+
+      {showAiChat && (
+        <AiChatPanel
+          title={isHe ? "עוזר מיילים AI" : "Email AI Assistant"}
+          messages={aiChatHistory.messages}
+          loaded={aiChatHistory.loaded}
+          aiLoading={aiLoading}
+          archive={aiChatHistory.archive}
+          onSend={sendAiMessage}
+          onClearAndArchive={aiChatHistory.clearAndArchive}
+          onLoadConversation={aiChatHistory.loadConversation}
+          placeholder={isHe ? "שאל על המיילים שלך..." : "Ask about your emails..."}
+          emptyText={isHe ? "שאל אותי על המיילים שלך ואני אעזור לך לנתח ולסדר אותם" : "Ask me about your emails and I'll help analyze them"}
+        />
+      )}
       <Card className="card-surface">
         <CardHeader>
           <div className="flex items-center justify-between">
